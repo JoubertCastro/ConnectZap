@@ -1,51 +1,63 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Status das Mensagens</title>
+  <meta charset="utf-8" />
+  <title>Status das Mensagens WhatsApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
+    :root{
+      --bg:#f5f7fb;--card:#ffffff;--txt:#222;--muted:#6b7280;--primary:#2563eb;--primary-d:#1d4ed8;
+      --success:#16a34a;--warn:#d97706;--danger:#dc2626;--outline:#e5e7eb;--radius:12px;
     }
-    h1 {
-      color: #333;
+    *{box-sizing:border-box}
+    body{
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
+      margin:0;padding:24px;background:var(--bg);color:var(--txt);
     }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      background: #fff;
+    .container{max-width:1100px;margin:0 auto}
+    .card{
+      background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
+      box-shadow:0 6px 24px rgba(0,0,0,.04);
     }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: center;
+    h1{margin:0 0 10px;font-size:22px}
+    .muted{color:var(--muted);font-size:14px;margin-bottom:10px}
+    table{
+      width:100%;border-collapse:collapse;margin-top:15px;background:#fff;border-radius:var(--radius);overflow:hidden
     }
-    th {
-      background: #eee;
+    th, td{
+      padding:12px 14px;border-bottom:1px solid var(--outline);text-align:left;font-size:14px
     }
-    .sent { color: orange; font-weight: bold; }
-    .delivered { color: blue; font-weight: bold; }
-    .read { color: green; font-weight: bold; }
+    th{background:#f9fafb;font-weight:600;color:var(--muted)}
+    tr:last-child td{border-bottom:none}
+    .status-pill{
+      display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600
+    }
+    .sent{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+    .delivered{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
+    .read{background:#dcfce7;color:#166534;border:1px solid #86efac}
   </style>
 </head>
 <body>
-  <h1>Status das Mensagens</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>Data/Hora</th>
-        <th>Recipient ID</th>
-        <th>Telefone</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="statusTable">
-      <tr><td colspan="4">Carregando...</td></tr>
-    </tbody>
-  </table>
+  <div class="container">
+    <div class="card">
+      <h1>Status das Mensagens WhatsApp</h1>
+      <div class="muted">Atualiza automaticamente a cada 5 segundos mostrando o status mais recente de cada mensagem.</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Recipient ID</th>
+            <th>Telefone</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="statusTable">
+          <tr><td colspan="4">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <script>
     async function carregarStatus() {
@@ -76,8 +88,10 @@
           tr.appendChild(tdTel);
 
           const tdStatus = document.createElement("td");
-          tdStatus.textContent = linha.status;
-          tdStatus.className = linha.status;
+          const span = document.createElement("span");
+          span.textContent = linha.status;
+          span.className = `status-pill ${linha.status}`;
+          tdStatus.appendChild(span);
           tr.appendChild(tdStatus);
 
           tbody.appendChild(tr);
@@ -87,7 +101,6 @@
       }
     }
 
-    // Atualiza a cada 5 segundos
     setInterval(carregarStatus, 5000);
     carregarStatus();
   </script>
