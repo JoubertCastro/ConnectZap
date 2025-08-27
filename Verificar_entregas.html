@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Status das Mensagens</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: #fff;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #eee;
+    }
+    .sent { color: orange; font-weight: bold; }
+    .delivered { color: blue; font-weight: bold; }
+    .read { color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Status das Mensagens</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Recipient ID</th>
+        <th>Telefone</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="statusTable">
+      <tr><td colspan="4">Carregando...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    async function carregarStatus() {
+      try {
+        const resp = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/status");
+        const dados = await resp.json();
+        const tbody = document.getElementById("statusTable");
+        tbody.innerHTML = "";
+
+        if (!dados.length) {
+          tbody.innerHTML = "<tr><td colspan='4'>Nenhum status encontrado</td></tr>";
+          return;
+        }
+
+        dados.forEach(linha => {
+          const tr = document.createElement("tr");
+
+          const tdData = document.createElement("td");
+          tdData.textContent = linha.data_hora;
+          tr.appendChild(tdData);
+
+          const tdRec = document.createElement("td");
+          tdRec.textContent = linha.recipient_id;
+          tr.appendChild(tdRec);
+
+          const tdTel = document.createElement("td");
+          tdTel.textContent = linha.display_phone_number;
+          tr.appendChild(tdTel);
+
+          const tdStatus = document.createElement("td");
+          tdStatus.textContent = linha.status;
+          tdStatus.className = linha.status;
+          tr.appendChild(tdStatus);
+
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error("Erro ao carregar status:", e);
+      }
+    }
+
+    // Atualiza a cada 5 segundos
+    setInterval(carregarStatus, 5000);
+    carregarStatus();
+  </script>
+</body>
+</html>
