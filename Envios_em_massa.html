@@ -238,6 +238,17 @@
           </div>
         </div>
       </div>
+      <div class="row" style="margin-top:12px;">
+        <div class="col-6">
+          <label for="nomeDisparo">Nome do Disparo</label>
+          <input id="nomeDisparo" placeholder="Campanha Agosto - Segmento X" required />
+        </div>
+        <div class="col-6">
+          <label for="grupoTrabalho">Grupo de Trabalho</label>
+          <input id="grupoTrabalho" placeholder="Equipe Comercial" required />
+        </div>
+      </div>
+
 
       <!-- Envio -->
       <div class="row" style="margin-top:16px;align-items:center;">
@@ -274,569 +285,57 @@
 
   <script>
     // ---------------------------- Estado ----------------------------
-    const estrategias = {
-      estrategia1: [
-        { to: "5561993742606", vars: ["Joubert"] },
-        { to: "5592991029242", vars: ["Savio"] },
-        { to: "5561996777300", vars: ["Ayrton"] },
-      ],
-      estrategia2: [
-        { to: "5561993742601", vars: ["Joubert"] },
-        { to: "5561993742602", vars: ["JoubertC"] },
-      ],
-    };
-
-    let contatos = [];              // [{ to: '55...', vars: ['v1','v2', ...] }]
-    let csvHeaders = [];            // ['telefone','nome','codigo', ...]
-    let custoEmDolar = 0;           // custo estimado
-    let mapping = {                 // qual coluna alimenta cada {{n}}
-      body: [],                     // array de índices (0-based) para {{1}}, {{2}} ...
-      headerText: [],               // idem, para HEADER TEXT
-      urlButtons: {},               // { index: 0 => [colIdxFor{{1}}] }
-    };
-    let tmpl = {                    // metadados do template selecionado
-      name: "",
-      category: "",
-      components: [],
-      bodyText: "",
-      bodyVars: 0,
-      headerType: null,             // null | TEXT | IMAGE | VIDEO | DOCUMENT
-      headerText: "",
-      headerVars: 0,
-      urlButtons: [],               // lista de {index, url, hasVar}
-    };
-
-    let flags = { paused: false, cancelled: false };
-
-    // ---------------------------- Utils ----------------------------
-    const $ = (sel) => document.querySelector(sel);
-    const byId = (id) => document.getElementById(id);
-
-    function log(line){
-      const out = byId('output');
-      out.textContent += (out.textContent ? "\n" : "") + line;
-      out.scrollTop = out.scrollHeight;
-    }
-
-    function setProgress(done, total){
-      const pct = total > 0 ? (done / total) * 100 : 0;
-      byId('progressBar').style.width = pct.toFixed(1) + '%';
-      byId('progressTxt').textContent = `${done}/${total}`;
-    }
-
-    function countPlaceholders(text){
-      if(!text) return 0;
-      const matches = text.match(/\{\{\d+\}\}/g);
-      return matches ? new Set(matches).size : 0;
-    }
-
-    function substitutePlaceholders(text, values){
-      // values: array where index 0 is {{1}}, index 1 is {{2}}, ...
-      if(!text) return '';
-      return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
-        const idx = parseInt(n,10) - 1;
-        return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
-      });
-    }
-
-    function parseCSV(text){
-      // CSV simples com , ou ; e aspas
-      const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
-      const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
-      const rows = [];
-      for(const line of lines){
-        const row = [];
-        let cur = '', inQ = false;
-        for(let i=0;i<line.length;i++){
-          const ch = line[i];
-          if(ch === '"'){
-            if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
-            else { inQ = !inQ; }
-          }else if(ch === delim && !inQ){
-            row.push(cur); cur='';
-          }else{
-            cur += ch;
-          }
-        }
-        row.push(cur);
-        rows.push(row.map(c => c.trim()));
-      }
-      return rows;
-    }
-
-    function ensureNumber(v, fallback=0){
-      const n = Number(v);
-      return Number.isFinite(n) ? n : fallback;
-    }
-
-    function escapeHtml(str=''){
-      return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-    }
-
-    // ---------------------------- UI Helpers ----------------------------
-    function renderSelect(id, varIndex, current){
-      let opts = '';
-      if(csvHeaders.length>0){
-        csvHeaders.forEach((h, idx) => {
-          const sel = idx === current ? 'selected' : '';
-          opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
-        });
-      }else{
-        // fallback pelo nº de colunas detectado
-        const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
-        for(let idx=0; idx<maxCols; idx++){
-          const sel = idx === current ? 'selected' : '';
-          opts += `<option value="${idx}" ${sel}>${idx+1}</option>`;
-        }
-      }
-      return `<label for="${id}">{{${varIndex+1}}} ⟶ coluna</label><select id="${id}">${opts}</select>`;
-    }
-
-    function renderMapUI(){
-      const area = byId('mapArea');
-      const hasTemplate = !!tmpl.name;
-      const hasContacts = contatos.length > 0;
-
-      if(!hasTemplate || !hasContacts){
-        area.innerHTML = '<span class="muted">Carregue contatos e selecione um template para configurar o mapeamento.</span>';
-        return;
-      }
-
-      const headerPart = (() => {
-        if(!tmpl.headerType) return '';
-        if(tmpl.headerType === 'TEXT' && tmpl.headerVars > 0){
-          let selects = '';
-          for(let i=0;i<tmpl.headerVars;i++){
-            selects += renderSelect(`map-header-${i}`, i, mapping.headerText[i]);
-          }
-          return `<h3>Header TEXT — variáveis</h3>${selects}`;
-        }
-        if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
-          return '<div class="muted">Header de mídia usa a URL informada em "Link da Mídia do Header".</div>';
-        }
-        return '';
-      })();
-
-      let bodySelects = '';
-      if(tmpl.bodyVars > 0){
-        bodySelects += '<h3>Body — variáveis</h3>';
-        for(let i=0;i<tmpl.bodyVars;i++){
-          bodySelects += renderSelect(`map-body-${i}`, i, mapping.body[i]);
-        }
-      }else{
-        bodySelects += '<div class="muted">Body sem variáveis.</div>';
-      }
-
-      let buttonsPart = '';
-      if(tmpl.urlButtons.length > 0){
-        buttonsPart += '<h3>Botões URL — variáveis</h3>';
-        tmpl.urlButtons.forEach(btn => {
-          if(btn.hasVar){
-            buttonsPart += `<div style="margin:6px 0 10px"><b>Botão #${btn.index+1}</b> — URL base: <span class="kbd">${btn.url}</span><br/>` +
-              renderSelect(`map-urlbtn-${btn.index}-0`, 0, mapping.urlButtons[btn.index]?.[0]) + '</div>';
-          }
-        });
-      }
-
-      const sample = contatos[0] || { to:'', vars:[] };
-      const bodyPreviewVals = (mapping.body || []).map(ci => ci != null ? sample.vars[ci] : '');
-      const bodyPrev = substitutePlaceholders(tmpl.bodyText, bodyPreviewVals);
-
-      area.innerHTML = `
-        ${headerPart}
-        ${bodySelects}
-        ${buttonsPart}
-        <div style="margin-top:10px">
-          <div class="muted">Prévia com o <b>primeiro contato</b>:</div>
-          <div class="card" style="padding:10px;border:1px dashed #cbd5e1;">
-            ${bodyPrev.replace(/\n/g,'<br/>')}
-          </div>
-        </div>
-      `;
-
-      // listeners dos selects
-      if(tmpl.headerType === 'TEXT'){
-        for(let i=0;i<tmpl.headerVars;i++){
-          byId(`map-header-${i}`)?.addEventListener('change', (e) => {
-            mapping.headerText[i] = ensureNumber(e.target.value, 0);
-          });
-        }
-      }
-      for(let i=0;i<tmpl.bodyVars;i++){
-        byId(`map-body-${i}`)?.addEventListener('change', (e) => {
-          mapping.body[i] = ensureNumber(e.target.value, 0);
-          renderMapUI(); // refresh preview
-        });
-      }
-      tmpl.urlButtons.forEach(btn => {
-        if(btn.hasVar){
-          byId(`map-urlbtn-${btn.index}-0`)?.addEventListener('change', (e) => {
-            mapping.urlButtons[btn.index] = [ensureNumber(e.target.value, 0)];
-          });
-        }
-      });
-    }
-
-    // ---------------------------- Custos ----------------------------
-    async function calcularCusto(){
-      const categoria = byId('templateCategory').value;
-      const qtd = contatos.length;
-      if(!categoria || !qtd){
-        byId('custoEstimado').textContent = '💵 Custo estimado: —';
-        byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
-        return;
-      }
-      // valores aproximados — ajuste conforme sua tabela vigente
-      const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
-      custoEmDolar = qtd * price;
-      byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
-
-      try{
-        const res = await fetch('https://open.er-api.com/v6/latest/USD');
-        const data = await res.json();
-        const brl = data?.rates?.BRL ?? 5.0; // fallback
-        const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
-        const final = custoEmDolar * brl * taxa;
-        byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
-      }catch(e){
-        const brl = 5.0; // fallback
-        const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
-        const final = custoEmDolar * brl * taxa;
-        byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
-      }
-    }
-
-    // ---------------------------- Templates ----------------------------
-    byId('btnBuscar').addEventListener('click', buscarTemplates);
-    async function buscarTemplates(){
-      const token = byId('token').value.trim();
-      const wabaId = byId('wabaId').value.trim();
-      const ver = byId('graphVersion').value;
-      if(!token || !wabaId){ alert('Informe token e WABA ID.'); return; }
-
-      const select = byId('templateSelect');
-      select.innerHTML = '<option value="">Carregando...</option>';
-
-      const urlBase = `https://graph.facebook.com/${ver}/${encodeURIComponent(wabaId)}/message_templates?limit=100&status=APPROVED`;
-      const all = [];
-      let next = urlBase;
-      try{
-        while(next){
-          const r = await fetch(next, { headers:{ Authorization:`Bearer ${token}` }});
-          const j = await r.json();
-          if(Array.isArray(j.data)) all.push(...j.data);
-          next = j?.paging?.next || null;
-        }
-      }catch(e){
-        alert('Erro ao buscar templates: ' + e.message);
-        select.innerHTML = '<option value="">-- Erro ao buscar --</option>';
-        return;
-      }
-
-      if(all.length === 0){
-        select.innerHTML = '<option value="">-- Nenhum template aprovado encontrado --</option>';
-        return;
-      }
-
-      select.innerHTML = '<option value="">-- Selecione um template --</option>';
-      all.sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = JSON.stringify(t);
-        opt.textContent = `${t.name} · ${t.category}`;
-        select.appendChild(opt);
-      });
-    }
-
-    byId('templateSelect').addEventListener('change', preencherTemplateInfo);
-    function preencherTemplateInfo(){
-      const val = byId('templateSelect').value;
-      if(!val) return;
-      const t = JSON.parse(val);
-
-      tmpl.name = t.name;
-      tmpl.category = t.category || '';
-      tmpl.components = t.components || [];
-      byId('templateName').value = tmpl.name;
-      byId('templateCategory').value = tmpl.category || '';
-
-      const header = tmpl.components.find(c => c.type === 'HEADER');
-      const body = tmpl.components.find(c => c.type === 'BODY');
-      const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
-
-      // Reset UI header
-      tmpl.headerType = null;
-      tmpl.headerText = '';
-      tmpl.headerVars = 0;
-      byId('headerFormat').value = '';
-      byId('headerTextWrap').classList.add('hide');
-      byId('mediaLinkWrap').classList.add('hide');
-
-      // Header
-      if(header){
-        const fmt = header.format; // TEXT | IMAGE | VIDEO | DOCUMENT
-        tmpl.headerType = fmt;
-        byId('headerFormat').value = fmt || '';
-        if(fmt === 'TEXT'){
-          tmpl.headerText = header.text || '';
-          tmpl.headerVars = countPlaceholders(tmpl.headerText);
-          byId('headerTextWrap').classList.remove('hide');
-        }else if(['IMAGE','VIDEO','DOCUMENT'].includes(fmt)){
-          byId('mediaLinkWrap').classList.remove('hide');
-        }
-      }
-
-      // Body
-      tmpl.bodyText = body?.text || '';
-      tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
-
-      // Buttons (apenas URL com {{1}})
-      tmpl.urlButtons = [];
-      if(buttons && Array.isArray(buttons.buttons)){
-        buttons.buttons.forEach((b, idx) => {
-          if(b.type === 'URL'){
-            const hasVar = (b.url || '').includes('{{');
-            tmpl.urlButtons.push({ index: idx, url: b.url || '', hasVar });
-          }
-        });
-      }
-
-      // Preview
-      const exemplos = body?.example?.body_text?.[0] || [];
-      const previewText = substitutePlaceholders(tmpl.bodyText, exemplos);
-      byId('previewArea').textContent = previewText ? `📄 Pré-visualização:\n${previewText}` : '—';
-
-      // Mapeamento padrão
-      mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
-      mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
-      mapping.urlButtons = {};
-
-      renderMapUI();
-      calcularCusto();
-    }
-
-    // ---------------------------- Contatos ----------------------------
-    byId('estrategiaSelect').addEventListener('change', function(){
-      const selected = this.value;
-      if(estrategias[selected]){
-        contatos = JSON.parse(JSON.stringify(estrategias[selected]));
-        csvHeaders = [];
-        byId('contagemContatos').textContent = `✔️ Estratégia "${selected}" carregada com ${contatos.length} contato(s).`;
-        renderMapUI();
-        calcularCusto();
-      }
-    });
-
-    byId('fileInput').addEventListener('change', function(){
-      const file = this.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const rows = parseCSV(e.target.result);
-        if(rows.length === 0) return;
-
-        // Detecta cabeçalho
-        const head = rows[0].map(c => (c||'').toLowerCase());
-        const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
-
-        const dataRows = hasHeader ? rows.slice(1) : rows;
-        csvHeaders = hasHeader ? rows[0] : (dataRows[0]?.map((_,i)=>`coluna_${i+1}`) || []);
-
-        contatos = dataRows.map(r => ({
-          to: (r[0] || '').replace(/\D+/g,''),
-          vars: r.slice(1),
-        })).filter(c => c.to);
-
-        byId('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
-        renderMapUI();
-        calcularCusto();
-      };
-      reader.readAsText(file);
-    });
-
-    byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
-    byId('templateCategory').addEventListener('change', calcularCusto);
-
-    // ---------------------------- Agendamento UI ----------------------------
-    byId('modoEnvio').addEventListener('change', () => {
-      const isAgendar = byId('modoEnvio').value === 'agendar';
-      byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
-    });
-
-    // ---------------------------- Envio ----------------------------
-    byId('btnEnviar').addEventListener('click', onEnviarClick);
-    byId('btnPausar').addEventListener('click', () => {
-      flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausado.');
-    });
-    byId('btnRetomar').addEventListener('click', () => {
-      flags.paused = false; byId('btnRetomar').disabled = true; log('▶️ Retomado.');
-    });
-    byId('btnCancelar').addEventListener('click', () => {
-      flags.cancelled = true; log('🛑 Cancelado pelo usuário.');
-    });
-
     async function onEnviarClick(){
-      const token = byId('token').value.trim();
-      const phoneId = byId('phoneId').value.trim();
-      const ver = byId('graphVersion').value;
-      if(!token || !phoneId || !tmpl.name){ alert('Preencha token, phone ID e selecione um template.'); return; }
-      if(contatos.length === 0){ alert('Nenhum contato carregado.'); return; }
+  if(contatos.length === 0){ 
+    alert('Nenhum contato carregado.'); 
+    return; 
+  }
 
-      const modoEnvio = byId('modoEnvio').value;
-      const dataHora = new Date(byId('dataHoraEnvio').value);
+  const payload = {
+    nome_disparo: byId("nomeDisparo").value.trim(),
+    grupo_trabalho: byId("grupoTrabalho").value.trim(),
+    modo_envio: byId("modoEnvio").value,
+    data_hora_agendamento: byId("dataHoraEnvio").value || null,
+    intervalo_msg: Number(byId("intervaloMsg").value || 0),
+    tamanho_lote: Number(byId("tamanhoLote").value || 0),
+    intervalo_lote: Number(byId("intervaloLote").value || 0),
+    template: {
+      name: tmpl.name,
+      language: "pt_BR",
+      headerType: tmpl.headerType,
+      bodyText: tmpl.bodyText,
+      bodyVars: tmpl.bodyVars,
+      headerVars: tmpl.headerVars,
+      urlButtons: tmpl.urlButtons,
+      mapping: mapping,
+      mediaLink: byId("mediaLink").value.trim()
+    },
+    contatos: contatos.map(c => ({
+      telefone: c.to,
+      conteudo: c.vars.join(",")   // <-- mais simples para o worker processar
+    }))
+  };
 
-      const startSend = () => enviarMensagens({ token, phoneId, ver });
-
-      if(modoEnvio === 'agendar'){
-        const delay = dataHora - new Date();
-        if(isNaN(delay) || delay <= 0){ alert('Informe uma data/hora futura para agendamento.'); return; }
-        log(`🕒 Envio agendado para ${dataHora.toLocaleString()} (a aba deve permanecer aberta).`);
-        setTimeout(startSend, delay);
-      }else{
-        startSend();
-      }
-    }
-
-    async function enviarMensagens({ token, phoneId, ver }){
-      byId('btnCancelar').disabled = false;
-      byId('okCount').textContent = '0';
-      byId('errCount').textContent = '0';
-      byId('output').textContent = '';
-      flags.paused = false; flags.cancelled = false;
-
-      const total = contatos.length;
-      let enviados = 0, ok = 0, err = 0;
-      const tamanhoLote = ensureNumber(byId('tamanhoLote').value, total) || total;
-      const intervaloLoteMin = ensureNumber(byId('intervaloLote').value, 0);
-      const intervaloMsgMs = Math.max(0, ensureNumber(byId('intervaloMsg').value, 0)) * 1000;
-
-      const endpoint = (id) => `https://graph.facebook.com/${ver}/${id}/messages`;
-
-      for(let i=0; i<total; i += tamanhoLote){
-        const lote = contatos.slice(i, i + tamanhoLote);
-
-        for(const contato of lote){
-          if(flags.cancelled){ setProgress(enviados, total); break; }
-          while(flags.paused){ await new Promise(r => setTimeout(r, 250)); }
-
-          const payload = montarPayloadParaContato(contato);
-
-          try{
-            const res = await fetch(endpoint(phoneId), {
-              method:'POST',
-              headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
-              body: JSON.stringify(payload),
-            });
-            const result = await res.json();
-            if(res.ok){
-              ok++;
-              log(`✔️ ${contato.to}: enviado (status ${res.status}) ${result?.messages?.[0]?.id ? 'id ' + result.messages[0].id : ''}`);
-            }else{
-              err++;
-              log(`❌ ${contato.to}: erro ${res.status} ${result?.error?.message || JSON.stringify(result)}`);
-            }
-          }catch(e){
-            err++;
-            log(`❌ ${contato.to}: falha de rede: ${e.message}`);
-          }
-
-          enviados++;
-          byId('okCount').textContent = String(ok);
-          byId('errCount').textContent = String(err);
-          setProgress(enviados, total);
-          if(intervaloMsgMs > 0) await new Promise(r => setTimeout(r, intervaloMsgMs));
-        }
-
-        if(flags.cancelled) break;
-        if(i + tamanhoLote < total && intervaloLoteMin > 0){
-          log(`⏱️ Aguardando ${intervaloLoteMin} minuto(s) para o próximo lote...`);
-          await new Promise(r => setTimeout(r, intervaloLoteMin * 60 * 1000));
-        }
-      }
-
-      byId('btnCancelar').disabled = true;
-      log(`🏁 Concluído. Sucessos: ${ok}, Erros: ${err}.`);
-    }
-
-    function montarPayloadParaContato(contato){
-      const components = [];
-
-      // HEADER
-      if(tmpl.headerType === 'TEXT'){
-        if(tmpl.headerVars > 0){
-          const vals = mapping.headerText.map(ci => contato.vars[ci] ?? '');
-          components.push({
-            type:'header',
-            parameters: vals.map(v => ({ type:'text', text:String(v) }))
-          });
-        }
-        // se HEADER TEXT não tem {{variáveis}}, não enviar parâmetros
-      }else if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
-        const mediaLink = byId('mediaLink').value.trim();
-        if(mediaLink){
-          const key = tmpl.headerType.toLowerCase(); // image | video | document
-          const mediaObj = {}; mediaObj[key] = { link: mediaLink };
-          components.push({ type:'header', parameters:[ { type:key, ...mediaObj } ] });
-        }
-      }
-
-      // BODY
-      if(tmpl.bodyVars > 0){
-        const vals = mapping.body.map(ci => contato.vars[ci] ?? '');
-        components.push({
-          type:'body',
-          parameters: vals.map(v => ({ type:'text', text:String(v) }))
-        });
-      }
-
-      // BUTTONS (apenas URL com {{1}})
-      if(tmpl.urlButtons.length > 0){
-        tmpl.urlButtons.forEach(btn => {
-          if(btn.hasVar){
-            const mapArr = mapping.urlButtons[btn.index] || [];
-            const v = String(contato.vars[mapArr[0] ?? 0] ?? '');
-            components.push({ type:'button', sub_type:'url', index:String(btn.index), parameters:[{ type:'text', text:v }] });
-          }
-        });
-      }
-
-      return {
-        messaging_product:'whatsapp',
-        to: contato.to,
-        type:'template',
-        template:{
-          name: tmpl.name,
-          language:{ code:'pt_BR' },
-          components,
-        },
-      };
-    }
-
-    // ---------------------------- Novo Envio ----------------------------
-    byId('btnNovoEnvio').addEventListener('click', () => {
-      contatos = [];
-      csvHeaders = [];
-      mapping = { body:[], headerText:[], urlButtons:{} };
-      flags = { paused:false, cancelled:false };
-      byId('output').textContent = 'Pronto para novo envio.';
-      byId('okCount').textContent = '0';
-      byId('errCount').textContent = '0';
-      byId('progressBar').style.width = '0%';
-      byId('progressTxt').textContent = '0/0';
-      byId('contagemContatos').textContent = 'Nenhum contato ainda.';
-      renderMapUI();
-      calcularCusto();
-      log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas.');
+  try {
+    const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
     });
+    const data = await res.json();
+    if(data.ok){
+      log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
+    }else{
+      log("❌ Erro ao salvar disparo: " + data.erro);
+    }
+  } catch(e) {
+    log("❌ Falha de rede ao salvar disparo: " + e.message);
+  }
+}
 
-    // ---------------------------- Baixar Log ----------------------------
-    byId('btnBaixarLog').addEventListener('click', () => {
-      const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `log-whatsapp-${Date.now()}.txt`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=> URL.revokeObjectURL(url), 500);
-    });
+document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
+
+
   </script>
 </body>
 </html>
