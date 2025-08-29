@@ -735,6 +735,9 @@
       }
 
       const payload = {
+        token: byId("token").value.trim(),
+        phone_id: byId("phoneId").value.trim(),
+        waba_id: byId("wabaId").value.trim(),
         nome_disparo: byId("nomeDisparo").value.trim(),
         grupo_trabalho: byId("grupoTrabalho").value.trim(),
         modo_envio: byId("modoEnvio").value,
