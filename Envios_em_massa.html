@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Envio de Mensagens WhatsApp — Versão Melhorada</title>
+  <title>Envio de Mensagens WhatsApp — Versão Restaurada</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
@@ -72,9 +72,9 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-08-14</span></h1>
+      <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-08-28</span></h1>
       <div class="muted">
-        Corrige envio sem header, mapeia múltiplos parâmetros, pausa/retoma/cancela, pagina templates, melhora custos e CSV.
+        Restaura a pré-visualização com substituição de variáveis, mapeamento e custo; mantém os novos campos e o envio via backend.
       </div>
 
       <!-- Credenciais -->
@@ -82,15 +82,15 @@
       <div class="row">
         <div class="col-6">
           <label for="token">Token de Acesso</label>
-          <input id="token" placeholder="Cole seu token" required />
+          <input id="token" placeholder="Cole seu token (opcional se usar backend)" />
         </div>
         <div class="col-6">
           <label for="wabaId">WhatsApp Business ID</label>
-          <input id="wabaId" placeholder="Ex: 316717608975353" required />
+          <input id="wabaId" placeholder="Ex: 316717608975353" />
         </div>
         <div class="col-6">
           <label for="phoneId">Phone Number ID</label>
-          <input id="phoneId" placeholder="Ex: 752755661251472" required />
+          <input id="phoneId" placeholder="Ex: 752755661251472" />
         </div>
         <div class="col-6">
           <label for="graphVersion">Versão Graph API</label>
@@ -218,7 +218,7 @@
               <input id="dataHoraEnvio" type="datetime-local" />
             </div>
           </div>
-          <div class="muted" style="margin-top:6px;">Para agendar, mantenha a aba aberta até o envio ocorrer.</div>
+          <div class="muted" style="margin-top:6px;">Para agendar, mantenha a aba aberta até o envio ocorrer (se usando envio local). Para backend, o agendamento é processado pelo servidor.</div>
         </div>
         <div class="col-6">
           <h2>Ritmo / Lotes</h2>
@@ -248,7 +248,6 @@
           <input id="grupoTrabalho" placeholder="Equipe Comercial" required />
         </div>
       </div>
-
 
       <!-- Envio -->
       <div class="row" style="margin-top:16px;align-items:center;">
@@ -284,6 +283,298 @@
   </div>
 
   <script>
+    // ---------------------------- Estado ----------------------------
+    const estrategias = {
+      estrategia1: [
+        { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
+        { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
+        { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
+      ],
+      estrategia2: [
+        { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+        { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+      ],
+    };
+
+    let contatos = [];              // [{ to: '55...', vars: ['v1','v2', ...] }]
+    let csvHeaders = [];            // ['telefone','nome','codigo', ...]
+    let custoEmDolar = 0;           // custo estimado
+    let mapping = {                 // qual coluna alimenta cada {{n}}
+      body: [],                     // array de índices (0-based) para {{1}}, {{2}} ...
+      headerText: [],               // idem, para HEADER TEXT
+      urlButtons: {},               // { index: 0 => [colIdxFor{{1}}] }
+    };
+    let tmpl = {                    // metadados do template selecionado
+      name: "",
+      category: "",
+      components: [],
+      bodyText: "",
+      bodyVars: 0,
+      headerType: null,             // null | TEXT | IMAGE | VIDEO | DOCUMENT
+      headerText: "",
+      headerVars: 0,
+      urlButtons: [],               // lista de {index, url, hasVar}
+    };
+
+    let flags = { paused: false, cancelled: false };
+
+    // ---------------------------- Utils ----------------------------
+    const $ = (sel) => document.querySelector(sel);
+    const byId = (id) => document.getElementById(id);
+
+    function log(line){
+      const out = byId('output');
+      out.textContent += (out.textContent ? "\n" : "") + line;
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function setProgress(done, total){
+      const pct = total > 0 ? (done / total) * 100 : 0;
+      byId('progressBar').style.width = pct.toFixed(1) + '%';
+      byId('progressTxt').textContent = `${done}/${total}`;
+    }
+
+    function countPlaceholders(text){
+      if(!text) return 0;
+      const matches = text.match(/\{\{\d+\}\}/g);
+      return matches ? new Set(matches).size : 0;
+    }
+
+    function substitutePlaceholders(text, values){
+      // values: array where index 0 is {{1}}, index 1 is {{2}}, ...
+      if(!text) return '';
+      return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
+        const idx = parseInt(n,10) - 1;
+        return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
+      });
+    }
+
+    function parseCSV(text){
+      // CSV simples com , ou ; e aspas
+      const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
+      const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
+      const rows = [];
+      for(const line of lines){
+        const row = [];
+        let cur = '', inQ = false;
+        for(let i=0;i<line.length;i++){
+          const ch = line[i];
+          if(ch === '"'){
+            if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+            else { inQ = !inQ; }
+          }else if(ch === delim && !inQ){
+            row.push(cur); cur='';
+          }else{
+            cur += ch;
+          }
+        }
+        row.push(cur);
+        rows.push(row.map(c => c.trim()));
+      }
+      return rows;
+    }
+
+    function ensureNumber(v, fallback=0){
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+    }
+
+    function escapeHtml(str=''){
+      return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+    }
+
+    // ---------------------------- UI Helpers ----------------------------
+    function renderSelect(id, varIndex, current){
+      let opts = '';
+      if(csvHeaders.length>0){
+        csvHeaders.forEach((h, idx) => {
+          const sel = idx === current ? 'selected' : '';
+          opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
+        });
+      }else{
+        // fallback pelo nº de colunas detectado
+        const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
+        for(let idx=0; idx<maxCols; idx++){
+          const sel = idx === current ? 'selected' : '';
+          opts += `<option value="${idx}" ${sel}>${idx+1}</option>`;
+        }
+      }
+      return `<label for="${id}">{{${varIndex+1}}} ⟶ coluna</label><select id="${id}">${opts}</select>`;
+    }
+
+    function renderMapUI(){
+      const area = byId('mapArea');
+      const hasTemplate = !!tmpl.name;
+      const hasContacts = contatos.length > 0;
+
+      if(!hasTemplate || !hasContacts){
+        area.innerHTML = '<span class="muted">Carregue contatos e selecione um template para configurar o mapeamento.</span>';
+        updatePreview();
+        return;
+      }
+
+      const headerPart = (() => {
+        if(!tmpl.headerType) return '';
+        if(tmpl.headerType === 'TEXT' && tmpl.headerVars > 0){
+          let selects = '';
+          for(let i=0;i<tmpl.headerVars;i++){
+            selects += renderSelect(`map-header-${i}`, i, mapping.headerText[i]);
+          }
+          return `<h3>Header TEXT — variáveis</h3>${selects}`;
+        }
+        if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
+          return '<div class="muted">Header de mídia usa a URL informada em "Link da Mídia do Header".</div>';
+        }
+        return '';
+      })();
+
+      let bodySelects = '';
+      if(tmpl.bodyVars > 0){
+        bodySelects += '<h3>Body — variáveis</h3>';
+        for(let i=0;i<tmpl.bodyVars;i++){
+          bodySelects += renderSelect(`map-body-${i}`, i, mapping.body[i]);
+        }
+      }else{
+        bodySelects += '<div class="muted">Body sem variáveis.</div>';
+      }
+
+      let buttonsPart = '';
+      if(tmpl.urlButtons.length > 0){
+        buttonsPart += '<h3>Botões URL — variáveis</h3>';
+        tmpl.urlButtons.forEach(btn => {
+          if(btn.hasVar){
+            buttonsPart += `<div style="margin:6px 0 10px"><b>Botão #${btn.index+1}</b> — URL base: <span class="kbd">${btn.url}</span><br/>` +
+              renderSelect(`map-urlbtn-${btn.index}-0`, 0, mapping.urlButtons[btn.index]?.[0]) + '</div>';
+          }
+        });
+      }
+
+      const sample = contatos[0] || { to:'', vars:[] };
+      const bodyPreviewVals = (mapping.body || []).map(ci => ci != null ? sample.vars[ci] : '');
+      const bodyPrev = substitutePlaceholders(tmpl.bodyText, bodyPreviewVals);
+
+      area.innerHTML = `
+        ${headerPart}
+        ${bodySelects}
+        ${buttonsPart}
+        <div style="margin-top:10px">
+          <div class="muted">Prévia com o <b>primeiro contato</b>:</div>
+          <div class="card" style="padding:10px;border:1px dashed #cbd5e1;">
+            ${bodyPrev.replace(/\n/g,'<br/>')}
+          </div>
+        </div>
+      `;
+
+      // listeners dos selects
+      if(tmpl.headerType === 'TEXT'){
+        for(let i=0;i<tmpl.headerVars;i++){
+          byId(`map-header-${i}`)?.addEventListener('change', (e) => {
+            mapping.headerText[i] = ensureNumber(e.target.value, 0);
+            updatePreview();
+          });
+        }
+      }
+      for(let i=0;i<tmpl.bodyVars;i++){
+        byId(`map-body-${i}`)?.addEventListener('change', (e) => {
+          mapping.body[i] = ensureNumber(e.target.value, 0);
+          renderMapUI(); // refresh preview + UI
+          updatePreview();
+        });
+      }
+      tmpl.urlButtons.forEach(btn => {
+        if(btn.hasVar){
+          byId(`map-urlbtn-${btn.index}-0`)?.addEventListener('change', (e) => {
+            mapping.urlButtons[btn.index] = [ensureNumber(e.target.value, 0)];
+          });
+        }
+      });
+
+      updatePreview();
+    }
+
+    // ---------------------------- Custos ----------------------------
+    async function calcularCusto(){
+      const categoria = byId('templateCategory').value;
+      const qtd = contatos.length;
+      if(!categoria || !qtd){
+        byId('custoEstimado').textContent = '💵 Custo estimado: —';
+        byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
+        return;
+      }
+      // valores aproximados — ajuste conforme sua tabela vigente
+      const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
+      custoEmDolar = qtd * price;
+      byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
+
+      try{
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        const data = await res.json();
+        const brl = data?.rates?.BRL ?? 5.0; // fallback
+        const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+        const final = custoEmDolar * brl * taxa;
+        byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
+      }catch(e){
+        const brl = 5.0; // fallback
+        const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+        const final = custoEmDolar * brl * taxa;
+        byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
+      }
+    }
+
+    // ---------------------------- Pré-visualização (restaurada) ----------------------------
+    function updatePreview(){
+      if(!tmpl.name){ byId('previewArea').textContent = '—'; return; }
+
+      // 1) Se o template tem exemplos no BODY, usar;
+      // 2) Caso contrário, se houver contatos + mapping, usar o primeiro contato;
+      // 3) Senão, mostrar o body cru.
+      const body = tmpl.bodyText || '';
+      let values = [];
+
+      // tenta exemplos do template
+      const compBody = (tmpl.components || []).find(c => c.type === 'BODY');
+      const exemploBody = compBody?.example?.body_text?.[0];
+      if(Array.isArray(exemploBody) && exemploBody.length){
+        values = exemploBody;
+      }else if(contatos.length && tmpl.bodyVars > 0){
+        // fallback: primeiro contato
+        const sample = contatos[0];
+        values = (mapping.body || []).map(ci => sample.vars[ci] ?? '');
+      }
+
+      const bodyPreview = values.length ? substitutePlaceholders(body, values) : body;
+
+      // Header TEXT opcional
+      let headerPreview = '';
+      if(tmpl.headerType === 'TEXT'){
+        const headerVals = [];
+        if(tmpl.headerVars > 0 && contatos.length){
+          const s = contatos[0];
+          for(let i=0;i<tmpl.headerVars;i++) headerVals.push(s.vars[mapping.headerText[i] ?? i] ?? '');
+        }
+        headerPreview = substitutePlaceholders(tmpl.headerText || '', headerVals);
+      }
+
+      const parts = [];
+      parts.push('📄 Pré-visualização:');
+      if(headerPreview){ parts.push(`*${headerPreview}*\n`); }
+      parts.push(bodyPreview);
+
+      // Botões URL com variável — exibe como anotação
+      if(tmpl.urlButtons?.length){
+        const btns = tmpl.urlButtons.map((b, i) => {
+          if(!b.hasVar) return `• Botão ${i+1}: URL fixa`;
+          const colIdx = mapping.urlButtons[i]?.[0];
+          const sampleVal = (contatos[0]?.vars || [])[colIdx ?? 0] ?? '{{1}}';
+          const final = (b.url || '').replace(/\{\{1\}\}/g, sampleVal);
+          return `• Botão ${i+1}: ${final}`;
+        }).join('\n');
+        if(btns) parts.push('\n[BOTÕES]\n' + btns);
+      }
+
+      byId('previewArea').textContent = parts.join('\n\n');
+    }
+
     // ---------------------------- Templates ----------------------------
     byId('btnBuscar').addEventListener('click', buscarTemplates);
     async function buscarTemplates(){
@@ -378,11 +669,6 @@
         });
       }
 
-      // Preview
-      const exemplos = body?.example?.body_text?.[0] || [];
-      const previewText = substitutePlaceholders(tmpl.bodyText, exemplos);
-      byId('previewArea').textContent = previewText ? `📄 Pré-visualização:\n${previewText}` : '—';
-
       // Mapeamento padrão
       mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
       mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
@@ -390,6 +676,7 @@
 
       renderMapUI();
       calcularCusto();
+      updatePreview();
     }
 
     // ---------------------------- Contatos ----------------------------
@@ -433,60 +720,101 @@
 
     byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
     byId('templateCategory').addEventListener('change', calcularCusto);
-    
-    
-    // ---------------------------- Estado ----------------------------
-    async function onEnviarClick(){
-  if(contatos.length === 0){ 
-    alert('Nenhum contato carregado.'); 
-    return; 
-  }
 
-  const payload = {
-    nome_disparo: byId("nomeDisparo").value.trim(),
-    grupo_trabalho: byId("grupoTrabalho").value.trim(),
-    modo_envio: byId("modoEnvio").value,
-    data_hora_agendamento: byId("dataHoraEnvio").value || null,
-    intervalo_msg: Number(byId("intervaloMsg").value || 0),
-    tamanho_lote: Number(byId("tamanhoLote").value || 0),
-    intervalo_lote: Number(byId("intervaloLote").value || 0),
-    template: {
-      name: tmpl.name,
-      language: "pt_BR",
-      headerType: tmpl.headerType,
-      bodyText: tmpl.bodyText,
-      bodyVars: tmpl.bodyVars,
-      headerVars: tmpl.headerVars,
-      urlButtons: tmpl.urlButtons,
-      mapping: mapping,
-      mediaLink: byId("mediaLink").value.trim()
-    },
-    contatos: contatos.map(c => ({
-      telefone: c.to,
-      conteudo: c.vars.join(",")   // <-- mais simples para o worker processar
-    }))
-  };
-
-  try {
-    const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+    // ---------------------------- Agendamento UI ----------------------------
+    byId('modoEnvio').addEventListener('change', () => {
+      const isAgendar = byId('modoEnvio').value === 'agendar';
+      byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
     });
-    const data = await res.json();
-    if(data.ok){
-      log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
-    }else{
-      log("❌ Erro ao salvar disparo: " + data.erro);
+
+    // ---------------------------- Envio via BACKEND (novo) ----------------------------
+    async function onEnviarClick(){
+      if(contatos.length === 0){ 
+        alert('Nenhum contato carregado.'); 
+        return; 
+      }
+
+      const payload = {
+        nome_disparo: byId("nomeDisparo").value.trim(),
+        grupo_trabalho: byId("grupoTrabalho").value.trim(),
+        modo_envio: byId("modoEnvio").value,
+        data_hora_agendamento: byId("dataHoraEnvio").value || null,
+        intervalo_msg: Number(byId("intervaloMsg").value || 0),
+        tamanho_lote: Number(byId("tamanhoLote").value || 0),
+        intervalo_lote: Number(byId("intervaloLote").value || 0),
+        template: {
+          name: tmpl.name,
+          language: "pt_BR",
+          headerType: tmpl.headerType,
+          bodyText: tmpl.bodyText,
+          bodyVars: tmpl.bodyVars,
+          headerVars: tmpl.headerVars,
+          urlButtons: tmpl.urlButtons,
+          mapping: mapping,
+          mediaLink: byId("mediaLink").value.trim()
+        },
+        contatos: contatos.map(c => ({
+          telefone: c.to,
+          conteudo: c.vars.join(",")   // simples para o worker processar
+        }))
+      };
+
+      try {
+        const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.ok){
+          log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
+        }else{
+          log("❌ Erro ao salvar disparo: " + (data.erro || JSON.stringify(data)));
+        }
+      } catch(e) {
+        log("❌ Falha de rede ao salvar disparo: " + e.message);
+      }
     }
-  } catch(e) {
-    log("❌ Falha de rede ao salvar disparo: " + e.message);
-  }
-}
 
-document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
+    document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
 
+    // Botões de pausa/retomar/cancelar — apenas UI (backend controla o envio)
+    byId('btnPausar').addEventListener('click', () => {
+      flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausa solicitada (se aplicável ao backend).');
+    });
+    byId('btnRetomar').addEventListener('click', () => {
+      flags.paused = false; byId('btnRetomar').disabled = true; log('▶️ Retomar solicitado (se aplicável ao backend).');
+    });
+    byId('btnCancelar').addEventListener('click', () => {
+      flags.cancelled = true; log('🛑 Cancelamento solicitado (se aplicável ao backend).');
+    });
 
+    // ---------------------------- Novo Envio ----------------------------
+    byId('btnNovoEnvio').addEventListener('click', () => {
+      contatos = [];
+      csvHeaders = [];
+      mapping = { body:[], headerText:[], urlButtons:{} };
+      flags = { paused:false, cancelled:false };
+      byId('output').textContent = 'Pronto para novo envio.';
+      byId('okCount').textContent = '0';
+      byId('errCount').textContent = '0';
+      byId('progressBar').style.width = '0%';
+      byId('progressTxt').textContent = '0/0';
+      byId('contagemContatos').textContent = 'Nenhum contato ainda.';
+      renderMapUI();
+      calcularCusto();
+      log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas se for buscar templates.');
+    });
+
+    // ---------------------------- Baixar Log ----------------------------
+    byId('btnBaixarLog').addEventListener('click', () => {
+      const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `log-whatsapp-${Date.now()}.txt`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=> URL.revokeObjectURL(url), 500);
+    });
   </script>
 </body>
 </html>
