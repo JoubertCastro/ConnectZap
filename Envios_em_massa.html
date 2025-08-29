@@ -284,6 +284,157 @@
   </div>
 
   <script>
+    // ---------------------------- Templates ----------------------------
+    byId('btnBuscar').addEventListener('click', buscarTemplates);
+    async function buscarTemplates(){
+      const token = byId('token').value.trim();
+      const wabaId = byId('wabaId').value.trim();
+      const ver = byId('graphVersion').value;
+      if(!token || !wabaId){ alert('Informe token e WABA ID.'); return; }
+
+      const select = byId('templateSelect');
+      select.innerHTML = '<option value="">Carregando...</option>';
+
+      const urlBase = `https://graph.facebook.com/${ver}/${encodeURIComponent(wabaId)}/message_templates?limit=100&status=APPROVED`;
+      const all = [];
+      let next = urlBase;
+      try{
+        while(next){
+          const r = await fetch(next, { headers:{ Authorization:`Bearer ${token}` }});
+          const j = await r.json();
+          if(Array.isArray(j.data)) all.push(...j.data);
+          next = j?.paging?.next || null;
+        }
+      }catch(e){
+        alert('Erro ao buscar templates: ' + e.message);
+        select.innerHTML = '<option value="">-- Erro ao buscar --</option>';
+        return;
+      }
+
+      if(all.length === 0){
+        select.innerHTML = '<option value="">-- Nenhum template aprovado encontrado --</option>';
+        return;
+      }
+
+      select.innerHTML = '<option value="">-- Selecione um template --</option>';
+      all.sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify(t);
+        opt.textContent = `${t.name} · ${t.category}`;
+        select.appendChild(opt);
+      });
+    }
+
+    byId('templateSelect').addEventListener('change', preencherTemplateInfo);
+    function preencherTemplateInfo(){
+      const val = byId('templateSelect').value;
+      if(!val) return;
+      const t = JSON.parse(val);
+
+      tmpl.name = t.name;
+      tmpl.category = t.category || '';
+      tmpl.components = t.components || [];
+      byId('templateName').value = tmpl.name;
+      byId('templateCategory').value = tmpl.category || '';
+
+      const header = tmpl.components.find(c => c.type === 'HEADER');
+      const body = tmpl.components.find(c => c.type === 'BODY');
+      const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
+
+      // Reset UI header
+      tmpl.headerType = null;
+      tmpl.headerText = '';
+      tmpl.headerVars = 0;
+      byId('headerFormat').value = '';
+      byId('headerTextWrap').classList.add('hide');
+      byId('mediaLinkWrap').classList.add('hide');
+
+      // Header
+      if(header){
+        const fmt = header.format; // TEXT | IMAGE | VIDEO | DOCUMENT
+        tmpl.headerType = fmt;
+        byId('headerFormat').value = fmt || '';
+        if(fmt === 'TEXT'){
+          tmpl.headerText = header.text || '';
+          tmpl.headerVars = countPlaceholders(tmpl.headerText);
+          byId('headerTextWrap').classList.remove('hide');
+        }else if(['IMAGE','VIDEO','DOCUMENT'].includes(fmt)){
+          byId('mediaLinkWrap').classList.remove('hide');
+        }
+      }
+
+      // Body
+      tmpl.bodyText = body?.text || '';
+      tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
+
+      // Buttons (apenas URL com {{1}})
+      tmpl.urlButtons = [];
+      if(buttons && Array.isArray(buttons.buttons)){
+        buttons.buttons.forEach((b, idx) => {
+          if(b.type === 'URL'){
+            const hasVar = (b.url || '').includes('{{');
+            tmpl.urlButtons.push({ index: idx, url: b.url || '', hasVar });
+          }
+        });
+      }
+
+      // Preview
+      const exemplos = body?.example?.body_text?.[0] || [];
+      const previewText = substitutePlaceholders(tmpl.bodyText, exemplos);
+      byId('previewArea').textContent = previewText ? `📄 Pré-visualização:\n${previewText}` : '—';
+
+      // Mapeamento padrão
+      mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
+      mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
+      mapping.urlButtons = {};
+
+      renderMapUI();
+      calcularCusto();
+    }
+
+    // ---------------------------- Contatos ----------------------------
+    byId('estrategiaSelect').addEventListener('change', function(){
+      const selected = this.value;
+      if(estrategias[selected]){
+        contatos = JSON.parse(JSON.stringify(estrategias[selected]));
+        csvHeaders = [];
+        byId('contagemContatos').textContent = `✔️ Estratégia "${selected}" carregada com ${contatos.length} contato(s).`;
+        renderMapUI();
+        calcularCusto();
+      }
+    });
+
+    byId('fileInput').addEventListener('change', function(){
+      const file = this.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rows = parseCSV(e.target.result);
+        if(rows.length === 0) return;
+
+        // Detecta cabeçalho
+        const head = rows[0].map(c => (c||'').toLowerCase());
+        const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
+
+        const dataRows = hasHeader ? rows.slice(1) : rows;
+        csvHeaders = hasHeader ? rows[0] : (dataRows[0]?.map((_,i)=>`coluna_${i+1}`) || []);
+
+        contatos = dataRows.map(r => ({
+          to: (r[0] || '').replace(/\D+/g,''),
+          vars: r.slice(1),
+        })).filter(c => c.to);
+
+        byId('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
+        renderMapUI();
+        calcularCusto();
+      };
+      reader.readAsText(file);
+    });
+
+    byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
+    byId('templateCategory').addEventListener('change', calcularCusto);
+    
+    
     // ---------------------------- Estado ----------------------------
     async function onEnviarClick(){
   if(contatos.length === 0){ 
