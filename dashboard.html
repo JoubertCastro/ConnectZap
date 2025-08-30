@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard — Connect ZAP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #222;}
+    header {background: #2563eb; color: #fff; padding: 16px; text-align: center;}
+    .container {max-width: 1200px; margin: 20px auto; padding: 0 20px;}
+    .cards {display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; margin-bottom: 30px;}
+    .card {background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.05); text-align: center;}
+    .card h3 {margin: 0; font-size: 18px; color: #555;}
+    .card p {font-size: 22px; font-weight: bold; margin: 8px 0 0;}
+    canvas {background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,.05);}
+    table {width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,.05); margin-top: 30px;}
+    th, td {padding: 12px; border-bottom: 1px solid #eee; text-align: left;}
+    th {background: #f9fafb;}
+    tr:hover {background: #f3f4f6;}
+    .filters {margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;}
+    .filters input, .filters select {padding: 8px; border: 1px solid #ccc; border-radius: 6px;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>📊 Dashboard de Relatórios — Connect ZAP</h1>
+  </header>
+
+  <div class="container">
+    <!-- Cards -->
+    <div class="cards">
+      <div class="card"><h3>Total de Disparos</h3><p id="total">0</p></div>
+      <div class="card"><h3>Enviados</h3><p id="enviados">0</p></div>
+      <div class="card"><h3>Entregues</h3><p id="entregues">0</p></div>
+      <div class="card"><h3>Lidos</h3><p id="lidos">0</p></div>
+    </div>
+
+    <!-- Gráfico -->
+    <canvas id="grafico"></canvas>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <input type="text" id="filtroNome" placeholder="Filtrar por nome do disparo">
+      <input type="date" id="filtroData">
+      <button onclick="carregarEnvios()">Aplicar Filtros</button>
+    </div>
+
+    <!-- Tabela -->
+    <table>
+      <thead>
+        <tr>
+          <th>Nome Disparo</th>
+          <th>Grupo</th>
+          <th>Data</th>
+          <th>Total</th>
+          <th>Entregues</th>
+          <th>Lidos</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaEnvios"></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function carregarResumo() {
+      const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/dashboard/resumo");
+      const data = await res.json();
+      document.getElementById("total").textContent = data.total;
+      document.getElementById("enviados").textContent = data.enviados;
+      document.getElementById("entregues").textContent = data.entregues;
+      document.getElementById("lidos").textContent = data.lidos;
+    }
+
+    async function carregarEnvios() {
+      const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/dashboard/envios");
+      const data = await res.json();
+
+      const filtroNome = document.getElementById("filtroNome").value.toLowerCase();
+      const filtroData = document.getElementById("filtroData").value;
+
+      const tbody = document.getElementById("tabelaEnvios");
+      tbody.innerHTML = "";
+
+      let labels = [], entregues = [], lidos = [];
+
+      data.filter(e => {
+        return (!filtroNome || e.nome_disparo.toLowerCase().includes(filtroNome)) &&
+               (!filtroData || e.criado_em.startsWith(filtroData));
+      }).forEach(e => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.nome_disparo}</td>
+          <td>${e.grupo_trabalho}</td>
+          <td>${new Date(e.criado_em).toLocaleString()}</td>
+          <td>${e.total}</td>
+          <td>${e.entregues}</td>
+          <td>${e.lidos}</td>`;
+        tbody.appendChild(tr);
+
+        labels.push(e.nome_disparo);
+        entregues.push(e.entregues);
+        lidos.push(e.lidos);
+      });
+
+      renderizarGrafico(labels, entregues, lidos);
+    }
+
+    let chart;
+    function renderizarGrafico(labels, entregues, lidos) {
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("grafico").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {label: "Entregues", data: entregues, backgroundColor: "#3b82f6"},
+            {label: "Lidos", data: lidos, backgroundColor: "#10b981"}
+          ]
+        },
+        options: {responsive: true, plugins: {legend: {position: "top"}}}
+      });
+    }
+
+    carregarResumo();
+    carregarEnvios();
+  </script>
+</body>
+</html>
