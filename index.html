@@ -40,6 +40,23 @@
       margin-top: 10px;
       text-align: center;
     }
+    .terms {
+      font-size: 12px;
+      color: #555;
+      margin-top: 10px;
+      text-align: center;
+    }
+    .terms input {
+      width: auto;
+      margin-right: 5px;
+    }
+    .terms a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .terms a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -47,6 +64,14 @@
     <h2>Entrar</h2>
     <input type="email" id="email" placeholder="Email" required />
     <input type="password" id="senha" placeholder="Senha" required />
+
+    <div class="terms">
+      <label>
+        <input type="checkbox" id="aceitoTermos" />
+        Eu li e aceito os <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank">Termos de Serviço</a> e a <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank">Política de Privacidade</a>.
+      </label>
+    </div>
+
     <button onclick="login()">Login</button>
     <div class="error" id="erro"></div>
   </div>
@@ -55,7 +80,13 @@
     async function login() {
       const email = document.getElementById("email").value;
       const senha = document.getElementById("senha").value;
+      const aceito = document.getElementById("aceitoTermos").checked;
       const erroDiv = document.getElementById("erro");
+
+      if (!aceito) {
+        erroDiv.textContent = "Você deve aceitar os Termos de Serviço e a Política de Privacidade.";
+        return;
+      }
 
       try {
         const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
