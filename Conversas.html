@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Conversas - WhatsApp Web Clone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="h-screen bg-gray-100 flex">
+
+  <!-- Sidebar -->
+  <div class="w-1/4 bg-white border-r flex flex-col">
+    <div class="p-3 border-b">
+      <input id="filtro" type="text" placeholder="Pesquisar telefone/ID" class="w-full p-2 border rounded">
+    </div>
+    <div id="listaContatos" class="flex-1 overflow-y-auto"></div>
+  </div>
+
+  <!-- Chat -->
+  <div class="flex-1 flex flex-col">
+    <div id="chatHeader" class="p-3 border-b bg-white font-bold"></div>
+    <div id="chatMensagens" class="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50"></div>
+    <div class="p-3 border-t bg-white flex items-center">
+      <input id="mensagemInput" type="text" placeholder="Digite sua mensagem..." class="flex-1 p-2 border rounded">
+      <button id="enviarBtn" class="ml-2 bg-green-500 text-white px-4 py-2 rounded">Enviar</button>
+    </div>
+  </div>
+
+<script>
+let conversaSelecionada = null;
+let contatos = [];
+
+async function carregarConversas() {
+  const resp = await fetch("/api/conversas");
+  contatos = await resp.json();
+
+  const lista = document.getElementById("listaContatos");
+  lista.innerHTML = "";
+  contatos.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "p-3 border-b cursor-pointer hover:bg-gray-100";
+    item.innerHTML = `
+      <div class="flex justify-between">
+        <span class="font-bold">${c.telefone}</span>
+        <span class="text-xs ${c.status === 'in' ? 'text-green-600' : 'text-yellow-600'}">${c.status}</span>
+      </div>
+      <div class="text-sm text-gray-600 truncate">${c.mensagem_final || ''}</div>
+    `;
+    item.onclick = () => abrirConversa(c);
+    lista.appendChild(item);
+  });
+}
+
+async function abrirConversa(c) {
+  conversaSelecionada = c;
+  document.getElementById("chatHeader").innerText = "Conversa com " + c.telefone;
+  const resp = await fetch("/api/conversas/" + c.telefone);
+  const msgs = await resp.json();
+
+  const chat = document.getElementById("chatMensagens");
+  chat.innerHTML = "";
+  msgs.forEach(m => {
+    const msgDiv = document.createElement("div");
+    msgDiv.className = "p-2 rounded max-w-xs " + 
+      (m.status === "in" ? "bg-gray-300 text-left" : "bg-green-200 ml-auto text-right");
+    msgDiv.innerText = m.mensagem_final;
+    chat.appendChild(msgDiv);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+document.getElementById("enviarBtn").onclick = async () => {
+  if (!conversaSelecionada) return alert("Selecione uma conversa");
+  const texto = document.getElementById("mensagemInput").value;
+  if (!texto) return;
+
+  await fetch("/api/conversas/" + conversaSelecionada.telefone, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      phone_id: conversaSelecionada.phone_id,
+      msg_id: conversaSelecionada.msg_id,
+      texto
+    })
+  });
+
+  document.getElementById("mensagemInput").value = "";
+  abrirConversa(conversaSelecionada);
+};
+
+carregarConversas();
+</script>
+</body>
+</html>
