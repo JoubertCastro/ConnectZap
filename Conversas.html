@@ -31,7 +31,7 @@ let conversaSelecionada = null;
 let contatos = [];
 
 async function carregarConversas() {
-  const resp = await fetch("/api/conversas");
+  const resp = await fetch("https://conversas-api-production.up.railway.app/api/conversas");
   contatos = await resp.json();
 
   const lista = document.getElementById("listaContatos");
@@ -54,7 +54,7 @@ async function carregarConversas() {
 async function abrirConversa(c) {
   conversaSelecionada = c;
   document.getElementById("chatHeader").innerText = "Conversa com " + c.telefone;
-  const resp = await fetch("/api/conversas/" + c.telefone);
+  const resp = await fetch("https://conversas-api-production.up.railway.app/api/conversas/" + c.telefone);
   const msgs = await resp.json();
 
   const chat = document.getElementById("chatMensagens");
@@ -75,7 +75,7 @@ document.getElementById("enviarBtn").onclick = async () => {
   const texto = document.getElementById("mensagemInput").value;
   if (!texto) return;
 
-  await fetch("/api/conversas/" + conversaSelecionada.telefone, {
+  await fetch("https://conversas-api-production.up.railway.app/api/conversas/" + conversaSelecionada.telefone, {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
