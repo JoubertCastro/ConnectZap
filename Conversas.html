@@ -6,13 +6,15 @@
   <title>Conversas WhatsApp</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    /* Bolhas de mensagem */
     .msg {
-      max-width: 70%;
-      padding: 10px 12px 18px 12px;
+      max-width: 72%;
+      padding: 12px 14px 28px 14px; /* espaço extra embaixo para hora */
       border-radius: 16px;
-      margin: 4px 0;
+      margin: 6px 0;
       position: relative;
       word-wrap: break-word;
+      white-space: pre-wrap;
     }
     .msg.enviada {
       background: #DCF8C6;
@@ -21,14 +23,14 @@
     .msg.recebida {
       background: #FFF;
       align-self: flex-start;
-      border: 1px solid #ddd;
+      border: 1px solid #e6e6e6;
     }
     .msg .hora {
       font-size: 11px;
       color: #666;
       position: absolute;
-      bottom: 2px;
-      right: 8px;
+      bottom: 6px;
+      right: 10px;
     }
     .dia {
       text-align: center;
@@ -36,44 +38,63 @@
       font-size: 12px;
       color: #888;
     }
+    /* contatos */
+    .contato-selected { background: #f0f9ff !important; }
+    mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
+    /* responsivo */
+    @media (max-width: 768px) {
+      aside { width: 42%; }
+      .msg { max-width: 80%; }
+    }
   </style>
 </head>
 <body class="h-screen flex bg-gray-100">
   <!-- Sidebar -->
-  <aside class="w-1/4 bg-white border-r flex flex-col">
+  <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
     <div class="p-2 border-b">
       <input 
+        id="searchInput"
         type="text" 
-        placeholder="🔍 Buscar contato"
+        placeholder="🔍 Buscar contato ou número"
         class="w-full p-2 rounded-md border"
-        onkeyup="filtrarContatos(this.value)"
+        oninput="filtrarContatos(this.value)"
+        autocomplete="off"
       />
     </div>
     <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+    <div class="p-2 text-xs text-gray-500 border-t">
+      Atualiza automaticamente. Toque em um contato para abrir a conversa.
+    </div>
   </aside>
 
   <!-- Área de conversa -->
   <main class="flex-1 flex flex-col">
-    <div class="flex items-center justify-between p-3 border-b bg-white">
-      <h2 id="tituloConversa" class="font-bold">Selecione uma conversa</h2>
-      <input 
-        type="date" 
-        id="filtroData" 
-        class="p-1 border rounded-md text-sm"
-        onchange="filtrarPorData()"
-      />
+    <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
+      <div class="flex items-center space-x-3">
+        <h2 id="tituloConversa" class="font-bold text-lg">Selecione uma conversa</h2>
+        <div id="subInfo" class="text-sm text-gray-500"></div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <input type="date" id="filtroDataInicio" class="p-1 border rounded-md text-sm" />
+        <input type="date" id="filtroDataFim" class="p-1 border rounded-md text-sm" />
+        <button onclick="filtrarPorData()" class="px-3 py-1 border rounded-md text-sm">Filtrar</button>
+        <button onclick="limparFiltro()" class="px-3 py-1 border rounded-md text-sm">Limpar</button>
+      </div>
     </div>
 
-    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-2 bg-gray-50"></div>
+    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-2 bg-gray-50">
+      <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+    </div>
 
     <div class="p-3 border-t flex space-x-2 bg-white">
-      <input 
-        type="text" 
+      <textarea 
         id="textoMensagem" 
-        class="flex-1 border rounded-md p-2"
+        rows="1"
+        class="flex-1 border rounded-md p-2 resize-none"
         placeholder="Digite uma mensagem..."
         disabled
-      />
+      ></textarea>
       <button 
         id="btnEnviar"
         onclick="enviarMensagem()" 
@@ -85,142 +106,244 @@
   </main>
 
 <script>
+/* CONFIG */
 const API_BASE = "https://conversas-api-production.up.railway.app";
 let contatoSelecionado = null;
 let msgIdAtual = null;
 let phoneIdAtual = null;
 
+/* Polling */
+let contactsInterval = null;
+let messagesInterval = null;
+let userTyping = false;
+
+/* Auto-resize textarea */
+const textarea = document.getElementById("textoMensagem");
+textarea.addEventListener("input", () => {
+  textarea.style.height = "auto";
+  textarea.style.height = (textarea.scrollHeight) + "px";
+  document.getElementById("btnEnviar").disabled = textarea.value.trim().length === 0;
+});
+
+/* Enter send, Shift+Enter newline */
+textarea.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (!document.getElementById("btnEnviar").disabled) enviarMensagem();
+  }
+});
+
+/* Carrega contatos (únicos) */
 async function carregarContatos() {
   try {
     const res = await fetch(`${API_BASE}/api/conversas/contatos`);
+    if (!res.ok) throw new Error("Falha ao buscar contatos");
     const contatos = await res.json();
     const lista = document.getElementById("contatos");
     lista.innerHTML = "";
 
-    // 🔹 Evita duplicados
-    const vistos = new Set();
-
     contatos.forEach(c => {
-      const chave = c.remetente;
-      if (vistos.has(chave)) return;
-      vistos.add(chave);
-
       const nome = c.nome_exibicao || c.remetente;
-      const ultimaMsg = c.mensagem_final ? c.mensagem_final.substring(0, 30) : "";
+      const ultimaMsg = c.mensagem_final ? c.mensagem_final.substring(0, 70) : "";
+      const hora = c.data_hora ? new Date(c.data_hora).toLocaleTimeString("pt-BR", {hour: "2-digit", minute:"2-digit"}) : "";
 
       const li = document.createElement("li");
       li.className = "flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b";
+      li.dataset.nome = (nome || "").toLowerCase();
+      li.dataset.remetente = (c.remetente || "").toLowerCase();
+      li.dataset.msg = (c.mensagem_final || "").toLowerCase();
+      li.dataset.phone_id = c.phone_id || "";
+      li.dataset.msg_id = c.msg_id || "";
+
       li.innerHTML = `
-        <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center mr-3">
-          ${nome[0].toUpperCase()}
+        <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center mr-3 font-medium">
+          ${ (nome || c.remetente || "U").charAt(0).toUpperCase() }
         </div>
-        <div class="flex-1">
-          <div class="font-bold truncate">${nome}</div>
-          <div class="text-sm text-gray-600 truncate">${ultimaMsg}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold truncate">${escapeHtml(nome)}</div>
+          <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
         </div>
+        <div class="text-xs text-gray-400 pl-2">${hora}</div>
       `;
-      li.onclick = () => abrirConversa(c);
+      li.onclick = () => abrirConversaFromElement(c, li);
       lista.appendChild(li);
     });
   } catch (err) {
     console.error("Erro ao carregar contatos", err);
+    document.getElementById("contatos").innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos</li>`;
   }
 }
 
-function filtrarContatos(query) {
-  query = query.toLowerCase();
-  document.querySelectorAll("#contatos li").forEach(li => {
-    let texto = li.innerText.toLowerCase();
-    li.style.display = texto.includes(query) ? "flex" : "none";
-  });
+/* abrir conversa, e aplicar destaque no item selecionado */
+function abrirConversaFromElement(c, el) {
+  // remova destaque anterior
+  document.querySelectorAll("#contatos li").forEach(li => li.classList.remove("contato-selected"));
+  el.classList.add("contato-selected");
+  abrirConversa(c);
 }
 
 async function abrirConversa(c) {
   contatoSelecionado = c.remetente;
   msgIdAtual = c.msg_id;
   phoneIdAtual = c.phone_id;
-
   const titulo = c.nome_exibicao || c.remetente;
   document.getElementById("tituloConversa").innerText = titulo;
+  document.getElementById("subInfo").innerText = c.phone_id ? `phone_id: ${c.phone_id}` : "";
 
-  document.getElementById("textoMensagem").disabled = false;
-  document.getElementById("btnEnviar").disabled = false;
+  textarea.disabled = false;
+  textarea.focus();
+  document.getElementById("btnEnviar").disabled = true;
 
+  // start polling messages for opened chat
+  if (messagesInterval) clearInterval(messagesInterval);
   carregarMensagens();
+  messagesInterval = setInterval(() => { if (!userTyping) carregarMensagens(); }, 3000);
 }
 
-async function carregarMensagens(dataFiltro = null) {
+/* carregar mensagens (aceita data range via inputs) */
+async function carregarMensagens() {
   if (!contatoSelecionado) return;
+  const chat = document.getElementById("chat");
+  chat.innerHTML = `<p id="loading" class="text-center text-gray-500">Carregando mensagens...</p>`;
+
+  const inicio = document.getElementById("filtroDataInicio").value;
+  const fim = document.getElementById("filtroDataFim").value;
 
   let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
-  if (dataFiltro) url += `?data=${dataFiltro}`;
+  const params = new URLSearchParams();
+  if (inicio) params.set("data_inicio", inicio);
+  if (fim) params.set("data_fim", fim);
+  const qs = params.toString();
+  if (qs) url += `?${qs}`;
 
-  const res = await fetch(url);
-  const msgs = await res.json();
-  const chat = document.getElementById("chat");
-  chat.innerHTML = "";
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Erro ao obter histórico");
+    const msgs = await res.json();
+    chat.innerHTML = "";
+    let ultimoDia = "";
 
-  let ultimoDia = "";
+    msgs.forEach(m => {
+      const data = new Date(m.data_hora);
+      const dia = data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      const hora = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 
-  msgs.forEach(m => {
-    const data = new Date(m.data_hora);
+      if (dia !== ultimoDia) {
+        const separador = document.createElement("div");
+        separador.className = "dia";
+        separador.innerText = `— ${dia} —`;
+        chat.appendChild(separador);
+        ultimoDia = dia;
+      }
 
-    // ✅ Ajuste de fuso horário para Brasília
-    const dia = data.toLocaleDateString("pt-BR", {
-      timeZone: "America/Sao_Paulo"
+      const div = document.createElement("div");
+      div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
+      div.innerHTML = `
+        <div>${escapeHtml(m.mensagem_final)}</div>
+        <span class="hora">${hora}</span>
+      `;
+      chat.appendChild(div);
     });
-    const hora = data.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/Sao_Paulo"
-    });
 
-    if (dia !== ultimoDia) {
-      const separador = document.createElement("div");
-      separador.className = "dia";
-      separador.innerText = `— ${dia} —`;
-      chat.appendChild(separador);
-      ultimoDia = dia;
-    }
-
-    const div = document.createElement("div");
-    div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
-    div.innerHTML = `
-      <div>${m.mensagem_final}</div>
-      <span class="hora">${hora}</span>
-    `;
-    chat.appendChild(div);
-  });
-
-  chat.scrollTop = chat.scrollHeight;
-}
-
-
-function filtrarPorData() {
-  const data = document.getElementById("filtroData").value;
-  carregarMensagens(data);
-}
-
-async function enviarMensagem() {
-  const texto = document.getElementById("textoMensagem").value.trim();
-  if (!texto || !contatoSelecionado) return;
-
-  const res = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ phone_id: phoneIdAtual, msg_id: msgIdAtual, texto })
-  });
-
-  const result = await res.json();
-  if (result.ok) {
-    document.getElementById("textoMensagem").value = "";
-    carregarMensagens();
-  } else {
-    alert("Erro ao enviar mensagem");
+    // scroll para o final
+    setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 50);
+  } catch (err) {
+    console.error("Erro ao carregar mensagens", err);
+    chat.innerHTML = `<p class="text-red-600 text-center">Erro ao carregar mensagens</p>`;
   }
 }
 
-carregarContatos();
+/* filtrar contatos por nome/telefone (com highlight) */
+function filtrarContatos(q) {
+  q = (q || "").toLowerCase().trim();
+  document.querySelectorAll("#contatos li").forEach(li => {
+    const nome = li.dataset.nome || "";
+    const remetente = li.dataset.remetente || "";
+    const msg = li.dataset.msg || "";
+    const hay = `${nome} ${remetente} ${msg}`;
+    if (hay.includes(q)) {
+      li.style.display = "flex";
+      if (q) {
+        // highlight simples no nome
+        const nameDiv = li.querySelector(".font-bold");
+        const original = nameDiv.textContent;
+        const reg = new RegExp(q, "ig");
+        nameDiv.innerHTML = original.replace(reg, match => `<mark>${match}</mark>`);
+      } else {
+        const nameDiv = li.querySelector(".font-bold");
+        nameDiv.innerHTML = nameDiv.textContent; // remove marcações
+      }
+    } else {
+      li.style.display = "none";
+    }
+  });
+}
+
+/* Filtrar por data (usa inputs) */
+function filtrarPorData() {
+  carregarMensagens();
+}
+function limparFiltro() {
+  document.getElementById("filtroDataInicio").value = "";
+  document.getElementById("filtroDataFim").value = "";
+  carregarMensagens();
+}
+
+/* Enviar mensagem: POST para backend; backend grava em mensagens_avulsas */
+async function enviarMensagem() {
+  const texto = textarea.value.trim();
+  if (!texto || !contatoSelecionado) return;
+
+  // Durante digitação, pausa o polling
+  userTyping = true;
+  document.getElementById("btnEnviar").disabled = true;
+
+  try {
+    const body = { texto };
+    // não envie token aqui (use env vars no servidor em produção). Para testes, backend aceita overrides via body se configurado.
+    const res = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const json = await res.json();
+    if (json.ok) {
+      textarea.value = "";
+      textarea.style.height = "auto";
+      carregarMensagens();
+    } else {
+      alert("Erro ao enviar: " + (json.erro || JSON.stringify(json)));
+    }
+  } catch (err) {
+    console.error("Falha no envio", err);
+    alert("Erro ao enviar mensagem (ver console).");
+  } finally {
+    userTyping = false;
+    document.getElementById("btnEnviar").disabled = textarea.value.trim().length === 0;
+  }
+}
+
+/* escape para text-only (simples) */
+function escapeHtml(s) {
+  if (!s) return "";
+  return s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+/* Inicia polling de contatos e atualizações periódicas */
+function startPolling() {
+  if (contactsInterval) clearInterval(contactsInterval);
+  carregarContatos();
+  contactsInterval = setInterval(() => { carregarContatos(); }, 15000);
+}
+startPolling();
+
+/* Atualiza contatos quando a aba voltar do background (melhora UX) */
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    carregarContatos();
+    if (contatoSelecionado) carregarMensagens();
+  }
+});
 </script>
 </body>
 </html>
