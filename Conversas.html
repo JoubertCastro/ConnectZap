@@ -34,6 +34,29 @@
   bottom: 4px;
   right: 8px;
 }
+/* Botão de resposta */
+.msg .btn-responder {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 14px;
+  color: #4b5563;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg.recebida:hover .btn-responder {
+  opacity: 1;
+}
+.msg .btn-responder:hover {
+  color: #2563eb;
+}
+/* Em telas pequenas o botão fica sempre visível */
+@media (max-width: 768px) {
+  .msg .btn-responder {
+    opacity: 1;
+  }
+}
+/* separadores de dia */
 .dia {
   text-align: center;
   margin: 12px 0;
@@ -225,8 +248,9 @@ async function carregarMensagens(){
       div.innerHTML=`<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
       if(m.status==="in"){
         const btn=document.createElement("button");
-        btn.className="absolute -left-6 top-1 text-xs text-blue-500 hover:underline";
-        btn.innerText="↩";
+        btn.className="btn-responder";
+        btn.title="Responder";
+        btn.innerHTML="↩";
         btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
         div.appendChild(btn);
       }
