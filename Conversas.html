@@ -230,7 +230,16 @@ async function enviarMensagem(){
   const texto=textarea.value.trim(); if(!texto||!contatoSelecionado) return;
   userTyping=true; btnEnviar.disabled=true;
   try{
-    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({texto})});
+    const body = { 
+      texto, 
+      phone_id: phoneIdAtual, 
+      msg_id: msgIdAtual 
+    };
+    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
     const json=await res.json();
     if(json.ok){textarea.value="";textarea.style.height="auto";carregarMensagens();}
     else alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
