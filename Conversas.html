@@ -1,116 +1,114 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conversas WhatsApp</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* Bolhas de mensagem modernas */
-    .msg {
-      max-width: 72%;
-      padding: 12px 14px 28px 14px; 
-      border-radius: 16px;
-      margin: 6px 0;
-      position: relative;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-      transition: background 0.2s;
-    }
-    .msg.enviada {
-      background: linear-gradient(120deg, #dcf8c6, #b8f0a4);
-      align-self: flex-end;
-    }
-    .msg.recebida {
-      background: #fff;
-      align-self: flex-start;
-      border: 1px solid #e2e8f0;
-    }
-    .msg .hora {
-      font-size: 11px;
-      color: #555;
-      position: absolute;
-      bottom: 6px;
-      right: 10px;
-    }
-    .dia {
-      text-align: center;
-      margin: 12px 0;
-      font-size: 12px;
-      color: #888;
-    }
-    /* Contatos */
-    .contato-selected { background: #f0f9ff !important; }
-    mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
-
-    /* Indicador de digitando */
-    #digitando {
-      font-size: 12px;
-      color: #666;
-      margin: 2px 0;
-      display: none;
-    }
-
-    /* Responsivo */
-    @media (max-width: 768px) {
-      aside { width: 42%; }
-      .msg { max-width: 80%; }
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conversas WhatsApp</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Bolhas de mensagem modernas */
+.msg {
+  max-width: 70%;
+  padding: 10px 14px 24px 14px;
+  border-radius: 18px;
+  margin: 4px 0;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+.msg.enviada {
+  background: linear-gradient(120deg, #dcf8c6, #b8f0a4);
+  align-self: flex-end;
+}
+.msg.recebida {
+  background: #fff;
+  align-self: flex-start;
+  border: 1px solid #e2e8f0;
+}
+.msg .hora {
+  font-size: 11px;
+  color: #555;
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+}
+.dia {
+  text-align: center;
+  margin: 12px 0;
+  font-size: 12px;
+  color: #888;
+}
+/* contatos */
+.contato-selected { background: #f0f9ff !important; }
+mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
+/* Digitando */
+#digitando {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+/* responsivo */
+@media (max-width: 768px) {
+  aside { width: 42%; }
+  .msg { max-width: 80%; }
+}
+</style>
 </head>
 <body class="h-screen flex bg-gray-100">
-  <!-- Sidebar -->
-  <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
-    <div class="p-2 border-b">
-      <input 
-        id="searchInput"
-        type="text" 
-        placeholder="🔍 Buscar contato ou número"
-        class="w-full p-2 rounded-md border"
-        oninput="filtrarContatos(this.value)"
-        autocomplete="off"
-      />
-    </div>
-    <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
-    <div class="p-2 text-xs text-gray-500 border-t">
-      Atualiza automaticamente. Toque em um contato para abrir a conversa.
-    </div>
-  </aside>
 
-  <!-- Área de conversa -->
-  <main class="flex-1 flex flex-col">
-    <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
-      <div class="flex items-center space-x-3">
-        <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
-        <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
-      </div>
-      <div class="flex items-center space-x-2">
-        <input type="date" id="filtroDataInicio" class="p-1 border rounded-md text-sm" />
-        <input type="date" id="filtroDataFim" class="p-1 border rounded-md text-sm" />
-        <button onclick="filtrarPorData()" class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100">Filtrar</button>
-        <button onclick="limparFiltro()" class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100">Limpar</button>
-      </div>
+<!-- Sidebar -->
+<aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
+  <div class="p-2 border-b">
+    <input 
+      id="searchInput" type="text" 
+      placeholder="🔍 Buscar contato ou número"
+      class="w-full p-2 rounded-md border"
+      oninput="filtrarContatos(this.value)"
+      autocomplete="off"
+    />
+  </div>
+  <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+  <div class="p-2 text-xs text-gray-500 border-t">
+    Atualiza automaticamente. Toque em um contato para abrir a conversa.
+  </div>
+</aside>
+
+<!-- Área de conversa -->
+<main class="flex-1 flex flex-col">
+  <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
+    <div class="flex items-center space-x-3">
+      <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
+      <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
     </div>
 
-    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
-      <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+    <div class="flex items-center space-x-2">
+      <input type="date" id="filtroDataInicio" class="p-1 border rounded-md text-sm" />
+      <input type="date" id="filtroDataFim" class="p-1 border rounded-md text-sm" />
+      <button onclick="filtrarPorData()" class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100">Filtrar</button>
+      <button onclick="limparFiltro()" class="px-3 py-1 border rounded-md text-sm hover:bg-gray-100">Limpar</button>
     </div>
-    <div id="digitando" class="px-4 text-left">Digitando...</div>
+  </div>
 
-    <div class="p-3 border-t flex space-x-2 bg-white">
-      <textarea 
-        id="textoMensagem" rows="1"
-        class="flex-1 border rounded-md p-2 resize-none"
-        placeholder="Digite uma mensagem..." disabled
-      ></textarea>
-      <button 
-        id="btnEnviar"
-        onclick="enviarMensagem()"
-        class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
-        disabled>Enviar</button>
-    </div>
-  </main>
+  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
+    <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+  </div>
+  <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
+
+  <div class="p-3 border-t flex space-x-2 bg-white">
+    <textarea 
+      id="textoMensagem" rows="1"
+      class="flex-1 border rounded-md p-2 resize-none"
+      placeholder="Digite uma mensagem..." disabled
+    ></textarea>
+    <button 
+      id="btnEnviar"
+      onclick="enviarMensagem()"
+      class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
+      disabled>Enviar</button>
+  </div>
+</main>
 
 <script>
 const API_BASE = "https://conversas-api-production.up.railway.app";
@@ -121,7 +119,6 @@ const textarea = document.getElementById("textoMensagem");
 const btnEnviar = document.getElementById("btnEnviar");
 const digitando = document.getElementById("digitando");
 
-// Auto-resize e mostrar digitando
 textarea.addEventListener("input", () => {
   textarea.style.height = "auto";
   textarea.style.height = textarea.scrollHeight + "px";
@@ -132,7 +129,6 @@ textarea.addEventListener("keydown", e => {
   if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
 });
 
-// Carrega contatos
 async function carregarContatos(){
   try{
     const res = await fetch(`${API_BASE}/api/conversas/contatos`);
@@ -182,11 +178,9 @@ async function abrirConversa(c){
   messagesInterval=setInterval(()=>{if(!userTyping) carregarMensagens();},3000);
 }
 
-// Carregar mensagens completo
 async function carregarMensagens(){
   if(!contatoSelecionado) return;
   const chat=document.getElementById("chat");
-  chat.innerHTML=`<p id="loading" class="text-center text-gray-500">Carregando mensagens...</p>`;
   const inicio=document.getElementById("filtroDataInicio").value;
   const fim=document.getElementById("filtroDataFim").value;
   let url=`${API_BASE}/api/conversas/${contatoSelecionado}`;
@@ -217,7 +211,6 @@ async function carregarMensagens(){
   }catch(err){console.error("Erro ao carregar mensagens",err);}
 }
 
-// Highlight contatos
 function filtrarContatos(q){
   q=(q||"").toLowerCase().trim();
   document.querySelectorAll("#contatos li").forEach(li=>{
@@ -247,7 +240,6 @@ async function enviarMensagem(){
 
 function escapeHtml(s){if(!s)return"";return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-// Polling
 function startPolling(){if(contactsInterval) clearInterval(contactsInterval); carregarContatos(); contactsInterval=setInterval(()=>{carregarContatos();},15000);}
 startPolling();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
