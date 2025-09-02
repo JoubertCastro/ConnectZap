@@ -96,6 +96,16 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   </div>
   <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
 
+  <!-- Preview de resposta -->
+  <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
+    <div class="truncate max-w-[80%]">
+      <span class="font-semibold">Respondendo:</span> 
+      <span id="respostaTexto" class="text-gray-600"></span>
+    </div>
+    <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
+  </div>
+
+  <!-- Input de mensagem -->
   <div class="p-3 border-t flex space-x-2 bg-white">
     <textarea 
       id="textoMensagem" rows="1"
@@ -112,7 +122,8 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
 
 <script>
 const API_BASE = "https://conversas-api-production.up.railway.app";
-let contatoSelecionado = null, msgIdAtual = null, phoneIdAtual = null, ultimoMsgId = null;
+let contatoSelecionado = null, phoneIdAtual = null, ultimoMsgId = null;
+let respostaMsgId = null;
 let contactsInterval = null, messagesInterval = null, userTyping = false;
 
 const textarea = document.getElementById("textoMensagem");
@@ -128,6 +139,12 @@ textarea.addEventListener("input", () => {
 textarea.addEventListener("keydown", e => {
   if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
 });
+
+function gerarCor(nome){
+  let hash=0;
+  for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
+  return `hsl(${hash % 360},70%,60%)`;
+}
 
 async function carregarContatos(){
   try{
@@ -148,7 +165,8 @@ async function carregarContatos(){
       li.dataset.phone_id=c.phone_id||"";
       li.dataset.msg_id=c.msg_id||"";
       li.innerHTML=`
-        <div class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center mr-3 font-medium">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
+             style="background:${gerarCor(nome)};color:white;">
           ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
         </div>
         <div class="flex-1 min-w-0">
@@ -169,7 +187,7 @@ function abrirConversaFromElement(c,el){
 }
 
 async function abrirConversa(c){
-  contatoSelecionado=c.remetente; msgIdAtual=c.msg_id; phoneIdAtual=c.phone_id; ultimoMsgId=null;
+  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
   document.getElementById("tituloConversa").innerText=c.nome_exibicao||c.remetente;
   document.getElementById("subInfo").innerText=c.phone_id?`phone_id: ${c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
@@ -205,10 +223,30 @@ async function carregarMensagens(){
       const div=document.createElement("div");
       div.className=`msg ${m.status==="in"?"recebida":"enviada"}`;
       div.innerHTML=`<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
+      if(m.status==="in"){
+        const btn=document.createElement("button");
+        btn.className="absolute -left-6 top-1 text-xs text-blue-500 hover:underline";
+        btn.innerText="↩";
+        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
+        div.appendChild(btn);
+      }
       chat.appendChild(div);
     });
     chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
   }catch(err){console.error("Erro ao carregar mensagens",err);}
+}
+
+function responderMensagem(msgId, conteudo){
+  respostaMsgId = msgId;
+  document.getElementById("respostaTexto").innerText = conteudo.slice(0,50);
+  document.getElementById("respostaPreview").classList.remove("hidden");
+  textarea.focus();
+}
+
+function cancelarResposta(){
+  respostaMsgId = null;
+  document.getElementById("respostaPreview").classList.add("hidden");
+  document.getElementById("respostaTexto").innerText = "";
 }
 
 function filtrarContatos(q){
@@ -227,13 +265,14 @@ function filtrarPorData(){ carregarMensagens(); }
 function limparFiltro(){ document.getElementById("filtroDataInicio").value=""; document.getElementById("filtroDataFim").value=""; carregarMensagens(); }
 
 async function enviarMensagem(){
-  const texto=textarea.value.trim(); if(!texto||!contatoSelecionado) return;
+  const texto=textarea.value.trim(); 
+  if(!texto||!contatoSelecionado) return;
   userTyping=true; btnEnviar.disabled=true;
   try{
     const body = { 
       texto, 
-      phone_id: phoneIdAtual, 
-      msg_id: msgIdAtual 
+      phone_id: phoneIdAtual,
+      msg_id: respostaMsgId || null
     };
     const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{
       method:"POST",
@@ -241,10 +280,20 @@ async function enviarMensagem(){
       body:JSON.stringify(body)
     });
     const json=await res.json();
-    if(json.ok){textarea.value="";textarea.style.height="auto";carregarMensagens();}
-    else alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
-  }catch(err){console.error(err); alert("Erro ao enviar mensagem.");}
-  finally{userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0;}
+    if(json.ok){
+      textarea.value="";textarea.style.height="auto";
+      cancelarResposta();
+      carregarMensagens();
+    } else {
+      alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
+    }
+  }catch(err){
+    console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network.");
+  }
+  finally{
+    userTyping=false; 
+    btnEnviar.disabled=textarea.value.trim().length===0;
+  }
 }
 
 function escapeHtml(s){if(!s)return"";return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
