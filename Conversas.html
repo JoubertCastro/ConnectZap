@@ -50,9 +50,19 @@
 .msg .btn-responder:hover {
   color: #2563eb;
 }
-/* Em telas pequenas o botão fica sempre visível */
-@media (max-width: 768px) {
-  .msg .btn-responder { opacity: 1; }
+/* Badge de não lidas */
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 9999px;
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
 }
 /* separadores de dia */
 .dia {
@@ -103,7 +113,6 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
       <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
       <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
     </div>
-
     <!-- Filtros escondidos -->
     <div class="flex items-center space-x-2 hidden">
       <input type="date" id="filtroDataInicio" class="p-1 border rounded-md text-sm" />
@@ -148,7 +157,7 @@ let contatoSelecionado = null, phoneIdAtual = null, ultimoMsgId = null;
 let respostaMsgId = null;
 let contactsInterval = null, messagesInterval = null, userTyping = false;
 
-// Controle de novas mensagens
+// Controle de novas mensagens (contador)
 let novasMensagens = {};
 let ultimoStatusContatos = {};
 
@@ -186,7 +195,7 @@ async function carregarContatos(){
 
       // Detecta se tem nova mensagem
       if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
-        novasMensagens[c.remetente] = true;
+        novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
       }
       ultimoStatusContatos[c.remetente] = c.data_hora;
 
@@ -194,9 +203,9 @@ async function carregarContatos(){
       li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
       li.dataset.remetente=c.remetente.toLowerCase();
 
-      // Badge de nova mensagem
-      const badge = novasMensagens[c.remetente] 
-        ? `<span class="absolute top-2 right-2 w-3 h-3 rounded-full bg-green-500"></span>` 
+      // Badge de contador
+      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
+        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
         : "";
 
       li.innerHTML=`
@@ -225,7 +234,7 @@ function abrirConversaFromElement(c,el){
 
 async function abrirConversa(c){
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
-  novasMensagens[c.remetente] = false; // limpa badge
+  novasMensagens[c.remetente] = 0; // zera contador
   document.getElementById("tituloConversa").innerText=c.nome_exibicao||c.remetente;
   document.getElementById("subInfo").innerText=c.phone_id?`phone_id: ${c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
