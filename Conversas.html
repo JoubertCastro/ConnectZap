@@ -378,8 +378,8 @@ async function enviarPDF(event){
     const json = await res.json();
     if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
 
-    const presignedUrl = json.url || json.upload_url;
-    const fileUrl = json.file_url || presignedUrl.split("?")[0];
+    const presignedUrl = json.upload_url;  // URL de upload
+    const fileUrl = json.file_url;         // URL pública para enviar no WhatsApp
 
     // 2. Upload do PDF para S3
     await fetch(presignedUrl, {
