@@ -141,7 +141,11 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   </div>
 
   <!-- Input de mensagem -->
-  <div class="p-3 border-t flex space-x-2 bg-white">
+  <div class="p-3 border-t flex space-x-2 bg-white items-center">
+    <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
+    <button onclick="document.getElementById('fileInput').click()" 
+      class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📎 PDF</button>
+
     <textarea 
       id="textoMensagem" rows="1"
       class="flex-1 border rounded-md p-2 resize-none"
@@ -348,6 +352,64 @@ async function enviarMensagem(){
   finally{
     userTyping=false; 
     btnEnviar.disabled=textarea.value.trim().length===0;
+  }
+}
+
+/* Função para enviar PDF */
+async function enviarPDF(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(!contatoSelecionado || !phoneIdAtual){
+    alert("Selecione uma conversa antes de enviar PDF");
+    return;
+  }
+  if(file.type !== "application/pdf"){
+    alert("Somente arquivos PDF são permitidos");
+    return;
+  }
+
+  try{
+    // 1. Solicita URL pré-assinada
+    const res = await fetch(`${API_BASE}/api/upload/pdf`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({filename: file.name})
+    });
+    const json = await res.json();
+    if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
+
+    const presignedUrl = json.url || json.upload_url;
+    const fileUrl = json.file_url || presignedUrl.split("?")[0];
+
+    // 2. Upload do PDF para S3
+    await fetch(presignedUrl, {
+      method: "PUT",
+      headers: {"Content-Type": "application/pdf"},
+      body: file
+    });
+
+    // 3. Envia mensagem via backend
+    const body = { 
+      phone_id: phoneIdAtual,
+      file_url: fileUrl,
+      filename: file.name
+    };
+    const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const sendJson = await sendRes.json();
+    if(sendJson.ok){
+      carregarMensagens();
+    } else {
+      alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson)));
+    }
+  }catch(err){
+    console.error("Erro ao enviar PDF",err);
+    alert("Erro ao enviar PDF");
+  }finally{
+    event.target.value = ""; // reseta input file
   }
 }
 
