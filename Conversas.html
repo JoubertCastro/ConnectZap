@@ -34,7 +34,6 @@
   bottom: 4px;
   right: 8px;
 }
-/* Botão de resposta */
 .msg .btn-responder {
   position: absolute;
   top: 6px;
@@ -50,7 +49,6 @@
 .msg .btn-responder:hover {
   color: #2563eb;
 }
-/* Badge de não lidas */
 .badge {
   position: absolute;
   top: 8px;
@@ -64,23 +62,19 @@
   min-width: 18px;
   text-align: center;
 }
-/* separadores de dia */
 .dia {
   text-align: center;
   margin: 12px 0;
   font-size: 12px;
   color: #888;
 }
-/* contatos */
 .contato-selected { background: #f0f9ff !important; }
 mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
-/* Digitando */
 #digitando {
   font-size: 12px;
   color: #666;
   margin-bottom: 4px;
 }
-/* responsivo */
 @media (max-width: 768px) {
   aside { width: 42%; }
   .msg { max-width: 80%; }
@@ -89,10 +83,8 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
 </head>
 <body class="h-screen flex bg-gray-100">
 
-<!-- Sidebar -->
 <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
   <div class="p-2 border-b space-y-2">
-    <!-- Filtro por conta -->
     <select id="filtroConta" class="w-full p-2 border rounded-md text-sm" onchange="carregarContatos()">
       <option value="">Todas as contas</option>
       <option value="732661079928516">conta1</option>
@@ -102,7 +94,6 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
       <option value="732661032985785">conta5</option>
       <option value="732689435784935">conta6</option>
     </select>
-    <!-- Busca -->
     <input 
       id="searchInput" type="text" 
       placeholder="🔍 Buscar contato ou número"
@@ -117,7 +108,6 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   </div>
 </aside>
 
-<!-- Área de conversa -->
 <main class="flex-1 flex flex-col">
   <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
     <div class="flex items-center space-x-3">
@@ -131,7 +121,6 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   </div>
   <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
 
-  <!-- Preview de resposta -->
   <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
     <div class="truncate max-w-[80%]">
       <span class="font-semibold">Respondendo:</span> 
@@ -140,7 +129,6 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
     <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
   </div>
 
-  <!-- Input de mensagem -->
   <div class="p-3 border-t flex space-x-2 bg-white items-center">
     <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
     <button onclick="document.getElementById('fileInput').click()" 
@@ -164,8 +152,6 @@ const API_BASE = "https://conversas-api-production.up.railway.app";
 let contatoSelecionado = null, phoneIdAtual = null, ultimoMsgId = null;
 let respostaMsgId = null;
 let contactsInterval = null, messagesInterval = null, userTyping = false;
-
-// Mapeamento de contas
 const phoneIdMap = {
   "732661079928516": "conta1",
   "732661079941652": "conta2",
@@ -174,8 +160,6 @@ const phoneIdMap = {
   "732661032985785": "conta5",
   "732689435784935": "conta6"
 };
-
-// Controle de novas mensagens (contador)
 let novasMensagens = {};
 let ultimoStatusContatos = {};
 
@@ -255,7 +239,7 @@ function abrirConversaFromElement(c,el){
 
 async function abrirConversa(c){
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
-  novasMensagens[c.remetente] = 0; // zera contador
+  novasMensagens[c.remetente] = 0;
   document.getElementById("tituloConversa").innerText=c.nome_exibicao||c.remetente;
   document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
@@ -355,7 +339,7 @@ async function enviarMensagem(){
   }
 }
 
-/* Função para enviar PDF */
+/* Função para enviar PDF ajustada */
 async function enviarPDF(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -379,7 +363,7 @@ async function enviarPDF(event){
     if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
 
     const presignedUrl = json.upload_url;  // URL de upload
-    const fileUrl = json.file_url;         // URL pública para enviar no WhatsApp
+    const fileUrl = json.file_url;         // URL pública do PDF
 
     // 2. Upload do PDF para S3
     await fetch(presignedUrl, {
@@ -397,7 +381,7 @@ async function enviarPDF(event){
     const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify(body)
+      body:JSON.stringify(body)
     });
     const sendJson = await sendRes.json();
     if(sendJson.ok){
@@ -418,7 +402,7 @@ function escapeHtml(s){if(!s)return"";return s.replace(/[&<>"']/g,ch=>({'&':'&am
 function startPolling(){
   if(contactsInterval) clearInterval(contactsInterval);
   carregarContatos();
-  contactsInterval=setInterval(()=>{carregarContatos();},5000); // atualiza contatos a cada 5s
+  contactsInterval=setInterval(()=>{carregarContatos();},5000);
 }
 startPolling();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
