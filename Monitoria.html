@@ -5,8 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Monitoria de Conversas</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<style>
+/* Bolhas estilo WhatsApp */
+.msg {
+  max-width: 70%;
+  padding: 10px 14px;
+  border-radius: 20px;
+  margin: 6px 0;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+.msg.enviada {
+  background: linear-gradient(135deg, #dcf8c6, #b2f2a0);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.msg.recebida {
+  background: #fff;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+.msg .hora {
+  font-size: 11px;
+  color: #555;
+  position: absolute;
+  bottom: -15px;
+  right: 8px;
+}
+.dia {
+  margin: 16px auto;
+  background: #e5e7eb;
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+</style>
 </head>
 <body class="h-screen flex bg-gray-100">
 
@@ -126,7 +165,6 @@ async function carregarMensagens(){
     const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`);
     let todas = await res.json();
 
-    // aplica filtros
     const inicio = document.getElementById("dataInicio").value;
     const fim = document.getElementById("dataFim").value;
     const tipo = document.getElementById("filtroTipo").value;
@@ -147,7 +185,7 @@ async function carregarMensagens(){
       const data=new Date(m.data_hora);
       const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
       const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
-      if(dia!==ultimoDia){ chat.innerHTML+=`<div class="text-center text-gray-500 text-xs my-2">— ${dia} —</div>`; ultimoDia=dia; }
+      if(dia!==ultimoDia){ chat.innerHTML+=`<div class="dia">— ${dia} —</div>`; ultimoDia=dia; }
       chat.innerHTML+=`
         <div class="msg ${m.status==="in"?"recebida":"enviada"}">
           <div>${escapeHtml(m.mensagem_final)}</div>
@@ -181,40 +219,36 @@ function exportarTXT(){
 
 function exportarPDF(){
   if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF("p","mm","a4");
-
-  // cabeçalho
-  doc.setFontSize(14);
-  doc.text("Monitoria de Conversas WhatsApp", 105, 15, {align:"center"});
-  doc.setFontSize(10);
-  doc.text(`Contato: ${contatoSelecionado} | Conta: ${phoneIdMap[phoneIdAtual]||phoneIdAtual}`, 10, 25);
-
-  // tabela
-  const dados = mensagens.map(m=>[
+  const body = mensagens.map(m=>[
     new Date(m.data_hora).toLocaleString("pt-BR"),
     m.status==="in"?"Recebida":"Enviada",
     m.mensagem_final
   ]);
 
-  doc.autoTable({
-    startY: 35,
-    head:[["Data/Hora","Direção","Mensagem"]],
-    body:dados,
-    styles:{fontSize:9, cellWidth:"wrap"},
-    headStyles:{fillColor:[52,152,219]},
-    alternateRowStyles:{fillColor:[245,245,245]}
-  });
+  const docDefinition = {
+    content: [
+      { text: "Monitoria de Conversas WhatsApp", style: "header", alignment:"center" },
+      { text: `Contato: ${contatoSelecionado} | Conta: ${phoneIdMap[phoneIdAtual]||phoneIdAtual}`, margin:[0,10,0,10] },
+      {
+        table: {
+          headerRows: 1,
+          widths: ["25%","15%","60%"],
+          body: [["Data/Hora","Direção","Mensagem"], ...body]
+        },
+        layout: "lightHorizontalLines"
+      },
+      { text: `Exportado em: ${new Date().toLocaleString("pt-BR")}`, style: "footer", margin:[0,20,0,0] }
+    ],
+    styles: {
+      header: { fontSize: 16, bold: true },
+      footer: { fontSize: 9, italics: true, alignment:"right" }
+    },
+    defaultStyle: {
+      font: "Helvetica"
+    }
+  };
 
-  // rodapé
-  const paginaTotal = doc.internal.getNumberOfPages();
-  for(let i=1;i<=paginaTotal;i++){
-    doc.setPage(i);
-    doc.text(`Página ${i}/${paginaTotal}`, 105, 290, {align:"center"});
-    doc.text(`Exportado em: ${new Date().toLocaleString("pt-BR")}`, 10, 290);
-  }
-
-  doc.save(`conversa_${contatoSelecionado}.pdf`);
+  pdfMake.createPdf(docDefinition).download(`conversa_${contatoSelecionado}.pdf`);
 }
 
 carregarContatos();
