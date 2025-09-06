@@ -5,20 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ConnectZap - Painel Principal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  >
   <style>
-    /* Estilo do iframe */
+    /* Transição de opacidade do iframe */
     iframe {
       width: 100%;
       height: calc(100vh - 80px);
       border: none;
       transition: opacity 0.3s ease-in-out;
     }
-
-    /* Menu lateral */
+    /* Hover na sidebar */
     .sidebar a:hover { background-color: #1f2937; }
-
-    /* Menu responsivo mobile */
+    /* Menu móvel */
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
@@ -46,60 +47,226 @@
     <nav class="flex-1 mt-6">
       <ul>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('home')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-home mr-3"></i> Home
           </a>
         </li>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
           </a>
         </li>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-chart-line mr-3"></i> Dashboard
           </a>
         </li>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
           </a>
         </li>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-eye mr-3"></i> Monitoria
           </a>
         </li>
         <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3">
+          <a href="#"
+             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')"
+             class="flex items-center px-6 py-3">
             <i class="fas fa-comments mr-3"></i> Conversas
           </a>
         </li>
       </ul>
     </nav>
     <div class="p-6 border-t border-gray-700 text-sm">
-      <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank" class="block hover:underline">Política de Privacidade</a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank" class="block hover:underline">Termos de Serviço</a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html" target="_blank" class="block hover:underline">Exclusão de Dados</a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html"
+         target="_blank"
+         class="block hover:underline">
+        Política de Privacidade
+      </a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html"
+         target="_blank"
+         class="block hover:underline">
+        Termos de Serviço
+      </a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html"
+         target="_blank"
+         class="block hover:underline">
+        Exclusão de Dados
+      </a>
     </div>
   </aside>
 
-  <!-- Conteúdo principal -->
+  <!-- Conteúdo principal via iframe -->
   <div class="md:ml-64">
-    <iframe id="contentFrame" src="homepage.html"></iframe>
+    <iframe id="contentFrame"></iframe>
   </div>
 
   <script>
+    const iframe = document.getElementById('contentFrame');
+
+    // HTML da Home embutido via srcdoc
+    const homeHTML = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home — ConnectZap</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    rel="stylesheet"
+  >
+</head>
+<body class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
+  <div class="flex flex-col items-center justify-center h-full px-6 py-12">
+    <img
+      src="https://i.imgur.com/SeuLinkDireto.png"
+      alt="Logo ConnectZap"
+      class="w-32 rounded-full shadow-lg mb-6"
+    >
+    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+      Bem-vindo ao ConnectZap
+    </h1>
+    <p class="text-lg md:text-xl text-gray-700 mb-6 text-center max-w-2xl">
+      Conecte-se com seus clientes de forma ágil e administre envios em massa
+      via WhatsApp com eficiência e segurança.
+    </p>
+    <a
+      href="#features"
+      class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+    >
+      Ver Recursos
+    </a>
+  </div>
+  <section id="features" class="py-12 px-6">
+    <div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3">
+      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+        <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Agilidade</h3>
+        <p class="text-gray-600">
+          Envie mensagens rapidamente e acompanhe resultados em tempo real.
+        </p>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+        <i class="fas fa-shield-alt text-green-400 text-3xl mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Segurança</h3>
+        <p class="text-gray-600">
+          Comunicação segura, garantindo privacidade dos dados dos clientes.
+        </p>
+      </div>
+      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+        <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Resultados</h3>
+        <p class="text-gray-600">
+          Métricas e insights para otimizar suas campanhas.
+        </p>
+      </div>
+    </div>
+  </section>
+  <footer class="bg-gray-100 text-center py-6">
+    <p class="text-gray-600">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
+  </footer>
+</body>
+</html>`;
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Home — ConnectZap</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          rel="stylesheet"
+        >
+      </head>
+      <body class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
+        <div class="flex flex-col items-center justify-center h-full px-6 py-12">
+          <img
+            src="https://i.imgur.com/SeuLinkDireto.png"
+            alt="Logo ConnectZap"
+            class="w-32 rounded-full shadow-lg mb-6"
+          >
+          <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+            Bem-vindo ao ConnectZap
+          </h1>
+          <p class="text-lg md:text-xl text-gray-700 mb-6 text-center max-w-2xl">
+            Conecte-se com seus clientes de forma ágil e administre envios em massa
+            via WhatsApp com eficiência e segurança.
+          </p>
+          <a
+            href="#features"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          >
+            Ver Recursos
+          </a>
+        </div>
+        <section id="features" class="py-12 px-6">
+          <div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3">
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+              <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
+              <h3 class="text-xl font-semibold mb-2">Agilidade</h3>
+              <p class="text-gray-600">
+                Envie mensagens rapidamente e acompanhe resultados em tempo real.
+              </p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+              <i class="fas fa-shield-alt text-green-400 text-3xl mb-4"></i>
+              <h3 class="text-xl font-semibold mb-2">Segurança</h3>
+              <p class="text-gray-600">
+                Comunicação segura, garantindo privacidade dos dados dos clientes.
+              </p>
+            </div>
+            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
+              <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
+              <h3 class="text-xl font-semibold mb-2">Resultados</h3>
+              <p class="text-gray-600">
+                Métricas e insights para otimizar suas campanhas.
+              </p>
+            </div>
+          </div>
+        </section>
+        <footer class="bg-gray-100 text-center py-6">
+          <p class="text-gray-600">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
+        </footer>
+      </body>
+      </html>
+    `;
+
+    // Função para trocar conteúdo: se url === 'home', usa srcdoc; caso contrário, muda src
     function loadPage(url) {
-      const iframe = document.getElementById('contentFrame');
       iframe.style.opacity = 0;
       setTimeout(() => {
-        iframe.src = url;
+        if (url === 'home') {
+          iframe.removeAttribute('src');
+          iframe.srcdoc = homeHTML;
+        } else {
+          iframe.removeAttribute('srcdoc');
+          iframe.src = url;
+        }
         iframe.onload = () => {
           iframe.style.opacity = 1;
-        }
+        };
       }, 200);
     }
+
+    // Carrega Home ao iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPage('home');
+    });
   </script>
 </body>
 </html>
