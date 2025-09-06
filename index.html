@@ -1,114 +1,255 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .login-container {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 300px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .error {
-      color: red;
-      margin-top: 10px;
-      text-align: center;
-    }
-    .terms {
-      font-size: 12px;
-      color: #555;
-      margin-top: 10px;
-      text-align: center;
-    }
-    .terms input {
-      width: auto;
-      margin-right: 5px;
-    }
-    .terms a {
-      color: #007bff;
-      text-decoration: none;
-    }
-    .terms a:hover {
-      text-decoration: underline;
-    }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    <h2>Entrar</h2>
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="senha" placeholder="Senha" required />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ConnectZap - Painel Principal</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<style>
+  iframe {
+    width: 100%;
+    height: calc(100vh - 80px);
+    border: none;
+    transition: opacity 0.3s ease-in-out;
+  }
 
-    <div class="terms">
-      <label>
-        <input type="checkbox" id="aceitoTermos" />
-        Eu li e aceito os <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank">Termos de Serviço</a> e a <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank">Política de Privacidade</a>.
+  .sidebar a {
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .sidebar a:hover {
+    background-color: #1f2937;
+    color: #fff;
+  }
+  .sidebar a.active {
+    background-color: #2563eb;
+    color: #fff;
+  }
+  .sidebar a.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .sidebar-footer a {
+    transition: color 0.2s;
+  }
+  .sidebar-footer a:hover {
+    color: #2563eb;
+  }
+
+  /* Modal login */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center; align-items: center;
+  }
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    width: 300px;
+    position: relative;
+  }
+  .modal-close {
+    position: absolute;
+    top: 10px; right: 15px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: #555;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; display: flex; justify-content: space-around; align-items: center; background-color: #1e293b; z-index: 50; }
+    .sidebar .desktop-only { display: none; }
+    iframe { height: calc(100vh - 60px); }
+  }
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<!-- Sidebar Desktop -->
+<aside class="sidebar w-64 bg-gray-900 text-white fixed h-full hidden md:flex flex-col">
+  <div class="p-6 text-2xl font-bold text-center border-b border-gray-700">ConnectZap</div>
+  <nav class="flex-1 mt-6">
+    <ul>
+      <li>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only active">
+          <i class="fas fa-home mr-3"></i> Home
+        </a>
+      </li>
+      <li>
+        <a href="#" id="loginBtn" onclick="abrirModalLogin()" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-sign-in-alt mr-3"></i> Login
+        </a>
+      </li>
+      <li>
+        <a href="#" id="enviosLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-paper-plane mr-3"></i> Envios
+        </a>
+      </li>
+      <li>
+        <a href="#" id="dashboardLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-chart-line mr-3"></i> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="#" id="monitoriaLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-eye mr-3"></i> Monitoria
+        </a>
+      </li>
+      <li>
+        <a href="#" id="conversasLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-comments mr-3"></i> Conversas
+        </a>
+      </li>
+    </ul>
+  </nav>
+  <div class="p-6 border-t border-gray-700 text-sm sidebar-footer space-y-1">
+    <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank" class="block">Política de Privacidade</a>
+    <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank" class="block">Termos de Serviço</a>
+    <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html" target="_blank" class="block">Exclusão de Dados</a>
+  </div>
+</aside>
+
+<!-- Sidebar Mobile -->
+<nav class="sidebar md:hidden bg-gray-900 text-white">
+  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-home text-lg"></i><span class="text-xs mt-1">Home</span>
+  </button>
+  <button id="loginBtnMobile" onclick="abrirModalLogin()" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>
+  </button>
+</nav>
+
+<!-- Conteúdo principal -->
+<div class="md:ml-64">
+  <iframe id="contentFrame" src="https://joubertcastro.github.io/ConnectZap/homepage.html" class="transition-opacity duration-300 ease-in-out"></iframe>
+</div>
+
+<!-- Modal Login -->
+<div id="modalLogin" class="modal flex">
+  <div class="modal-content">
+    <span class="modal-close" onclick="fecharModalLogin()">&times;</span>
+    <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
+    <input type="email" id="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
+    <input type="password" id="senha" placeholder="Senha" class="w-full p-2 mb-3 border rounded" />
+
+    <!-- Checkbox de aceite -->
+    <div class="flex items-center mb-3 text-sm">
+      <input type="checkbox" id="aceitoTermos" class="mr-2">
+      <label for="aceitoTermos">
+        Eu li e aceito os 
+        <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank" class="text-blue-600 underline">Termos de Serviço</a> 
+        e a 
+        <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank" class="text-blue-600 underline">Política de Privacidade</a>.
       </label>
     </div>
 
-    <button onclick="login()">Login</button>
-    <div class="error" id="erro"></div>
+    <button onclick="login()" class="w-full p-2 bg-blue-600 text-white rounded">Entrar</button>
+    <div class="error text-red-600 text-center mt-2" id="erro"></div>
   </div>
+</div>
 
-  <script>
-    async function login() {
-      const email = document.getElementById("email").value;
-      const senha = document.getElementById("senha").value;
-      const aceito = document.getElementById("aceitoTermos").checked;
-      const erroDiv = document.getElementById("erro");
+<script>
+  const links = document.querySelectorAll('.sidebar a');
+  const enviosLink = document.getElementById('enviosLink');
+  const dashboardLink = document.getElementById('dashboardLink');
+  const monitoriaLink = document.getElementById('monitoriaLink');
+  const conversasLink = document.getElementById('conversasLink');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginBtnMobile = document.getElementById('loginBtnMobile');
 
-      if (!aceito) {
-        erroDiv.textContent = "Você deve aceitar os Termos de Serviço e a Política de Privacidade.";
-        return;
-      }
+  function loadPage(url) {
+    const iframe = document.getElementById('contentFrame');
+    iframe.style.opacity = 0;
+    links.forEach(link => link.classList.remove('active'));
+    const clickedLink = Array.from(links).find(link => link.getAttribute('onclick')?.includes(url));
+    if(clickedLink) clickedLink.classList.add('active');
+    setTimeout(() => {
+      iframe.src = url;
+      iframe.onload = () => { iframe.style.opacity = 1; };
+    }, 200);
+  }
 
-      try {
-        const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, senha })
-        });
+  function abrirModalLogin() {
+    document.getElementById('modalLogin').style.display = 'flex';
+  }
+  function fecharModalLogin() {
+    document.getElementById('modalLogin').style.display = 'none';
+    document.getElementById('erro').textContent = '';
+  }
 
-        const data = await res.json();
+  async function login() {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    const aceito = document.getElementById('aceitoTermos').checked;
+    const erroDiv = document.getElementById('erro');
 
-        if (data.ok) {
-          // Armazena dados no localStorage (ou sessionStorage)
-          localStorage.setItem("usuario", JSON.stringify(data.user));
-          // Redireciona para página protegida
-          window.location.href = "Conversas1.html";
-        } else {
-          erroDiv.textContent = data.erro || "Erro ao fazer login";
-        }
-      } catch (err) {
-        erroDiv.textContent = "Erro de conexão com o servidor";
-      }
+    if(!email || !senha) {
+      erroDiv.textContent = "Preencha todos os campos!";
+      return;
     }
-  </script>
+    if(!aceito) {
+      erroDiv.textContent = "Você deve aceitar os Termos de Serviço e a Política de Privacidade.";
+      return;
+    }
+
+    try {
+      const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha })
+      });
+      const data = await res.json();
+
+      if(data.ok) {
+        localStorage.setItem("usuario", JSON.stringify(data.user));
+        habilitarLinks();
+        fecharModalLogin();
+      } else {
+        erroDiv.textContent = data.erro || "Erro ao fazer login";
+      }
+    } catch(err) {
+      erroDiv.textContent = "Erro de conexão com o servidor";
+    }
+  }
+
+  function habilitarLinks() {
+    enviosLink.classList.remove('disabled');
+    dashboardLink.classList.remove('disabled');
+    monitoriaLink.classList.remove('disabled');
+    conversasLink.classList.remove('disabled');
+
+    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-3"></i> Logout';
+    loginBtn.onclick = logout;
+    loginBtnMobile.innerHTML = '<i class="fas fa-sign-out-alt text-lg"></i><span class="text-xs mt-1">Logout</span>';
+    loginBtnMobile.onclick = logout;
+  }
+
+  function logout() {
+    localStorage.removeItem('usuario');
+    enviosLink.classList.add('disabled');
+    dashboardLink.classList.add('disabled');
+    monitoriaLink.classList.add('disabled');
+    conversasLink.classList.add('disabled');
+
+    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
+    loginBtn.onclick = abrirModalLogin;
+    loginBtnMobile.innerHTML = '<i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>';
+    loginBtnMobile.onclick = abrirModalLogin;
+
+    loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html');
+  }
+
+  window.onload = () => {
+    const usuario = localStorage.getItem('usuario');
+    if(usuario) habilitarLinks();
+  };
+</script>
+
 </body>
 </html>
