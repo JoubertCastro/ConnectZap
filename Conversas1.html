@@ -1,177 +1,105 @@
-# Arquivo `index.html`
-
-```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>ConnectZap</title>
-  <!-- Tailwind via CDN para protótipo; em produção faça build local -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ConnectZap - Painel Principal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    rel="stylesheet"
-  >
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* Transição do conteúdo */
-    #app { transition: opacity 0.3s ease-in-out; }
+    /* Estilo do iframe */
+    iframe {
+      width: 100%;
+      height: calc(100vh - 80px);
+      border: none;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    /* Menu lateral */
+    .sidebar a:hover { background-color: #1f2937; }
+
+    /* Menu responsivo mobile */
+    @media (max-width: 768px) {
+      .sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        display: flex;
+        justify-content: space-around;
+        background-color: #1e293b;
+      }
+      iframe {
+        height: calc(100vh - 60px);
+      }
+    }
   </style>
 </head>
-<body class="font-sans bg-gray-100">
-
-  <!-- Header móvel -->
-  <header class="md:hidden flex items-center justify-between bg-gray-900 text-white p-4">
-    <button
-      id="menuBtn"
-      aria-label="Abrir menu"
-      aria-expanded="false"
-      class="focus:outline-none"
-    >
-      <i class="fas fa-bars text-2xl"></i>
-    </button>
-    <h1 class="text-xl font-bold">ConnectZap</h1>
-  </header>
+<body class="bg-gray-100 font-sans">
 
   <!-- Sidebar / Menu Lateral -->
-  <aside
-    id="sidebar"
-    class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white transform -translate-x-full md:translate-x-0 transition-transform z-50"
-  >
+  <aside class="sidebar w-64 bg-gray-900 text-white fixed h-full hidden md:flex flex-col">
     <div class="p-6 text-2xl font-bold text-center border-b border-gray-700">
       ConnectZap
     </div>
-    <nav class="mt-6 flex-1">
+    <nav class="flex-1 mt-6">
       <ul>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-home mr-3" aria-hidden="true"></i>
-            <span>Home</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-home mr-3"></i> Home
+          </a>
         </li>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-paper-plane mr-3" aria-hidden="true"></i>
-            <span>Envios em Massa</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
+          </a>
         </li>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-chart-line mr-3" aria-hidden="true"></i>
-            <span>Dashboard</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-chart-line mr-3"></i> Dashboard
+          </a>
         </li>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-check-circle mr-3" aria-hidden="true"></i>
-            <span>Verificar Entregas</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
+          </a>
         </li>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-eye mr-3" aria-hidden="true"></i>
-            <span>Monitoria</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-eye mr-3"></i> Monitoria
+          </a>
         </li>
-        <li>
-          <button
-            onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')"
-            class="w-full text-left flex items-center px-6 py-3 hover:bg-gray-700 focus:outline-none"
-          >
-            <i class="fas fa-comments mr-3" aria-hidden="true"></i>
-            <span>Conversas</span>
-          </button>
+        <li class="hover:bg-gray-700">
+          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3">
+            <i class="fas fa-comments mr-3"></i> Conversas
+          </a>
         </li>
       </ul>
     </nav>
     <div class="p-6 border-t border-gray-700 text-sm">
-      <a
-        href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html"
-        target="_blank"
-        class="block hover:underline"
-      >
-        Política de Privacidade
-      </a>
-      <a
-        href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html"
-        target="_blank"
-        class="block hover:underline"
-      >
-        Termos de Serviço
-      </a>
-      <a
-        href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html"
-        target="_blank"
-        class="block hover:underline"
-      >
-        Exclusão de Dados
-      </a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank" class="block hover:underline">Política de Privacidade</a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank" class="block hover:underline">Termos de Serviço</a>
+      <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html" target="_blank" class="block hover:underline">Exclusão de Dados</a>
     </div>
   </aside>
 
   <!-- Conteúdo principal -->
-  <main
-    id="app"
-    class="md:ml-64 min-h-screen pt-8 px-4 md:px-8"
-  >
-    <!-- Carregamento inicial via JS -->
-  </main>
+  <div class="md:ml-64">
+    <iframe id="contentFrame" src="homepage.html"></iframe>
+  </div>
 
   <script>
-    // Toggle menu móvel
-    const menuBtn = document.getElementById('menuBtn');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuBtn) {
-      menuBtn.addEventListener('click', () => {
-        const expanded = menuBtn.getAttribute('aria-expanded') === 'true';
-        menuBtn.setAttribute('aria-expanded', String(!expanded));
-        sidebar.classList.toggle('-translate-x-full');
-      });
+    function loadPage(url) {
+      const iframe = document.getElementById('contentFrame');
+      iframe.style.opacity = 0;
+      setTimeout(() => {
+        iframe.src = url;
+        iframe.onload = () => {
+          iframe.style.opacity = 1;
+        }
+      }, 200);
     }
-
-    // Carrega conteúdo dinâmico via fetch
-    async function loadPage(url) {
-      const app = document.getElementById('app');
-      app.style.opacity = 0;
-      try {
-        const res = await fetch(url);
-        const html = await res.text();
-        setTimeout(() => {
-          app.innerHTML = html;
-          app.style.opacity = 1;
-          // fechar menu móvel ao clicar
-          if (window.innerWidth < 768) {
-            sidebar.classList.add('-translate-x-full');
-            menuBtn.setAttribute('aria-expanded', 'false');
-          }
-        }, 200);
-      } catch(err) {
-        app.innerHTML = '<p class="text-red-500">Erro ao carregar a página.</p>';
-        app.style.opacity = 1;
-      }
-    }
-
-    // Carregamento inicial
-    document.addEventListener('DOMContentLoaded', () => {
-      loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html');
-    });
   </script>
 </body>
 </html>
-```
