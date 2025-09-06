@@ -8,7 +8,13 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
 /* Identidade visual consistente com o chat */
-.card-hover:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.12); transition: all 0.3s ease; }
+.card-hover:hover { 
+  transform: scale(1.05); 
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12); 
+  transition: all 0.3s ease; 
+}
+
+/* Hero com efeito de paralaxe e fundo animado */
 .hero-gradient { 
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); 
   position: relative; 
@@ -21,13 +27,18 @@
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
-  animation: rotate 20s linear infinite;
+  background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%);
+  animation: rotate 25s linear infinite;
+  z-index: 0;
 }
 @keyframes rotate {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* Animação dos cards ao aparecer */
+.card { opacity: 0; transform: translateY(20px); transition: all 0.6s ease-out; }
+.card.show { opacity: 1; transform: translateY(0); }
 </style>
 </head>
 <body class="font-sans bg-gray-50">
@@ -36,28 +47,28 @@
 <section class="hero-gradient flex flex-col items-center text-center py-28 px-4 relative z-10">
   <img src="https://i.imgur.com/1tdwLPJ.png"
        alt="Logo ConnectZap"
-       class="w-36 h-36 mb-8 rounded-full shadow-xl border-4 border-white">
-  <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight max-w-3xl">
+       class="w-36 h-36 mb-8 rounded-full shadow-xl border-4 border-white relative z-10">
+  <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight max-w-3xl relative z-10">
     Conecte-se ao WhatsApp de forma ágil e segura
   </h1>
-  <p class="mt-6 text-gray-700 text-lg max-w-2xl">
+  <p class="mt-6 text-gray-700 text-lg max-w-2xl relative z-10">
     Gerencie suas conversas, acompanhe resultados e mantenha total controle de suas mensagens em tempo real, com segurança e eficiência.
   </p>
 </section>
 
 <!-- Features / Recursos -->
 <section id="features" class="px-4 py-20 max-w-7xl mx-auto grid gap-8 md:grid-cols-3">
-  <div class="bg-white p-6 rounded-xl shadow-md card-hover flex flex-col items-start">
+  <div class="bg-white p-6 rounded-xl shadow-md card card-hover flex flex-col items-start">
     <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
     <h3 class="font-semibold text-lg mb-2">Agilidade</h3>
     <p class="text-gray-600">Envie mensagens rapidamente e acompanhe em tempo real.</p>
   </div>
-  <div class="bg-white p-6 rounded-xl shadow-md card-hover flex flex-col items-start">
+  <div class="bg-white p-6 rounded-xl shadow-md card card-hover flex flex-col items-start">
     <i class="fas fa-shield-alt text-green-400 text-3xl mb-4"></i>
     <h3 class="font-semibold text-lg mb-2">Segurança</h3>
     <p class="text-gray-600">Conexão segura e confiável para todas as suas contas.</p>
   </div>
-  <div class="bg-white p-6 rounded-xl shadow-md card-hover flex flex-col items-start">
+  <div class="bg-white p-6 rounded-xl shadow-md card card-hover flex flex-col items-start">
     <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
     <h3 class="font-semibold text-lg mb-2">Monitoramento</h3>
     <p class="text-gray-600">Acompanhe métricas e desempenho das suas mensagens.</p>
@@ -66,13 +77,23 @@
 
 <!-- Footer -->
 <footer class="bg-gray-100 text-center py-8 border-t">
-  <div class="flex flex-col sm:flex-row justify-center gap-4 mb-2">
-    <a href="/conversas" class="text-blue-600 hover:underline">Conversas</a>
-    <a href="/monitoria" class="text-blue-600 hover:underline">Monitoria</a>
-    <a href="/suporte" class="text-blue-600 hover:underline">Suporte</a>
-  </div>
   <p class="text-gray-500 text-sm">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
 </footer>
+
+<script>
+// Mostrar animação nos cards ao aparecer no viewport
+const cards = document.querySelectorAll('.card');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      entry.target.classList.add('show');
+      observer.unobserve(entry.target);
+    }
+  });
+},{ threshold: 0.2 });
+
+cards.forEach(card => observer.observe(card));
+</script>
 
 </body>
 </html>
