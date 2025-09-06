@@ -8,29 +8,45 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
 <style>
 /* Identidade visual consistente com o chat */
-.card-hover:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
-.btn-primary { @apply bg-blue-600 text-white hover:bg-blue-700 transition rounded-lg px-6 py-3 shadow-md; }
-.btn-secondary { @apply border border-blue-600 text-blue-600 hover:bg-blue-50 transition rounded-lg px-6 py-3; }
-.hero-gradient { background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); }
+.card-hover:hover { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.12); transition: all 0.3s ease; }
+.hero-gradient { 
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); 
+  position: relative; 
+  overflow: hidden;
+}
+.hero-gradient::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(59,130,246,0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+}
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 </style>
 </head>
 <body class="font-sans bg-gray-50">
 
 <!-- Hero -->
-<section class="hero-gradient flex flex-col items-center text-center py-20 px-4">
+<section class="hero-gradient flex flex-col items-center text-center py-28 px-4 relative z-10">
   <img src="https://i.imgur.com/1tdwLPJ.png"
        alt="Logo ConnectZap"
-       class="w-32 h-32 mb-6 rounded-full shadow-xl border-4 border-white">
-  <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Bem-vindo ao ConnectZap</h1>
-  <p class="mt-4 text-gray-700 max-w-2xl">Conecte-se de forma ágil e segura via WhatsApp, gerencie conversas e acompanhe resultados em tempo real.</p>
-  <div class="mt-8 flex flex-col sm:flex-row gap-4">
-    <a href="#features" class="btn-primary text-center">Ver Recursos</a>
-    <a href="/conversas" class="btn-secondary text-center">Ver Conversas</a>
-  </div>
+       class="w-36 h-36 mb-8 rounded-full shadow-xl border-4 border-white">
+  <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight max-w-3xl">
+    Conecte-se ao WhatsApp de forma ágil e segura
+  </h1>
+  <p class="mt-6 text-gray-700 text-lg max-w-2xl">
+    Gerencie suas conversas, acompanhe resultados e mantenha total controle de suas mensagens em tempo real, com segurança e eficiência.
+  </p>
 </section>
 
 <!-- Features / Recursos -->
-<section id="features" class="px-4 py-16 max-w-7xl mx-auto grid gap-8 md:grid-cols-3">
+<section id="features" class="px-4 py-20 max-w-7xl mx-auto grid gap-8 md:grid-cols-3">
   <div class="bg-white p-6 rounded-xl shadow-md card-hover flex flex-col items-start">
     <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
     <h3 class="font-semibold text-lg mb-2">Agilidade</h3>
@@ -45,25 +61,6 @@
     <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
     <h3 class="font-semibold text-lg mb-2">Monitoramento</h3>
     <p class="text-gray-600">Acompanhe métricas e desempenho das suas mensagens.</p>
-  </div>
-</section>
-
-<!-- Acesso rápido -->
-<section class="bg-blue-50 py-16 px-4">
-  <div class="max-w-5xl mx-auto text-center">
-    <h2 class="text-3xl font-bold text-gray-900 mb-6">Acesse rapidamente</h2>
-    <p class="text-gray-700 mb-8">Entre diretamente nas funcionalidades principais do ConnectZap.</p>
-    <div class="flex flex-col sm:flex-row justify-center gap-6">
-      <a href="/conversas" class="bg-green-500 text-white px-6 py-4 rounded-xl shadow-md hover:bg-green-600 transition flex-1">
-        <i class="fas fa-comment-dots mr-2"></i> Conversas
-      </a>
-      <a href="/monitoria" class="bg-purple-500 text-white px-6 py-4 rounded-xl shadow-md hover:bg-purple-600 transition flex-1">
-        <i class="fas fa-eye mr-2"></i> Monitoria
-      </a>
-      <a href="/relatorios" class="bg-orange-400 text-white px-6 py-4 rounded-xl shadow-md hover:bg-orange-500 transition flex-1">
-        <i class="fas fa-chart-pie mr-2"></i> Relatórios
-      </a>
-    </div>
   </div>
 </section>
 
