@@ -5,268 +5,103 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ConnectZap - Painel Principal</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    rel="stylesheet"
-  >
-  <style>
-    /* Transição de opacidade do iframe */
-    iframe {
-      width: 100%;
-      height: calc(100vh - 80px);
-      border: none;
-      transition: opacity 0.3s ease-in-out;
-    }
-    /* Hover na sidebar */
-    .sidebar a:hover { background-color: #1f2937; }
-    /* Menu móvel */
-    @media (max-width: 768px) {
-      .sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        display: flex;
-        justify-content: space-around;
-        background-color: #1e293b;
-      }
-      iframe {
-        height: calc(100vh - 60px);
-      }
-    }
-  </style>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans flex">
 
-  <!-- Sidebar / Menu Lateral -->
-  <aside class="sidebar w-64 bg-gray-900 text-white fixed h-full hidden md:flex flex-col">
-    <div class="p-6 text-2xl font-bold text-center border-b border-gray-700">
-      ConnectZap
-    </div>
-    <nav class="flex-1 mt-6">
-      <ul>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('home')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-home mr-3"></i> Home
-          </a>
-        </li>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
-          </a>
-        </li>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-chart-line mr-3"></i> Dashboard
-          </a>
-        </li>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
-          </a>
-        </li>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-eye mr-3"></i> Monitoria
-          </a>
-        </li>
-        <li class="hover:bg-gray-700">
-          <a href="#"
-             onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')"
-             class="flex items-center px-6 py-3">
-            <i class="fas fa-comments mr-3"></i> Conversas
-          </a>
-        </li>
+  <!-- Sidebar -->
+  <aside class="sidebar bg-gray-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col">
+    <header class="p-6 text-2xl font-bold border-b border-gray-700">ConnectZap</header>
+    <nav class="flex-1 overflow-y-auto">
+      <ul id="menuList" class="p-4 space-y-1">
+        <!-- Menu items via JS -->
       </ul>
     </nav>
-    <div class="p-6 border-t border-gray-700 text-sm">
-      <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html"
-         target="_blank"
-         class="block hover:underline">
-        Política de Privacidade
-      </a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html"
-         target="_blank"
-         class="block hover:underline">
-        Termos de Serviço
-      </a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html"
-         target="_blank"
-         class="block hover:underline">
-        Exclusão de Dados
-      </a>
-    </div>
+    <footer class="p-4 border-t border-gray-700 text-xs space-y-1">
+      <a href="Politica_de_privacidade.html" target="_blank" class="block hover:underline">Política de Privacidade</a>
+      <a href="Termos_de_Servico.html" target="_blank" class="block hover:underline">Termos de Serviço</a>
+      <a href="Exclusao_de_dados.html" target="_blank" class="block hover:underline">Exclusão de Dados</a>
+    </footer>
   </aside>
 
-  <!-- Conteúdo principal via iframe -->
-  <div class="md:ml-64">
-    <iframe id="contentFrame"></iframe>
-  </div>
+  <!-- Mobile menu toggle -->
+  <button id="mobileMenuBtn"
+          class="md:hidden fixed top-4 left-4 bg-gray-900 text-white p-2 rounded focus:outline-none"
+          aria-label="Abrir menu">
+    <i class="fas fa-bars"></i>
+  </button>
 
+  <!-- Content -->
+  <main class="flex-1 md:ml-64 transition-all">
+    <iframe id="contentFrame"
+            src="homepage.html"
+            class="w-full h-screen opacity-100 transition-opacity duration-300"
+            title="Conteúdo principal">
+    </iframe>
+  </main>
+
+  <!-- Scripts -->
   <script>
-    const iframe = document.getElementById('contentFrame');
+    // Configuração do menu
+    const pages = [
+      { name: 'Home', icon: 'fa-home', url: 'homepage.html' },
+      { name: 'Envios em Massa', icon: 'fa-paper-plane', url: 'Envios_em_massa.html' },
+      { name: 'Dashboard', icon: 'fa-chart-line', url: 'dashboard.html' },
+      { name: 'Verificar Entregas', icon: 'fa-check-circle', url: 'Verificar_entregas.html' },
+      { name: 'Monitoria', icon: 'fa-eye', url: 'Monitoria.html' },
+      { name: 'Conversas', icon: 'fa-comments', url: 'Conversas.html' }
+    ];
 
-    // HTML da Home embutido via srcdoc
-    const homeHTML = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home — ConnectZap</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    rel="stylesheet"
-  >
-</head>
-<body class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
-  <div class="flex flex-col items-center justify-center h-full px-6 py-12">
-    <img
-      src="https://i.imgur.com/SeuLinkDireto.png"
-      alt="Logo ConnectZap"
-      class="w-32 rounded-full shadow-lg mb-6"
-    >
-    <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-      Bem-vindo ao ConnectZap
-    </h1>
-    <p class="text-lg md:text-xl text-gray-700 mb-6 text-center max-w-2xl">
-      Conecte-se com seus clientes de forma ágil e administre envios em massa
-      via WhatsApp com eficiência e segurança.
-    </p>
-    <a
-      href="#features"
-      class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-    >
-      Ver Recursos
-    </a>
-  </div>
-  <section id="features" class="py-12 px-6">
-    <div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3">
-      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-        <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
-        <h3 class="text-xl font-semibold mb-2">Agilidade</h3>
-        <p class="text-gray-600">
-          Envie mensagens rapidamente e acompanhe resultados em tempo real.
-        </p>
-      </div>
-      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-        <i class="fas fa-shield-alt text-green-400 text-3xl mb-4"></i>
-        <h3 class="text-xl font-semibold mb-2">Segurança</h3>
-        <p class="text-gray-600">
-          Comunicação segura, garantindo privacidade dos dados dos clientes.
-        </p>
-      </div>
-      <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-        <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
-        <h3 class="text-xl font-semibold mb-2">Resultados</h3>
-        <p class="text-gray-600">
-          Métricas e insights para otimizar suas campanhas.
-        </p>
-      </div>
-    </div>
-  </section>
-  <footer class="bg-gray-100 text-center py-6">
-    <p class="text-gray-600">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
-  </footer>
-</body>
-</html>`;
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Home — ConnectZap</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          rel="stylesheet"
-        >
-      </head>
-      <body class="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
-        <div class="flex flex-col items-center justify-center h-full px-6 py-12">
-          <img
-            src="https://i.imgur.com/SeuLinkDireto.png"
-            alt="Logo ConnectZap"
-            class="w-32 rounded-full shadow-lg mb-6"
-          >
-          <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
-            Bem-vindo ao ConnectZap
-          </h1>
-          <p class="text-lg md:text-xl text-gray-700 mb-6 text-center max-w-2xl">
-            Conecte-se com seus clientes de forma ágil e administre envios em massa
-            via WhatsApp com eficiência e segurança.
-          </p>
-          <a
-            href="#features"
-            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-          >
-            Ver Recursos
-          </a>
-        </div>
-        <section id="features" class="py-12 px-6">
-          <div class="max-w-5xl mx-auto grid gap-8 md:grid-cols-3">
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-              <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
-              <h3 class="text-xl font-semibold mb-2">Agilidade</h3>
-              <p class="text-gray-600">
-                Envie mensagens rapidamente e acompanhe resultados em tempo real.
-              </p>
-            </div>
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-              <i class="fas fa-shield-alt text-green-400 text-3xl mb-4"></i>
-              <h3 class="text-xl font-semibold mb-2">Segurança</h3>
-              <p class="text-gray-600">
-                Comunicação segura, garantindo privacidade dos dados dos clientes.
-              </p>
-            </div>
-            <div class="bg-white rounded-xl shadow-lg p-6 text-center hover:scale-105 transition">
-              <i class="fas fa-chart-line text-blue-400 text-3xl mb-4"></i>
-              <h3 class="text-xl font-semibold mb-2">Resultados</h3>
-              <p class="text-gray-600">
-                Métricas e insights para otimizar suas campanhas.
-              </p>
-            </div>
-          </div>
-        </section>
-        <footer class="bg-gray-100 text-center py-6">
-          <p class="text-gray-600">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
-        </footer>
-      </body>
-      </html>
-    `;
+    const menuList = document.getElementById('menuList');
+    let activeIndex = 0;
 
-    // Função para trocar conteúdo: se url === 'home', usa srcdoc; caso contrário, muda src
-    function loadPage(url) {
-      iframe.style.opacity = 0;
+    function renderMenu() {
+      menuList.innerHTML = pages.map((page, i) => `
+        <li>
+          <button
+            class="w-full text-left flex items-center px-4 py-2 rounded-md
+                   hover:bg-gray-700 focus:outline-none ${i === activeIndex ? 'bg-gray-700' : ''}"
+            onclick="loadPage(${i})">
+            <i class="fas ${page.icon} w-5"></i>
+            <span class="ml-3">${page.name}</span>
+          </button>
+        </li>
+      `).join('');
+    }
+
+    function loadPage(index) {
+      if (index === activeIndex) return;
+      activeIndex = index;
+      renderMenu();
+      const iframe = document.getElementById('contentFrame');
+      iframe.classList.replace('opacity-100', 'opacity-0');
       setTimeout(() => {
-        if (url === 'home') {
-          iframe.removeAttribute('src');
-          iframe.srcdoc = homeHTML;
-        } else {
-          iframe.removeAttribute('srcdoc');
-          iframe.src = url;
-        }
-        iframe.onload = () => {
-          iframe.style.opacity = 1;
-        };
+        iframe.src = pages[index].url;
       }, 200);
     }
 
-    // Carrega Home ao iniciar
-    document.addEventListener('DOMContentLoaded', () => {
-      loadPage('home');
+    // After load, fade in
+    document.getElementById('contentFrame').addEventListener('load', () => {
+      const iframe = document.getElementById('contentFrame');
+      iframe.classList.replace('opacity-0', 'opacity-100');
     });
+
+    // Mobile menu toggle
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    const sidebar = document.querySelector('.sidebar');
+    mobileBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+    });
+
+    // Inicialização
+    renderMenu();
   </script>
+
+  <style>
+    /* Ajusta altura do iframe considerando a barra */
+    @media (max-width: 768px) {
+      iframe { height: calc(100vh - 60px); }
+    }
+  </style>
 </body>
 </html>
