@@ -7,7 +7,6 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
-  /* Iframe com transição suave */
   iframe {
     width: 100%;
     height: calc(100vh - 80px);
@@ -15,7 +14,6 @@
     transition: opacity 0.3s ease-in-out;
   }
 
-  /* Sidebar desktop */
   .sidebar a {
     transition: background-color 0.2s, color 0.2s;
   }
@@ -27,8 +25,11 @@
     background-color: #2563eb;
     color: #fff;
   }
+  .sidebar a.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
 
-  /* Footer links */
   .sidebar-footer a {
     transition: color 0.2s;
   }
@@ -36,7 +37,6 @@
     color: #2563eb;
   }
 
-  /* Menu responsivo mobile */
   @media (max-width: 768px) {
     .sidebar {
       position: fixed;
@@ -50,12 +50,8 @@
       background-color: #1e293b;
       z-index: 50;
     }
-    .sidebar .desktop-only {
-      display: none;
-    }
-    iframe {
-      height: calc(100vh - 60px);
-    }
+    .sidebar .desktop-only { display: none; }
+    iframe { height: calc(100vh - 60px); }
   }
 </style>
 </head>
@@ -69,32 +65,32 @@
   <nav class="flex-1 mt-6">
     <ul>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only active">
           <i class="fas fa-home mr-3"></i> Home
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
-          <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
+        <a href="#" id="loginBtn" onclick="abrirLogin()" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-sign-in-alt mr-3"></i> Login
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+        <a href="#" id="enviosLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-paper-plane mr-3"></i> Envios
+        </a>
+      </li>
+      <li>
+        <a href="#" id="dashboardLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
           <i class="fas fa-chart-line mr-3"></i> Dashboard
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
-          <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
-        </a>
-      </li>
-      <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+        <a href="#" id="monitoriaLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
           <i class="fas fa-eye mr-3"></i> Monitoria
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+        <a href="#" id="conversasLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
           <i class="fas fa-comments mr-3"></i> Conversas
         </a>
       </li>
@@ -110,20 +106,10 @@
 <!-- Sidebar Mobile -->
 <nav class="sidebar md:hidden bg-gray-900 text-white">
   <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-home text-lg"></i>
-    <span class="text-xs mt-1">Home</span>
+    <i class="fas fa-home text-lg"></i><span class="text-xs mt-1">Home</span>
   </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-paper-plane text-lg"></i>
-    <span class="text-xs mt-1">Envios</span>
-  </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-chart-line text-lg"></i>
-    <span class="text-xs mt-1">Dashboard</span>
-  </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-eye text-lg"></i>
-    <span class="text-xs mt-1">Monitoria</span>
+  <button id="loginBtnMobile" onclick="abrirLogin()" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>
   </button>
 </nav>
 
@@ -134,6 +120,12 @@
 
 <script>
   const links = document.querySelectorAll('.sidebar a');
+  const enviosLink = document.getElementById('enviosLink');
+  const dashboardLink = document.getElementById('dashboardLink');
+  const monitoriaLink = document.getElementById('monitoriaLink');
+  const conversasLink = document.getElementById('conversasLink');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginBtnMobile = document.getElementById('loginBtnMobile');
 
   function loadPage(url) {
     const iframe = document.getElementById('contentFrame');
@@ -141,7 +133,6 @@
 
     // Remove active de todos links
     links.forEach(link => link.classList.remove('active'));
-
     // Marca o link clicado como ativo (desktop)
     const clickedLink = Array.from(links).find(link => link.getAttribute('onclick')?.includes(url));
     if(clickedLink) clickedLink.classList.add('active');
@@ -151,6 +142,45 @@
       iframe.onload = () => { iframe.style.opacity = 1; };
     }, 200);
   }
+
+  function abrirLogin() {
+    // Redireciona para sua página de login
+    window.location.href = "https://joubertcastro.github.io/ConnectZap/index.html";
+  }
+
+  function habilitarLinks() {
+    enviosLink.classList.remove('disabled');
+    dashboardLink.classList.remove('disabled');
+    monitoriaLink.classList.remove('disabled');
+    conversasLink.classList.remove('disabled');
+
+    // Troca botão Login por Logout
+    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-3"></i> Logout';
+    loginBtn.onclick = logout;
+    loginBtnMobile.innerHTML = '<i class="fas fa-sign-out-alt text-lg"></i><span class="text-xs mt-1">Logout</span>';
+    loginBtnMobile.onclick = logout;
+  }
+
+  function logout() {
+    localStorage.removeItem('usuario');
+    enviosLink.classList.add('disabled');
+    dashboardLink.classList.add('disabled');
+    monitoriaLink.classList.add('disabled');
+    conversasLink.classList.add('disabled');
+
+    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
+    loginBtn.onclick = abrirLogin;
+    loginBtnMobile.innerHTML = '<i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>';
+    loginBtnMobile.onclick = abrirLogin;
+
+    loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html');
+  }
+
+  // Checa login ao carregar a página
+  window.onload = () => {
+    const usuario = localStorage.getItem('usuario');
+    if(usuario) habilitarLinks();
+  };
 </script>
 
 </body>
