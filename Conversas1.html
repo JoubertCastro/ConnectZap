@@ -7,13 +7,27 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    /* Scroll suave no iframe */
-    iframe {
-      width: 100%;
-      height: calc(100vh - 80px);
-      border: none;
+    .fade-enter {
+      opacity: 0;
+      transform: translateY(10px);
     }
-    /* Menu fixo lateral */
+    .fade-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+      transition: all 0.3s ease-in-out;
+    }
+    .fade-exit {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-exit-active {
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease-in-out;
+    }
+    .menu-active {
+      background-color: #1d4ed8; /* azul escuro */
+    }
     @media (max-width: 768px) {
       .sidebar {
         position: fixed;
@@ -24,9 +38,7 @@
         display: flex;
         justify-content: space-around;
         background-color: #1e293b;
-      }
-      iframe {
-        height: calc(100vh - 60px);
+        z-index: 50;
       }
     }
   </style>
@@ -39,55 +51,103 @@
       ConnectZap
     </div>
     <nav class="flex-1 mt-6">
-      <ul>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/index.html')" class="flex items-center px-6 py-3">
+      <ul id="menuList">
+        <li>
+          <a href="#" data-page="index.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-home mr-3"></i> Principal
           </a>
         </li>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3">
+        <li>
+          <a href="#" data-page="Envios_em_massa.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
           </a>
         </li>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3">
+        <li>
+          <a href="#" data-page="dashboard.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-chart-line mr-3"></i> Dashboard
           </a>
         </li>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3">
+        <li>
+          <a href="#" data-page="Verificar_entregas.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
           </a>
         </li>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3">
+        <li>
+          <a href="#" data-page="Monitoria.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-eye mr-3"></i> Monitoria
           </a>
         </li>
-        <li class="hover:bg-gray-700">
-          <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3">
+        <li>
+          <a href="#" data-page="Conversas.html" class="flex items-center px-6 py-3 hover:bg-gray-700">
             <i class="fas fa-comments mr-3"></i> Conversas
           </a>
         </li>
       </ul>
     </nav>
     <div class="p-6 border-t border-gray-700 text-sm">
-      <a href="https://joubertcastro.github.io/ConnectZap/Politica_de_privacidade.html" target="_blank" class="block hover:underline">Política de Privacidade</a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Termos_de_Servico.html" target="_blank" class="block hover:underline">Termos de Serviço</a>
-      <a href="https://joubertcastro.github.io/ConnectZap/Exclusao_de_dados.html" target="_blank" class="block hover:underline">Exclusão de Dados</a>
+      <a href="Politica_de_privacidade.html" target="_blank" class="block hover:underline">Política de Privacidade</a>
+      <a href="Termos_de_Servico.html" target="_blank" class="block hover:underline">Termos de Serviço</a>
+      <a href="Exclusao_de_dados.html" target="_blank" class="block hover:underline">Exclusão de Dados</a>
     </div>
   </aside>
 
-  <!-- Conteúdo principal -->
-  <div class="md:ml-64">
-    <iframe id="contentFrame" src="https://joubertcastro.github.io/ConnectZap/index.html"></iframe>
+  <!-- Área principal -->
+  <div class="md:ml-64 p-6" id="mainContent">
+    <!-- Conteúdo inicial -->
   </div>
 
   <script>
-    function loadPage(url) {
-      document.getElementById('contentFrame').src = url;
+    const baseURL = 'https://joubertcastro.github.io/ConnectZap/';
+    const mainContent = document.getElementById('mainContent');
+    const menuLinks = document.querySelectorAll('#menuList a');
+
+    function setActiveMenu(page) {
+      menuLinks.forEach(link => {
+        if (link.getAttribute('data-page') === page) {
+          link.classList.add('menu-active');
+        } else {
+          link.classList.remove('menu-active');
+        }
+      });
     }
+
+    async function loadPage(page) {
+      setActiveMenu(page);
+
+      // animação de saída
+      mainContent.classList.add('fade-exit', 'fade-exit-active');
+
+      setTimeout(async () => {
+        try {
+          const response = await fetch(baseURL + page);
+          let html = await response.text();
+
+          // Inserir apenas o conteúdo do <body>
+          const bodyContent = html.match(/<body[^>]*>((.|[\n\r])*)<\/body>/im);
+          mainContent.innerHTML = bodyContent ? bodyContent[1] : html;
+
+          // animação de entrada
+          mainContent.classList.remove('fade-exit', 'fade-exit-active');
+          mainContent.classList.add('fade-enter');
+          setTimeout(() => mainContent.classList.add('fade-enter-active'), 10);
+          setTimeout(() => mainContent.classList.remove('fade-enter', 'fade-enter-active'), 310);
+        } catch (err) {
+          mainContent.innerHTML = '<p class="text-red-500">Erro ao carregar a página.</p>';
+          console.error(err);
+        }
+      }, 300);
+    }
+
+    menuLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const page = link.getAttribute('data-page');
+        loadPage(page);
+      });
+    });
+
+    // Carregar página inicial
+    loadPage('index.html');
   </script>
 </body>
 </html>
