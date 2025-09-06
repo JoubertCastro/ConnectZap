@@ -3,211 +3,153 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ConnectZap - Painel Premium</title>
+<title>ConnectZap - Painel Principal</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
+  /* Iframe com transição suave */
   iframe {
     width: 100%;
-    height: 100vh;
+    height: calc(100vh - 80px);
     border: none;
     transition: opacity 0.3s ease-in-out;
   }
-  .sidebar {
-    background-color: #1e293b;
-    color: #fff;
-    transition: width 0.3s;
-    overflow: hidden;
-  }
-  .sidebar.collapsed { width: 80px; }
-  .sidebar ul li a {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    transition: all 0.3s;
-    position: relative;
-  }
-  .sidebar ul li a:hover { background-color: #2563eb; }
-  .sidebar ul li a.active { background-color: #1d4ed8; }
-  .sidebar ul li a span.tooltip {
-    position: absolute;
-    left: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: #111827;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
-  }
-  .sidebar ul li a:hover span.tooltip { opacity: 1; }
 
+  /* Sidebar desktop */
+  .sidebar a {
+    transition: background-color 0.2s, color 0.2s;
+  }
+  .sidebar a:hover {
+    background-color: #1f2937;
+    color: #fff;
+  }
+  .sidebar a.active {
+    background-color: #2563eb;
+    color: #fff;
+  }
+
+  /* Footer links */
+  .sidebar-footer a {
+    transition: color 0.2s;
+  }
+  .sidebar-footer a:hover {
+    color: #2563eb;
+  }
+
+  /* Menu responsivo mobile */
   @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .mobile-menu {
+    .sidebar {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
       height: 60px;
-      background-color: #1e293b;
       display: flex;
       justify-content: space-around;
       align-items: center;
+      background-color: #1e293b;
       z-index: 50;
-      transition: transform 0.3s;
     }
-    .mobile-menu button {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 0.75rem;
+    .sidebar .desktop-only {
+      display: none;
     }
-    iframe { height: calc(100vh - 60px); }
+    iframe {
+      height: calc(100vh - 60px);
+    }
   }
-
-  /* Links desabilitados */
-  .disabled { opacity: 0.5; pointer-events: none; }
 </style>
 </head>
-<body class="bg-gray-100 font-sans flex">
+<body class="bg-gray-100 font-sans">
 
 <!-- Sidebar Desktop -->
-<aside id="sidebar" class="sidebar w-64 h-screen flex flex-col">
-  <div class="flex items-center justify-between p-6 border-b border-gray-700">
-    <span class="text-2xl font-bold">ConnectZap</span>
-    <button id="toggleSidebar" class="text-gray-400 hover:text-white"><i class="fas fa-bars"></i></button>
+<aside class="sidebar w-64 bg-gray-900 text-white fixed h-full hidden md:flex flex-col">
+  <div class="p-6 text-2xl font-bold text-center border-b border-gray-700">
+    ConnectZap
   </div>
-  <nav class="flex-1 mt-4">
-    <ul class="space-y-2">
+  <nav class="flex-1 mt-6">
+    <ul>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="active">
-          <i class="fas fa-home text-lg"></i><span class="flex-1">Home</span><span class="tooltip">Home</span>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-home mr-3"></i> Home
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" data-protected="true">
-          <i class="fas fa-paper-plane text-lg"></i><span class="flex-1">Envios</span><span class="tooltip">Envios em Massa</span>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-paper-plane mr-3"></i> Envios em Massa
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" data-protected="true">
-          <i class="fas fa-chart-line text-lg"></i><span class="flex-1">Dashboard</span><span class="tooltip">Dashboard</span>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-chart-line mr-3"></i> Dashboard
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" data-protected="true">
-          <i class="fas fa-eye text-lg"></i><span class="flex-1">Monitoria</span><span class="tooltip">Monitoria</span>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-check-circle mr-3"></i> Verificar Entregas
         </a>
       </li>
       <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" data-protected="true">
-          <i class="fas fa-comments text-lg"></i><span class="flex-1">Conversas</span><span class="tooltip">Conversas</span>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-eye mr-3"></i> Monitoria
+        </a>
+      </li>
+      <li>
+        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only">
+          <i class="fas fa-comments mr-3"></i> Conversas
         </a>
       </li>
     </ul>
   </nav>
-  <div class="p-6 border-t border-gray-700 text-sm space-y-1 sidebar-footer">
-    <button id="btnLogout" class="w-full bg-red-600 p-2 rounded hidden">Logout</button>
-    <a href="#" target="_blank" class="block hover:underline">Política de Privacidade</a>
-    <a href="#" target="_blank" class="block hover:underline">Termos de Serviço</a>
-    <a href="#" target="_blank" class="block hover:underline">Exclusão de Dados</a>
+  <div class="p-6 border-t border-gray-700 text-sm sidebar-footer space-y-1">
+    <a href="#" target="_blank" class="block">Política de Privacidade</a>
+    <a href="#" target="_blank" class="block">Termos de Serviço</a>
+    <a href="#" target="_blank" class="block">Exclusão de Dados</a>
   </div>
 </aside>
 
-<!-- Mobile Menu -->
-<nav class="mobile-menu md:hidden">
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')">
-    <i class="fas fa-home text-xl"></i><span>Home</span>
+<!-- Sidebar Mobile -->
+<nav class="sidebar md:hidden bg-gray-900 text-white">
+  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-home text-lg"></i>
+    <span class="text-xs mt-1">Home</span>
   </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" data-protected="true">
-    <i class="fas fa-paper-plane text-xl"></i><span>Envios</span>
+  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-paper-plane text-lg"></i>
+    <span class="text-xs mt-1">Envios</span>
   </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" data-protected="true">
-    <i class="fas fa-chart-line text-xl"></i><span>Dashboard</span>
+  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-chart-line text-lg"></i>
+    <span class="text-xs mt-1">Dashboard</span>
   </button>
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" data-protected="true">
-    <i class="fas fa-eye text-xl"></i><span>Monitoria</span>
+  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex flex-col items-center justify-center text-sm">
+    <i class="fas fa-eye text-lg"></i>
+    <span class="text-xs mt-1">Monitoria</span>
   </button>
 </nav>
 
 <!-- Conteúdo principal -->
-<div class="flex-1">
-  <iframe id="contentFrame" src="https://joubertcastro.github.io/ConnectZap/homepage.html"></iframe>
+<div class="md:ml-64">
+  <iframe id="contentFrame" src="https://joubertcastro.github.io/ConnectZap/homepage.html" class="transition-opacity duration-300 ease-in-out"></iframe>
 </div>
 
 <script>
-  const links = document.querySelectorAll('.sidebar ul li a');
-  const mobileLinks = document.querySelectorAll('.mobile-menu button');
-  const sidebar = document.getElementById('sidebar');
-  const toggleSidebar = document.getElementById('toggleSidebar');
-  const btnLogout = document.getElementById('btnLogout');
+  const links = document.querySelectorAll('.sidebar a');
 
-  // Toggle sidebar collapsed
-  toggleSidebar.addEventListener('click', () => { sidebar.classList.toggle('collapsed'); });
-
-  // Função de carregar página com controle de login
   function loadPage(url) {
     const iframe = document.getElementById('contentFrame');
-    const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
-
-    // Se protegido e não logado
-    if (!usuario && url !== 'https://joubertcastro.github.io/ConnectZap/index.html') {
-      alert("Faça login para acessar este recurso.");
-      return;
-    }
-
     iframe.style.opacity = 0;
 
-    // Atualiza links ativos desktop
+    // Remove active de todos links
     links.forEach(link => link.classList.remove('active'));
+
+    // Marca o link clicado como ativo (desktop)
     const clickedLink = Array.from(links).find(link => link.getAttribute('onclick')?.includes(url));
     if(clickedLink) clickedLink.classList.add('active');
 
-    // Atualiza links ativos mobile
-    mobileLinks.forEach(btn => btn.classList.remove('active'));
-    const clickedMobile = Array.from(mobileLinks).find(btn => btn.getAttribute('onclick')?.includes(url));
-    if(clickedMobile) clickedMobile.classList.add('active');
-
-    setTimeout(() => { iframe.src = url; iframe.onload = () => { iframe.style.opacity = 1; }; }, 200);
-  }
-
-  // Verifica login ao carregar
-  window.addEventListener('load', () => {
-    const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
-    if (usuario) enableProtectedLinks();
-  });
-
-  // Habilita links protegidos após login
-  function enableProtectedLinks() {
-    links.forEach(link => { if(link.dataset.protected) link.classList.remove('disabled'); });
-    mobileLinks.forEach(btn => { if(btn.dataset?.protected) btn.classList.remove('disabled'); });
-    btnLogout.classList.remove('hidden');
-  }
-
-  // Logout
-  btnLogout.addEventListener('click', () => {
-    localStorage.removeItem('usuario');
-    alert("Logout realizado!");
-    btnLogout.classList.add('hidden');
-    // Desabilita links protegidos novamente
-    links.forEach(link => { if(link.dataset.protected) link.classList.add('disabled'); });
-    mobileLinks.forEach(btn => { if(btn.dataset?.protected) btn.classList.add('disabled'); });
-    loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html');
-  });
-
-  // Inicialmente desabilita links protegidos se não logado
-  const usuarioInicial = JSON.parse(localStorage.getItem("usuario") || "null");
-  if (!usuarioInicial) {
-    links.forEach(link => { if(link.dataset.protected) link.classList.add('disabled'); });
-    mobileLinks.forEach(btn => { if(btn.dataset?.protected) btn.classList.add('disabled'); });
+    setTimeout(() => {
+      iframe.src = url;
+      iframe.onload = () => { iframe.style.opacity = 1; };
+    }, 200);
   }
 </script>
 
