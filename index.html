@@ -92,7 +92,7 @@
         </a>
       </li>
       <li>
-        <a href="#" id="dashboardLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+        <a href="#" id="entregasLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
           <i class="fas fa-chart-line mr-3"></i> Verificar Entregas
         </a>
       </li>
@@ -162,6 +162,7 @@
 <script>
   const links = document.querySelectorAll('.sidebar a');
   const enviosLink = document.getElementById('enviosLink');
+  const entregasLink = document.getElementById('entregasLink');
   const dashboardLink = document.getElementById('dashboardLink');
   const monitoriaLink = document.getElementById('monitoriaLink');
   const conversasLink = document.getElementById('conversasLink');
@@ -225,6 +226,7 @@
 
   function habilitarLinks() {
     enviosLink.classList.remove('disabled');
+    entregasLink.classList.remove('disabled');
     dashboardLink.classList.remove('disabled');
     monitoriaLink.classList.remove('disabled');
     conversasLink.classList.remove('disabled');
@@ -238,6 +240,7 @@
   function logout() {
     localStorage.removeItem('usuario');
     enviosLink.classList.add('disabled');
+    entregasLink.classList.add('disabled');
     dashboardLink.classList.add('disabled');
     monitoriaLink.classList.add('disabled');
     conversasLink.classList.add('disabled');
