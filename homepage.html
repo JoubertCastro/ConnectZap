@@ -1,44 +1,30 @@
-<div class="flex flex-col items-center justify-start h-full w-full bg-gradient-to-b from-gray-50 to-gray-100 p-8">
-  
-  <!-- Hero Section -->
-  <section class="flex flex-col items-center text-center max-w-4xl mb-12">
-    <img src="https://imgur.com/a/JqAMh9x" alt="ConnectZap Logo" class="w-36 h-auto mb-6 shadow-lg rounded-full">
-    <h1 class="text-5xl font-extrabold mb-4 text-gray-900">Bem-vindo ao ConnectZap</h1>
-    <p class="text-gray-700 text-lg md:text-xl mb-6 max-w-2xl">
-      Conecte-se com seus clientes de forma ágil e administre envios em massa via WhatsApp com eficiência e segurança. 
-      A plataforma que ajuda sua empresa a atingir metas e fortalecer relacionamentos.
-    </p>
+<main class="min-h-screen bg-gray-50 flex flex-col">
+  <!-- Hero -->
+  <section class="flex flex-col items-center text-center py-16 px-4">
+    <img src="https://i.imgur.com/SeuLinkDireto.png"
+         alt="Logo ConnectZap"
+         class="w-32 h-auto mb-6 rounded-full shadow-md">
+    <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Bem-vindo ao ConnectZap</h1>
+    <p class="mt-4 text-gray-700 max-w-2xl">Conecte-se de forma ágil e segura via WhatsApp...</p>
+    <a href="#features"
+       class="mt-6 inline-block px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+      Ver Recursos
+    </a>
   </section>
 
-  <!-- Differentials / Values Section -->
-  <section class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mb-12 w-full px-4">
-    <div class="bg-white rounded-xl shadow-xl p-6 flex flex-col items-center text-center hover:scale-105 transform transition duration-300">
-      <i class="fas fa-bolt text-yellow-500 text-4xl mb-4"></i>
-      <h3 class="text-xl font-semibold mb-2">Agilidade</h3>
-      <p class="text-gray-600">Envie mensagens rapidamente e acompanhe resultados em tempo real, economizando tempo e esforço.</p>
+  <!-- Features -->
+  <section id="features" class="grid gap-8 md:grid-cols-3 px-4 pb-16">
+    <!-- Card repetido -->
+    <div class="bg-white p-6 rounded-xl shadow-lg hover:scale-105 transition">
+      <i class="fas fa-bolt text-yellow-400 text-3xl mb-4"></i>
+      <h3 class="font-semibold text-lg mb-2">Agilidade</h3>
+      <p class="text-gray-600">Envie mensagens rapidamente e acompanhe em tempo real.</p>
     </div>
-
-    <div class="bg-white rounded-xl shadow-xl p-6 flex flex-col items-center text-center hover:scale-105 transform transition duration-300">
-      <i class="fas fa-shield-alt text-green-500 text-4xl mb-4"></i>
-      <h3 class="text-xl font-semibold mb-2">Segurança</h3>
-      <p class="text-gray-600">Toda comunicação é segura e confiável, garantindo privacidade e integridade dos dados dos clientes.</p>
-    </div>
-
-    <div class="bg-white rounded-xl shadow-xl p-6 flex flex-col items-center text-center hover:scale-105 transform transition duration-300">
-      <i class="fas fa-chart-line text-blue-500 text-4xl mb-4"></i>
-      <h3 class="text-xl font-semibold mb-2">Resultados</h3>
-      <p class="text-gray-600">Acompanhe métricas e obtenha insights para otimizar campanhas e melhorar a performance do seu time.</p>
-    </div>
+    <!-- … -->
   </section>
 
-  <!-- About / Info Section -->
-  <section class="bg-gray-50 w-full py-12">
-    <div class="max-w-4xl mx-auto text-center px-4">
-      <h2 class="text-3xl font-bold mb-4 text-gray-900">Nossa missão</h2>
-      <p class="text-gray-700 mb-6 text-lg">
-        No ConnectZap, nossa missão é facilitar a comunicação entre empresas e clientes de forma ágil, segura e profissional.
-        Queremos que sua equipe tenha ferramentas eficientes para alcançar resultados e oferecer a melhor experiência possível.
-      </p>
-    </div>
-  </section>
-</div>
+  <!-- Footer -->
+  <footer class="bg-gray-100 text-center py-6">
+    <p class="text-gray-600">&copy; 2025 ConnectZap. Todos os direitos reservados.</p>
+  </footer>
+</main>
