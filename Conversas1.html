@@ -1,238 +1,196 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ConnectZap - Painel Principal</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Monitoria de Conversas</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  iframe {
-    width: 100%;
-    height: calc(100vh - 80px);
-    border: none;
-    transition: opacity 0.3s ease-in-out;
-  }
-
-  .sidebar a {
-    transition: background-color 0.2s, color 0.2s;
-  }
-  .sidebar a:hover {
-    background-color: #1f2937;
-    color: #fff;
-  }
-  .sidebar a.active {
-    background-color: #2563eb;
-    color: #fff;
-  }
-  .sidebar a.disabled {
-    pointer-events: none;
-    opacity: 0.5;
-  }
-
-  .sidebar-footer a {
-    transition: color 0.2s;
-  }
-  .sidebar-footer a:hover {
-    color: #2563eb;
-  }
-
-  /* Modal login */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 100;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center; align-items: center;
-  }
-  .modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 8px;
-    width: 300px;
-    position: relative;
-  }
-  .modal-close {
-    position: absolute;
-    top: 10px; right: 15px;
-    cursor: pointer;
-    font-size: 1.2rem;
-    color: #555;
-  }
-
-  @media (max-width: 768px) {
-    .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; display: flex; justify-content: space-around; align-items: center; background-color: #1e293b; z-index: 50; }
-    .sidebar .desktop-only { display: none; }
-    iframe { height: calc(100vh - 60px); }
-  }
+.msg {
+  max-width: 70%;
+  padding: 10px 14px 24px 14px;
+  border-radius: 18px;
+  margin: 4px 0;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.msg.enviada { background: linear-gradient(120deg, #dcf8c6, #b8f0a4); align-self: flex-end; }
+.msg.recebida { background: #fff; align-self: flex-start; border: 1px solid #e2e8f0; }
+.msg .hora { font-size: 11px; color: #555; position: absolute; bottom: 4px; right: 8px; }
+.dia { text-align: center; margin: 12px 0; font-size: 12px; color: #888; }
+.contato-selected { background: #f0f9ff !important; }
+mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
+@media (max-width: 768px) { aside { width: 42%; } .msg { max-width: 80%; } }
 </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="h-screen flex bg-gray-100">
 
-<!-- Sidebar Desktop -->
-<aside class="sidebar w-64 bg-gray-900 text-white fixed h-full hidden md:flex flex-col">
-  <div class="p-6 text-2xl font-bold text-center border-b border-gray-700">ConnectZap</div>
-  <nav class="flex-1 mt-6">
-    <ul>
-      <li>
-        <a href="#" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only active">
-          <i class="fas fa-home mr-3"></i> Home
-        </a>
-      </li>
-      <li>
-        <a href="#" id="loginBtn" onclick="abrirModalLogin()" class="flex items-center px-6 py-3 rounded-lg desktop-only">
-          <i class="fas fa-sign-in-alt mr-3"></i> Login
-        </a>
-      </li>
-      <li>
-        <a href="#" id="enviosLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Envios_em_massa.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
-          <i class="fas fa-paper-plane mr-3"></i> Envios
-        </a>
-      </li>
-      <li>
-        <a href="#" id="dashboardLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
-          <i class="fas fa-chart-line mr-3"></i> Dashboard
-        </a>
-      </li>
-      <li>
-        <a href="#" id="monitoriaLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Monitoria.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
-          <i class="fas fa-eye mr-3"></i> Monitoria
-        </a>
-      </li>
-      <li>
-        <a href="#" id="conversasLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Conversas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
-          <i class="fas fa-comments mr-3"></i> Conversas
-        </a>
-      </li>
-    </ul>
-  </nav>
-  <div class="p-6 border-t border-gray-700 text-sm sidebar-footer space-y-1">
-    <a href="#" target="_blank" class="block">Política de Privacidade</a>
-    <a href="#" target="_blank" class="block">Termos de Serviço</a>
-    <a href="#" target="_blank" class="block">Exclusão de Dados</a>
+<!-- Sidebar -->
+<aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
+  <div class="p-2 border-b space-y-2">
+    <select id="filtroConta" class="w-full p-2 border rounded-md text-sm" onchange="carregarContatos()">
+      <option value="">Todas as contas</option>
+      <option value="732661079928516">conta1</option>
+      <option value="732661079941652">conta2</option>
+      <option value="732661056767878">conta3</option>
+      <option value="732661054654634">conta4</option>
+      <option value="732661032985785">conta5</option>
+      <option value="732689435784935">conta6</option>
+    </select>
+    <input id="searchInput" type="text" placeholder="🔍 Buscar contato ou número"
+      class="w-full p-2 rounded-md border" oninput="filtrarContatos(this.value)" autocomplete="off" />
   </div>
+  <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+  <div class="p-2 text-xs text-gray-500 border-t">Atualiza automaticamente. Clique para abrir a conversa.</div>
 </aside>
 
-<!-- Sidebar Mobile -->
-<nav class="sidebar md:hidden bg-gray-900 text-white">
-  <button onclick="loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html')" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-home text-lg"></i><span class="text-xs mt-1">Home</span>
-  </button>
-  <button id="loginBtnMobile" onclick="abrirModalLogin()" class="flex flex-col items-center justify-center text-sm">
-    <i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>
-  </button>
-</nav>
-
-<!-- Conteúdo principal -->
-<div class="md:ml-64">
-  <iframe id="contentFrame" src="https://joubertcastro.github.io/ConnectZap/homepage.html" class="transition-opacity duration-300 ease-in-out"></iframe>
-</div>
-
-<!-- Modal Login -->
-<div id="modalLogin" class="modal flex">
-  <div class="modal-content">
-    <span class="modal-close" onclick="fecharModalLogin()">&times;</span>
-    <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
-    <input type="email" id="email" placeholder="Email" class="w-full p-2 mb-3 border rounded" />
-    <input type="password" id="senha" placeholder="Senha" class="w-full p-2 mb-3 border rounded" />
-    <button onclick="login()" class="w-full p-2 bg-blue-600 text-white rounded">Entrar</button>
-    <div class="error text-red-600 text-center mt-2" id="erro"></div>
+<!-- Main -->
+<main class="flex-1 flex flex-col">
+  <div class="flex items-center justify-between p-3 border-b bg-white">
+    <div>
+      <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
+      <div id="subInfo" class="text-sm text-gray-500"></div>
+    </div>
+    <div class="space-x-2">
+      <button onclick="exportarTXT()" class="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">TXT</button>
+      <button onclick="exportarPDF()" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">PDF</button>
+    </div>
   </div>
-</div>
+
+  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
+    <p class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+  </div>
+
+  <div class="p-2 border-t bg-white text-xs text-gray-500 flex justify-between">
+    <div id="resumo">Nenhuma conversa selecionada</div>
+    <input type="text" id="buscaConversa" placeholder="🔎 Buscar na conversa"
+      class="p-1 border rounded text-sm" oninput="buscarNaConversa(this.value)" />
+  </div>
+</main>
 
 <script>
-  const links = document.querySelectorAll('.sidebar a');
-  const enviosLink = document.getElementById('enviosLink');
-  const dashboardLink = document.getElementById('dashboardLink');
-  const monitoriaLink = document.getElementById('monitoriaLink');
-  const conversasLink = document.getElementById('conversasLink');
-  const loginBtn = document.getElementById('loginBtn');
-  const loginBtnMobile = document.getElementById('loginBtnMobile');
+const API_BASE = "https://conversas-api-production.up.railway.app";
+let contatoSelecionado = null, phoneIdAtual = null;
+let mensagens = [];
+const phoneIdMap = {
+  "732661079928516": "conta1",
+  "732661079941652": "conta2",
+  "732661056767878": "conta3",
+  "732661054654634": "conta4",
+  "732661032985785": "conta5",
+  "732689435784935": "conta6"
+};
 
-  function loadPage(url) {
-    const iframe = document.getElementById('contentFrame');
-    iframe.style.opacity = 0;
-    links.forEach(link => link.classList.remove('active'));
-    const clickedLink = Array.from(links).find(link => link.getAttribute('onclick')?.includes(url));
-    if(clickedLink) clickedLink.classList.add('active');
-    setTimeout(() => {
-      iframe.src = url;
-      iframe.onload = () => { iframe.style.opacity = 1; };
-    }, 200);
-  }
+function gerarCor(nome){
+  let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
+  return `hsl(${hash % 360},70%,60%)`;
+}
+function escapeHtml(s){if(!s)return"";return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
 
-  function abrirModalLogin() {
-    document.getElementById('modalLogin').style.display = 'flex';
-  }
-  function fecharModalLogin() {
-    document.getElementById('modalLogin').style.display = 'none';
-    document.getElementById('erro').textContent = '';
-  }
+async function carregarContatos(){
+  try{
+    const res = await fetch(`${API_BASE}/api/conversas/contatos`);
+    const contatos = await res.json();
+    const lista = document.getElementById("contatos");
+    lista.innerHTML = "";
+    const filtroConta = document.getElementById("filtroConta").value;
 
-  async function login() {
-    const email = document.getElementById('email').value;
-    const senha = document.getElementById('senha').value;
-    const erroDiv = document.getElementById('erro');
-
-    if(!email || !senha) {
-      erroDiv.textContent = "Preencha todos os campos!";
-      return;
-    }
-
-    try {
-      const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha })
+    contatos.filter(c => !filtroConta || c.phone_id === filtroConta)
+      .forEach(c=>{
+        const nome = c.nome_exibicao||c.remetente;
+        const li = document.createElement("li");
+        li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b";
+        li.innerHTML=`
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
+               style="background:${gerarCor(nome)};color:white;">
+            ${(nome||c.remetente).charAt(0).toUpperCase()}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">${escapeHtml(nome)}</div>
+            <div class="text-sm text-gray-600 truncate">${escapeHtml(c.mensagem_final||"")}</div>
+          </div>
+        `;
+        li.onclick=()=>abrirConversa(c);
+        lista.appendChild(li);
       });
-      const data = await res.json();
+  }catch(err){console.error("Erro ao carregar contatos",err);}
+}
 
-      if(data.ok) {
-        localStorage.setItem("usuario", JSON.stringify(data.user));
-        habilitarLinks();
-        fecharModalLogin();
-      } else {
-        erroDiv.textContent = data.erro || "Erro ao fazer login";
-      }
-    } catch(err) {
-      erroDiv.textContent = "Erro de conexão com o servidor";
+async function abrirConversa(c){
+  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
+  document.getElementById("tituloConversa").innerText=c.nome_exibicao||c.remetente;
+  document.getElementById("subInfo").innerText=c.phone_id?`Conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
+  await carregarMensagens();
+}
+
+async function carregarMensagens(){
+  if(!contatoSelecionado) return;
+  try{
+    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`);
+    mensagens=await res.json();
+    const chat=document.getElementById("chat");
+    chat.innerHTML=""; let ultimoDia="";
+    let enviadas=0, recebidas=0;
+
+    mensagens.forEach(m=>{
+      if(m.status==="in") recebidas++; else enviadas++;
+      const data=new Date(m.data_hora);
+      const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+      const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+      if(dia!==ultimoDia){ chat.innerHTML+=`<div class="dia">— ${dia} —</div>`; ultimoDia=dia; }
+      chat.innerHTML+=`
+        <div class="msg ${m.status==="in"?"recebida":"enviada"}">
+          <div>${escapeHtml(m.mensagem_final)}</div>
+          <span class="hora">${hora}</span>
+        </div>`;
+    });
+    document.getElementById("resumo").innerText=`Enviadas: ${enviadas} | Recebidas: ${recebidas} | Total: ${mensagens.length}`;
+    chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
+  }catch(err){console.error("Erro ao carregar mensagens",err);}
+}
+
+function buscarNaConversa(q){
+  q=q.toLowerCase();
+  document.querySelectorAll("#chat .msg").forEach(div=>{
+    div.innerHTML=div.innerHTML.replace(/<mark>|<\/mark>/g,"");
+    if(q && div.innerText.toLowerCase().includes(q)){
+      div.innerHTML=div.innerHTML.replace(new RegExp(q,"gi"),m=>`<mark>${m}</mark>`);
     }
-  }
+  });
+}
 
-  function habilitarLinks() {
-    enviosLink.classList.remove('disabled');
-    dashboardLink.classList.remove('disabled');
-    monitoriaLink.classList.remove('disabled');
-    conversasLink.classList.remove('disabled');
+function exportarTXT(){
+  if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
+  let conteudo = mensagens.map(m=>{
+    const data=new Date(m.data_hora).toLocaleString("pt-BR");
+    return `[${data}] (${m.status==="in"?"Recebida":"Enviada"}) ${m.mensagem_final}`;
+  }).join("\n");
+  const blob=new Blob([conteudo],{type:"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download=`conversa_${contatoSelecionado}.txt`;a.click();
+  URL.revokeObjectURL(url);
+}
 
-    loginBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-3"></i> Logout';
-    loginBtn.onclick = logout;
-    loginBtnMobile.innerHTML = '<i class="fas fa-sign-out-alt text-lg"></i><span class="text-xs mt-1">Logout</span>';
-    loginBtnMobile.onclick = logout;
-  }
+function exportarPDF(){
+  if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y=10;
+  mensagens.forEach(m=>{
+    const data=new Date(m.data_hora).toLocaleString("pt-BR");
+    const linha = `[${data}] (${m.status==="in"?"Recebida":"Enviada"}) ${m.mensagem_final}`;
+    doc.text(linha,10,y);
+    y+=8; if(y>280){doc.addPage();y=10;}
+  });
+  doc.save(`conversa_${contatoSelecionado}.pdf`);
+}
 
-  function logout() {
-    localStorage.removeItem('usuario');
-    enviosLink.classList.add('disabled');
-    dashboardLink.classList.add('disabled');
-    monitoriaLink.classList.add('disabled');
-    conversasLink.classList.add('disabled');
-
-    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
-    loginBtn.onclick = abrirModalLogin;
-    loginBtnMobile.innerHTML = '<i class="fas fa-sign-in-alt text-lg"></i><span class="text-xs mt-1">Login</span>';
-    loginBtnMobile.onclick = abrirModalLogin;
-
-    loadPage('https://joubertcastro.github.io/ConnectZap/homepage.html');
-  }
-
-  window.onload = () => {
-    const usuario = localStorage.getItem('usuario');
-    if(usuario) habilitarLinks();
-  };
+carregarContatos();
+setInterval(carregarContatos,10000);
 </script>
-
 </body>
 </html>

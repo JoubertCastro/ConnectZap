@@ -132,7 +132,7 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   <div class="p-3 border-t flex space-x-2 bg-white items-center">
     <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
     <button onclick="document.getElementById('fileInput').click()" 
-      class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📎 PDF</button>
+      class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
 
     <textarea 
       id="textoMensagem" rows="1"
@@ -376,7 +376,7 @@ async function enviarPDF(event){
     const body = { 
       phone_id: phoneIdAtual,
       file_url: fileUrl,
-      filename: file.name
+      original_filename: file.name
     };
     const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
       method:"POST",
