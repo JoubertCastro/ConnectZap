@@ -182,8 +182,15 @@
   }
 
   function abrirModalLogin() {
+    // ✅ só abre o modal se NÃO estiver logado
+    const usuario = localStorage.getItem('usuario');
+    if (usuario) {
+      console.log("Usuário já está logado, não exibindo modal.");
+      return;
+    }
     document.getElementById('modalLogin').style.display = 'flex';
   }
+
   function fecharModalLogin() {
     document.getElementById('modalLogin').style.display = 'none';
     document.getElementById('erro').textContent = '';
