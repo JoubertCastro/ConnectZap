@@ -822,7 +822,28 @@
       calcularCusto();
       log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas se for buscar templates.');
     });
+    // --- Preencher IDs ao selecionar conta ---
+    const contas = {
+      "732661079928516|1910445533050310": { phone: "732661079928516", waba: "1910445533050310" }, // ConnectZap
+      "727586317113885|844006574616797": { phone: "727586317113885", waba: "844006574616797" }, // Recovery PJ
+      "802977069563598|825347669829173": { phone: "802977069563598", waba: "825347669829173" }, // Recovery PF
+      "821562937700669|1989071868573988": { phone: "821562937700669", waba: "1989071868573988" }, // Mercado Pago Cobrança
+      "779797401888141|1714740535849713": { phone: "779797401888141", waba: "1714740535849713" }, // DivZero
+      "829210283602406|757728786687884": { phone: "829210283602406", waba: "757728786687884" }, // Arc4U
+      "713021321904495|803987045361450": { phone: "713021321904495", waba: "803987045361450" }, // Serasa
+      "803535039503723|760293050103603": { phone: "803535039503723", waba: "760293050103603" }, // Mercado Pago Vendas
+    };
 
+    document.getElementById("contaSelect").addEventListener("change", function(){
+      const val = this.value;
+      if(contas[val]){
+        document.getElementById("phoneId").value = contas[val].phone;
+        document.getElementById("wabaId").value = contas[val].waba;
+      }else{
+        document.getElementById("phoneId").value = "";
+        document.getElementById("wabaId").value = "";
+      }
+    });    
     // ---------------------------- Baixar Log ----------------------------
     byId('btnBaixarLog').addEventListener('click', () => {
       const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
