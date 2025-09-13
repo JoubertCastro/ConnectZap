@@ -85,22 +85,36 @@
           <input id="token" placeholder="Cole seu token (opcional se usar backend)" />
         </div>
         <div class="col-6">
+          <label for="contaSelect">Conta</label>
+          <select id="contaSelect">
+            <option value="">-- Selecione a conta --</option>
+            <option value="732661079928516|1910445533050310">ConnectZap</option>
+            <option value="727586317113885|844006574616797">Recovery PJ</option>
+            <option value="802977069563598|825347669829173">Recovery PF</option>
+            <option value="821562937700669|1989071868573988">Mercado Pago Cobrança</option>
+            <option value="779797401888141|1714740535849713">DivZero</option>
+            <option value="829210283602406|757728786687884">Arc4U</option>
+            <option value="713021321904495|803987045361450">Serasa</option>
+            <option value="803535039503723|760293050103603">Mercado Pago Vendas</option>
+          </select>
+        </div>
+        <div class="col-6">
           <label for="wabaId">WhatsApp Business ID</label>
-          <input id="wabaId" placeholder="Ex: 316717608975353" />
+          <input id="wabaId" readonly />
         </div>
         <div class="col-6">
           <label for="phoneId">Phone Number ID</label>
-          <input id="phoneId" placeholder="Ex: 752755661251472" />
+          <input id="phoneId" readonly />
         </div>
         <div class="col-6">
           <label for="graphVersion">Versão Graph API</label>
           <select id="graphVersion">
-            <option value="v23.0">v23.0</option>
+            <option value="v23.0" selected>v23.0</option>
             <option value="v22.0">v22.0</option>
             <option value="v21.0">v21.0</option>
             <option value="v20.0">v20.0</option>
             <option value="v19.0">v19.0</option>
-            <option value="v18.0" selected>v18.0</option>
+            <option value="v18.0">v18.0</option>
           </select>
         </div>
       </div>

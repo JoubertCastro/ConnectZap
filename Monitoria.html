@@ -54,12 +54,14 @@
     <h2 class="font-bold text-lg">Contatos</h2>
     <select id="filtroConta" class="w-full p-2 border rounded-md text-sm" onchange="carregarContatos()">
       <option value="">Todas as contas</option>
-      <option value="732661079928516">conta1</option>
-      <option value="732661079941652">conta2</option>
-      <option value="732661056767878">conta3</option>
-      <option value="732661054654634">conta4</option>
-      <option value="732661032985785">conta5</option>
-      <option value="732689435784935">conta6</option>
+      <option value="732661079928516">ConnectZap</option>
+      <option value="727586317113885">Recovery PJ</option>
+      <option value="802977069563598">Recovery PF</option>
+      <option value="821562937700669">Mercado Pago Cobrança</option>
+      <option value="779797401888141">DivZero</option>
+      <option value="829210283602406">Arc4U</option>
+      <option value="713021321904495">Serasa</option>
+      <option value="803535039503723">Mercado Pago Vendas</option>
     </select>
     <input id="searchInput" type="text" placeholder="🔍 Buscar contato"
       class="w-full p-2 rounded-md border" oninput="filtrarContatos(this.value)" autocomplete="off"/>
@@ -112,12 +114,14 @@ const API_BASE = "https://conversas-api-production.up.railway.app";
 let contatoSelecionado = null, phoneIdAtual = null;
 let mensagens = [];
 const phoneIdMap = {
-  "732661079928516": "conta1",
-  "732661079941652": "conta2",
-  "732661056767878": "conta3",
-  "732661054654634": "conta4",
-  "732661032985785": "conta5",
-  "732689435784935": "conta6"
+  "732661079928516": "ConnectZap",
+  "727586317113885": "Recovery PJ",
+  "802977069563598": "Recovery PF",
+  "821562937700669": "Mercado Pago Cobrança",
+  "779797401888141": "DivZero",
+  "829210283602406": "Arc4U",
+  "713021321904495": "Serasa",
+  "803535039503723": "Mercado Pago Vendas"
 };
 
 function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
