@@ -70,25 +70,17 @@
           </select>
         </div>
 
-        <!-- Filtro por período -->
-        <div>
-          <label for="filtroPeriodo">Período:</label>
-          <select id="filtroPeriodo" onchange="toggleCustomInterval()">
-            <option value="custom">Personalizado</option>
-          </select>
-        </div>
-
-        <!-- Personalizado -->
-        <div id="customInterval" style="display:none;gap:10px;align-items:flex-end">
-          <div>
-            <label for="dataInicio">De:</label>
-            <input type="datetime-local" id="dataInicio">
-          </div>
-          <div>
-            <label for="dataFim">Até:</label>
-            <input type="datetime-local" id="dataFim">
-          </div>
-        </div>
+<!-- Filtro Personalizado -->
+<div style="display:flex;gap:10px;align-items:flex-end">
+  <div>
+    <label for="dataInicio">De:</label>
+    <input type="datetime-local" id="dataInicio">
+  </div>
+  <div>
+    <label for="dataFim">Até:</label>
+    <input type="datetime-local" id="dataFim">
+  </div>
+</div>
 
         <button class="btn" onclick="carregarStatus()">Aplicar Filtros</button>
       </div>
