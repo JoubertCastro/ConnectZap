@@ -107,74 +107,64 @@
       document.getElementById("customInterval").style.display = periodo==="custom" ? "flex":"none";
     }
 
-    async function carregarStatus() {
-      try {
-        const resp = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/status");
-        const dados = await resp.json();
-        const tbody = document.getElementById("statusTable");
-        tbody.innerHTML = "";
+async function carregarStatus() {
+  try {
+    const resp = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/status");
+    const dados = await resp.json();
+    const tbody = document.getElementById("statusTable");
+    tbody.innerHTML = "";
 
-        // aplica filtros
-        const filtroConta = document.getElementById("filtroConta").value;
-        const filtroPeriodo = document.getElementById("filtroPeriodo").value;
-        const inicio = document.getElementById("dataInicio").value;
-        const fim = document.getElementById("dataFim").value;
+    // aplica filtros
+    const filtroConta = document.getElementById("filtroConta").value;
+    const inicio = document.getElementById("dataInicio").value;
+    const fim = document.getElementById("dataFim").value;
 
-        const agora = new Date();
+    let filtrados = dados.filter(linha => {
+      // filtro por conta
+      if (filtroConta && linha.display_phone_number !== filtroConta) return false;
 
-        let filtrados = dados.filter(linha => {
-          // filtro por conta
-          if(filtroConta && linha.display_phone_number !== filtroConta) return false;
+      // filtro por intervalo personalizado
+      const data = new Date(linha.data_hora);
+      if (inicio && data < new Date(inicio)) return false;
+      if (fim && data > new Date(fim)) return false;
 
-          // filtro por período
-          const data = new Date(linha.data_hora);
-          if(filtroPeriodo!=="custom"){
-            let limite = new Date(agora);
-            if(filtroPeriodo.endsWith("m")) limite.setMinutes(agora.getMinutes()-parseInt(filtroPeriodo));
-            if(filtroPeriodo.endsWith("h")) limite.setHours(agora.getHours()-parseInt(filtroPeriodo));
-            if(filtroPeriodo.endsWith("d")) limite.setDate(agora.getDate()-parseInt(filtroPeriodo));
-            if(data < limite) return false;
-          } else {
-            if(inicio && data < new Date(inicio)) return false;
-            if(fim && data > new Date(fim)) return false;
-          }
+      return true;
+    });
 
-          return true;
-        });
-
-        if (!filtrados.length) {
-          tbody.innerHTML = "<tr><td colspan='4'>Nenhum status encontrado</td></tr>";
-          return;
-        }
-
-        filtrados.forEach(linha => {
-          const tr = document.createElement("tr");
-
-          const tdData = document.createElement("td");
-          tdData.textContent = linha.data_hora;
-          tr.appendChild(tdData);
-
-          const tdRec = document.createElement("td");
-          tdRec.textContent = linha.recipient_id;
-          tr.appendChild(tdRec);
-
-          const tdTel = document.createElement("td");
-          tdTel.textContent = linha.display_phone_number;
-          tr.appendChild(tdTel);
-
-          const tdStatus = document.createElement("td");
-          const span = document.createElement("span");
-          span.textContent = linha.status;
-          span.className = `status-pill ${linha.status}`;
-          tdStatus.appendChild(span);
-          tr.appendChild(tdStatus);
-
-          tbody.appendChild(tr);
-        });
-      } catch (e) {
-        console.error("Erro ao carregar status:", e);
-      }
+    if (!filtrados.length) {
+      tbody.innerHTML = "<tr><td colspan='4'>Nenhum status encontrado</td></tr>";
+      return;
     }
+
+    filtrados.forEach(linha => {
+      const tr = document.createElement("tr");
+
+      const tdData = document.createElement("td");
+      tdData.textContent = linha.data_hora;
+      tr.appendChild(tdData);
+
+      const tdRec = document.createElement("td");
+      tdRec.textContent = linha.recipient_id;
+      tr.appendChild(tdRec);
+
+      const tdTel = document.createElement("td");
+      tdTel.textContent = linha.display_phone_number;
+      tr.appendChild(tdTel);
+
+      const tdStatus = document.createElement("td");
+      const span = document.createElement("span");
+      span.textContent = linha.status;
+      span.className = `status-pill ${linha.status}`;
+      tdStatus.appendChild(span);
+      tr.appendChild(tdStatus);
+
+      tbody.appendChild(tr);
+    });
+  } catch (e) {
+    console.error("Erro ao carregar status:", e);
+  }
+}
+
 
     setInterval(carregarStatus, 5000);
     carregarStatus();
