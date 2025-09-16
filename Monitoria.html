@@ -165,7 +165,8 @@ async function abrirConversa(c){
 async function carregarMensagens(){
   if(!contatoSelecionado) return;
   try{
-    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`);
+    // ✅ agora busca pelo telefone e phone_id
+    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`);
     let todas = await res.json();
 
     const inicio = document.getElementById("dataInicio").value;
