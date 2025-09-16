@@ -255,7 +255,8 @@ async function abrirConversa(c){
 async function carregarMensagens(){
   if(!contatoSelecionado) return;
   const chat=document.getElementById("chat");
-  let url=`${API_BASE}/api/conversas/${contatoSelecionado}`;
+  // ✅ agora envia também o phone_id
+  let url=`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`;
   try{
     const res=await fetch(url);
     if(!res.ok) throw new Error("Erro ao obter histórico");
