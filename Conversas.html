@@ -244,7 +244,8 @@ function abrirConversaFromElement(c,el){
 async function abrirConversa(c){
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
   novasMensagens[c.remetente] = 0;
-  document.getElementById("tituloConversa").innerText=c.nome_exibicao||c.remetente;
+  document.getElementById("tituloConversa").innerText =
+  c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
   document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
   if(messagesInterval) clearInterval(messagesInterval);
