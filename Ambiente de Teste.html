@@ -256,7 +256,6 @@ async function abrirConversa(c){
 async function carregarMensagens(){
   if(!contatoSelecionado) return;
   const chat=document.getElementById("chat");
-  // ✅ agora envia também o phone_id
   let url=`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`;
   try{
     const res=await fetch(url);
@@ -268,48 +267,53 @@ async function carregarMensagens(){
       const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
       const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
       if(dia!==ultimoDia){
-        const sep=document.createElement("div"); sep.className="dia"; sep.innerText=`— ${dia} —`;
-        chat.appendChild(sep); ultimoDia=dia;
+        const sep=document.createElement("div"); 
+        sep.className="dia"; 
+        sep.innerText=`— ${dia} —`;
+        chat.appendChild(sep); 
+        ultimoDia=dia;
       }
+
       const div=document.createElement("div");
       div.className=`msg ${m.status==="in"?"recebida":"enviada"}`;
-      if (m.mensagem_final === "[image]") {
-  // mostra placeholder + botão de visualização
-  div.innerHTML = `
-    <div>[imagem recebida]</div>
-    <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
-    <span class="hora">${hora}</span>
-  `;
 
-  const btn = div.querySelector(".btn-olhinho");
-  btn.onclick = async () => {
-    btn.disabled = true;
-    btn.innerText = "⏳ Carregando...";
-    try {
-      const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-      const json = await res.json();
-      if(json.ok && json.lookaside_url){
-        const img = document.createElement("img");
-        img.src = json.lookaside_url; // ✅ usa URL final Lookaside
-        img.alt = "Imagem recebida";
-        img.className = "mt-2 rounded-lg max-w-xs border";
-        div.insertBefore(img, btn);
-        btn.remove();
-      } else {
-        btn.disabled = false;
-        btn.innerText = "👁 Ver imagem";
-        alert("Erro ao carregar imagem: " + (json.erro || ""));
+      // Se for imagem
+      if(m.tipo === "imagem"){
+        const btn=document.createElement("button");
+        btn.innerText="👁 Ver imagem";
+        btn.className="mt-2 text-blue-600 underline";
+        btn.onclick=async ()=>{
+          btn.disabled=true;
+          btn.innerText="⏳ Carregando...";
+          try{
+            const res=await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
+            if(!res.ok) throw new Error("Erro ao buscar imagem");
+            const blob=await res.blob();
+            const url=URL.createObjectURL(blob);
+
+            const img=document.createElement("img");
+            img.src=url;
+            img.alt="Imagem recebida";
+            img.className="mt-2 rounded-lg max-w-xs border cursor-pointer";
+            img.onclick=()=>abrirModalImagem(url);
+
+            div.appendChild(img);
+            btn.remove();
+          }catch(e){
+            console.error(e);
+            btn.disabled=false;
+            btn.innerText="👁 Ver imagem";
+            alert("Erro ao carregar imagem");
+          }
+        };
+        div.appendChild(btn);
+      } 
+      // Se for texto normal
+      else {
+        div.innerHTML=`<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
       }
-    } catch(e){
-      console.error(e);
-      btn.disabled = false;
-      btn.innerText = "👁 Ver imagem";
-    }
-  };
-} else {
-  div.innerHTML = `<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
-}
 
+      // Botão de resposta só nas recebidas
       if(m.status==="in"){
         const btn=document.createElement("button");
         btn.className="btn-responder";
@@ -318,11 +322,15 @@ async function carregarMensagens(){
         btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
         div.appendChild(btn);
       }
+
       chat.appendChild(div);
     });
     chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
-  }catch(err){console.error("Erro ao carregar mensagens",err);}
+  }catch(err){
+    console.error("Erro ao carregar mensagens",err);
+  }
 }
+
 
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId;
@@ -448,6 +456,24 @@ function startPolling(){
 }
 startPolling();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
+// Modal
+const imageModal = document.getElementById("imageModal");
+const modalImg = document.getElementById("modalImg");
+const closeModal = document.getElementById("closeModal");
+
+function abrirModalImagem(src){
+  modalImg.src = src;
+  imageModal.classList.remove("hidden");
+}
+
+closeModal.onclick = () => imageModal.classList.add("hidden");
+imageModal.onclick = (e) => { if (e.target === imageModal) imageModal.classList.add("hidden"); };
+
 </script>
+<!-- Modal para visualização da imagem -->
+<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+  <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
+  <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
+</div>
 </body>
 </html>
