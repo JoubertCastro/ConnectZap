@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Conversas WhatsApp</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* Bolhas de mensagem modernas */
+.msg {
+  max-width: 70%;
+  padding: 10px 14px 24px 14px;
+  border-radius: 18px;
+  margin: 4px 0;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+.msg.enviada {
+  background: linear-gradient(120deg, #dcf8c6, #b8f0a4);
+  align-self: flex-end;
+}
+.msg.recebida {
+  background: #fff;
+  align-self: flex-start;
+  border: 1px solid #e2e8f0;
+}
+.msg .hora {
+  font-size: 11px;
+  color: #555;
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+}
+.msg .btn-responder {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 14px;
+  color: #4b5563;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.msg.recebida:hover .btn-responder {
+  opacity: 1;
+}
+.msg .btn-responder:hover {
+  color: #2563eb;
+}
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 9999px;
+  padding: 2px 6px;
+  min-width: 18px;
+  text-align: center;
+}
+.dia {
+  text-align: center;
+  margin: 12px 0;
+  font-size: 12px;
+  color: #888;
+}
+.contato-selected { background: #f0f9ff !important; }
+mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
+#digitando {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+@media (max-width: 768px) {
+  aside { width: 42%; }
+  .msg { max-width: 80%; }
+}
+</style>
+</head>
+<body class="h-screen flex bg-gray-100">
+
+<aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
+  <div class="p-2 border-b space-y-2">
+    <select id="filtroConta" class="w-full p-2 border rounded-md text-sm" onchange="carregarContatos()">
+      <option value="">Todas as contas</option>
+      <option value="732661079928516">ConnectZap</option>
+      <option value="727586317113885">Recovery PJ</option>
+      <option value="802977069563598">Recovery PF</option>
+      <option value="821562937700669">Mercado Pago Cobrança</option>
+      <option value="779797401888141">DivZero</option>
+      <option value="829210283602406">Arc4U</option>
+      <option value="713021321904495">Serasa</option>
+      <option value="803535039503723">Mercado Pago Vendas</option>
+    </select>
+    <input 
+      id="searchInput" type="text" 
+      placeholder="🔍 Buscar contato ou número"
+      class="w-full p-2 rounded-md border"
+      oninput="filtrarContatos(this.value)"
+      autocomplete="off"
+    />
+  </div>
+  <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+  <div class="p-2 text-xs text-gray-500 border-t">
+    Atualiza automaticamente. Toque em um contato para abrir a conversa.
+  </div>
+</aside>
+
+<main class="flex-1 flex flex-col">
+  <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
+    <div class="flex items-center space-x-3">
+      <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
+      <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
+    </div>
+  </div>
+
+  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
+    <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+  </div>
+  <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
+
+  <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
+    <div class="truncate max-w-[80%]">
+      <span class="font-semibold">Respondendo:</span> 
+      <span id="respostaTexto" class="text-gray-600"></span>
+    </div>
+    <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
+  </div>
+
+  <div class="p-3 border-t flex space-x-2 bg-white items-center">
+    <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
+    <button onclick="document.getElementById('fileInput').click()" 
+      class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
+
+    <textarea 
+      id="textoMensagem" rows="1"
+      class="flex-1 border rounded-md p-2 resize-none"
+      placeholder="Digite uma mensagem..." disabled
+    ></textarea>
+    <button 
+      id="btnEnviar"
+      onclick="enviarMensagem()"
+      class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
+      disabled>Enviar</button>
+  </div>
+</main>
+
+<script>
+const API_BASE = "https://conversas-api-production.up.railway.app";
+let contatoSelecionado = null, phoneIdAtual = null, ultimoMsgId = null;
+let respostaMsgId = null;
+let contactsInterval = null, messagesInterval = null, userTyping = false;
+const phoneIdMap = {
+  "732661079928516": "ConnectZap",
+  "727586317113885": "Recovery PJ",
+  "802977069563598": "Recovery PF",
+  "821562937700669": "Mercado Pago Cobrança",
+  "779797401888141": "DivZero",
+  "829210283602406": "Arc4U",
+  "713021321904495": "Serasa",
+  "803535039503723": "Mercado Pago Vendas"
+};
+let novasMensagens = {};
+let ultimoStatusContatos = {};
+
+const textarea = document.getElementById("textoMensagem");
+const btnEnviar = document.getElementById("btnEnviar");
+const digitando = document.getElementById("digitando");
+
+textarea.addEventListener("input", () => {
+  textarea.style.height = "auto";
+  textarea.style.height = textarea.scrollHeight + "px";
+  btnEnviar.disabled = textarea.value.trim().length === 0;
+  digitando.style.display = textarea.value.trim() ? "block" : "none";
+});
+textarea.addEventListener("keydown", e => {
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
+});
+
+function gerarCor(nome){
+  let hash=0;
+  for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
+  return `hsl(${hash % 360},70%,60%)`;
+}
+
+async function carregarContatos(){
+  try{
+    const res = await fetch(`${API_BASE}/api/conversas/contatos`);
+    if(!res.ok) throw new Error("Falha ao buscar contatos");
+    const contatos = await res.json();
+    const lista = document.getElementById("contatos");
+    lista.innerHTML = "";
+
+    const filtroConta = document.getElementById("filtroConta").value;
+
+    contatos
+      .filter(c => !filtroConta || c.phone_id === filtroConta)
+      .forEach(c=>{
+        const nome = c.nome_exibicao||c.remetente;
+        const ultimaMsg = c.mensagem_final?c.mensagem_final.substring(0,70):"";
+        const hora = c.data_hora?new Date(c.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
+
+        if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
+          novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
+        }
+        ultimoStatusContatos[c.remetente] = c.data_hora;
+
+        const li = document.createElement("li");
+        li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
+        li.dataset.remetente=c.remetente.toLowerCase();
+
+        const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
+          ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
+          : "";
+
+        li.innerHTML=`
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
+               style="background:${gerarCor(nome)};color:white;">
+            ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-bold truncate">${escapeHtml(nome)}</div>
+            <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
+          </div>
+          <div class="text-xs text-gray-400 pl-2">${hora}</div>
+          ${badge}
+        `;
+        li.onclick=()=>abrirConversaFromElement(c,li);
+        lista.appendChild(li);
+      });
+  }catch(err){console.error("Erro ao carregar contatos",err);}
+}
+
+function abrirConversaFromElement(c,el){
+  document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
+  el.classList.add("contato-selected");
+  abrirConversa(c);
+}
+
+async function abrirConversa(c){
+  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
+  novasMensagens[c.remetente] = 0;
+  document.getElementById("tituloConversa").innerText =
+  c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
+  document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
+  textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
+  if(messagesInterval) clearInterval(messagesInterval);
+  carregarMensagens();
+  messagesInterval=setInterval(()=>{if(!userTyping) carregarMensagens();},3000);
+}
+
+async function carregarMensagens(){
+  if(!contatoSelecionado) return;
+  const chat=document.getElementById("chat");
+  // ✅ agora envia também o phone_id
+  let url=`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`;
+  try{
+    const res=await fetch(url);
+    if(!res.ok) throw new Error("Erro ao obter histórico");
+    const msgs=await res.json();
+    chat.innerHTML=""; let ultimoDia="";
+    msgs.forEach(m=>{
+      const data=new Date(m.data_hora);
+      const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+      const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+      if(dia!==ultimoDia){
+        const sep=document.createElement("div"); sep.className="dia"; sep.innerText=`— ${dia} —`;
+        chat.appendChild(sep); ultimoDia=dia;
+      }
+      const div=document.createElement("div");
+      div.className=`msg ${m.status==="in"?"recebida":"enviada"}`;
+      if (m.mensagem_final === "[image]") {
+  // mostra placeholder + botão de visualização
+  div.innerHTML = `
+    <div>[imagem recebida]</div>
+    <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
+    <span class="hora">${hora}</span>
+  `;
+
+  const btn = div.querySelector(".btn-olhinho");
+  btn.onclick = async () => {
+    btn.disabled = true;
+    btn.innerText = "⏳ Carregando...";
+    try {
+      // consulta o backend
+      const res = await fetch(`${API_BASE}/api/conversas/image/${m.msg_id}`);
+      const json = await res.json();
+      if (json.ok && json.url) {
+        const img = document.createElement("img");
+        img.src = json.url;
+        img.alt = "Imagem recebida";
+        img.className = "mt-2 rounded-lg max-w-xs border";
+        div.insertBefore(img, btn);
+        btn.remove(); // remove botão depois de exibir
+      } else {
+        btn.disabled = false;
+        btn.innerText = "👁 Ver imagem";
+        alert("Erro ao carregar imagem: " + (json.erro || "desconhecido"));
+      }
+    } catch (e) {
+      console.error(e);
+      btn.disabled = false;
+      btn.innerText = "👁 Ver imagem";
+    }
+  };
+} else {
+  div.innerHTML = `<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
+}
+
+      if(m.status==="in"){
+        const btn=document.createElement("button");
+        btn.className="btn-responder";
+        btn.title="Responder";
+        btn.innerHTML="↩";
+        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
+        div.appendChild(btn);
+      }
+      chat.appendChild(div);
+    });
+    chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
+  }catch(err){console.error("Erro ao carregar mensagens",err);}
+}
+
+function responderMensagem(msgId, conteudo){
+  respostaMsgId = msgId;
+  document.getElementById("respostaTexto").innerText = conteudo.slice(0,50);
+  document.getElementById("respostaPreview").classList.remove("hidden");
+  textarea.focus();
+}
+
+function cancelarResposta(){
+  respostaMsgId = null;
+  document.getElementById("respostaPreview").classList.add("hidden");
+  document.getElementById("respostaTexto").innerText = "";
+}
+
+function filtrarContatos(q){
+  q=(q||"").toLowerCase().trim();
+  document.querySelectorAll("#contatos li").forEach(li=>{
+    const hay=li.textContent.toLowerCase();
+    if(hay.includes(q)){
+      li.style.display="flex";
+      const nameDiv=li.querySelector(".font-bold");
+      nameDiv.innerHTML=q?nameDiv.textContent.replace(new RegExp(q,"ig"),match=>`<mark>${match}</mark>`):nameDiv.textContent;
+    }else li.style.display="none";
+  });
+}
+
+async function enviarMensagem(){
+  const texto=textarea.value.trim(); 
+  if(!texto||!contatoSelecionado) return;
+  userTyping=true; btnEnviar.disabled=true;
+  try{
+    const body = { 
+      texto, 
+      phone_id: phoneIdAtual,
+      msg_id: respostaMsgId || null
+    };
+    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+    const json=await res.json();
+    if(json.ok){
+      textarea.value="";textarea.style.height="auto";
+      cancelarResposta();
+      carregarMensagens();
+    } else {
+      alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
+    }
+  }catch(err){
+    console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network.");
+  }
+  finally{
+    userTyping=false; 
+    btnEnviar.disabled=textarea.value.trim().length===0;
+  }
+}
+
+/* Função para enviar PDF ajustada */
+async function enviarPDF(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  if(!contatoSelecionado || !phoneIdAtual){
+    alert("Selecione uma conversa antes de enviar PDF");
+    return;
+  }
+  if(file.type !== "application/pdf"){
+    alert("Somente arquivos PDF são permitidos");
+    return;
+  }
+
+  try{
+    // 1. Solicita URL pré-assinada
+    const res = await fetch(`${API_BASE}/api/upload/pdf`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({filename: file.name})
+    });
+    const json = await res.json();
+    if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
+
+    const presignedUrl = json.upload_url;  // URL de upload
+    const fileUrl = json.file_url;         // URL pública do PDF
+
+    // 2. Upload do PDF para S3
+    await fetch(presignedUrl, {
+      method: "PUT",
+      headers: {"Content-Type": "application/pdf"},
+      body: file
+    });
+
+    // 3. Envia mensagem via backend
+    const body = { 
+      phone_id: phoneIdAtual,
+      file_url: fileUrl,
+      original_filename: file.name
+    };
+    const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+    const sendJson = await sendRes.json();
+    if(sendJson.ok){
+      carregarMensagens();
+    } else {
+      alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson)));
+    }
+  }catch(err){
+    console.error("Erro ao enviar PDF",err);
+    alert("Erro ao enviar PDF");
+  }finally{
+    event.target.value = ""; // reseta input file
+  }
+}
+
+function escapeHtml(s){if(!s)return"";return s.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+
+function startPolling(){
+  if(contactsInterval) clearInterval(contactsInterval);
+  carregarContatos();
+  contactsInterval=setInterval(()=>{carregarContatos();},5000);
+}
+startPolling();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
+</script>
+</body>
+</html>
