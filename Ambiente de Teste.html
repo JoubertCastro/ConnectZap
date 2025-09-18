@@ -256,30 +256,36 @@ async function abrirConversa(c){
 async function carregarMensagens(){
   if(!contatoSelecionado) return;
   const chat=document.getElementById("chat");
-  let url=`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`;
-  try{
-    const res=await fetch(url);
-    if(!res.ok) throw new Error("Erro ao obter histórico");
-    const msgs=await res.json();
-    chat.innerHTML=""; let ultimoDia="";
-    msgs.forEach(m=>{
-      const data=new Date(m.data_hora);
-      const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
-      const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
 
-      if(dia!==ultimoDia){
-        const sep=document.createElement("div");
-        sep.className="dia";
-        sep.innerText=`— ${dia} —`;
+  // monta URL só com phone_id se existir
+  let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
+  if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
+
+  try {
+    const res = await fetch(url);
+    if(!res.ok) throw new Error("Erro ao obter histórico");
+    const msgs = await res.json();
+
+    chat.innerHTML = "";
+    let ultimoDia = "";
+
+    msgs.forEach(m => {
+      const data = new Date(m.data_hora);
+      const dia = data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+      const hora = data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+
+      if(dia !== ultimoDia){
+        const sep = document.createElement("div");
+        sep.className = "dia";
+        sep.innerText = `— ${dia} —`;
         chat.appendChild(sep);
-        ultimoDia=dia;
+        ultimoDia = dia;
       }
 
-      const div=document.createElement("div");
-      div.className=`msg ${m.status==="in"?"recebida":"enviada"}`;
+      const div = document.createElement("div");
+      div.className = `msg ${m.status==="in"?"recebida":"enviada"}`;
 
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        // mostra placeholder + botão
         div.innerHTML = `
           <div class="text-gray-600 italic">[imagem recebida]</div>
           <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
@@ -292,20 +298,18 @@ async function carregarMensagens(){
           btn.innerText = "⏳ Carregando...";
           try {
             const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-            const json = await res.json();
-            if (json.ok && json.lookaside_url) {
-              const img = document.createElement("img");
-              img.src = json.lookaside_url;
-              img.alt = "Imagem recebida";
-              img.className = "mt-2 rounded-lg max-w-xs border cursor-pointer";
-              img.onclick = () => abrirModalImagem(json.lookaside_url);
-              div.insertBefore(img, btn);
-              btn.remove();
-            } else {
-              btn.disabled = false;
-              btn.innerText = "👁 Ver imagem";
-              alert("Erro ao carregar imagem: " + (json.erro || "URL não retornada"));
-            }
+            if (!res.ok) throw new Error("Erro ao buscar imagem");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+
+            const img = document.createElement("img");
+            img.src = url;
+            img.alt = "Imagem recebida";
+            img.className = "mt-2 rounded-lg max-w-xs border cursor-pointer";
+            img.onclick = () => abrirModalImagem(url);
+
+            div.insertBefore(img, btn);
+            btn.remove();
           } catch(e) {
             console.error(e);
             btn.disabled = false;
@@ -313,13 +317,10 @@ async function carregarMensagens(){
             alert("Erro ao carregar imagem");
           }
         };
-      }
-      else {
-        // mensagens de texto
+      } else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
       }
 
-      // Botão de resposta só nas recebidas
       if(m.status==="in"){
         const btn=document.createElement("button");
         btn.className="btn-responder";
@@ -331,8 +332,9 @@ async function carregarMensagens(){
 
       chat.appendChild(div);
     });
+
     chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
-  }catch(err){
+  } catch(err) {
     console.error("Erro ao carregar mensagens",err);
   }
 }
