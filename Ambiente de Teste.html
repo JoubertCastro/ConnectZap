@@ -249,50 +249,44 @@ async function abrirConversa(c){
   document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
   if(messagesInterval) clearInterval(messagesInterval);
-  carregarMensagens();
-  messagesInterval=setInterval(()=>{if(!userTyping) carregarMensagens();},3000);
+  await carregarMensagens(false); // primeira vez: carga total
+  messagesInterval=setInterval(()=>{if(!userTyping) carregarMensagens(true);},5000);
 }
 
-async function carregarMensagens() {
+async function carregarMensagens(incremental = true) {
   if (!contatoSelecionado) return;
   const chat = document.getElementById("chat");
 
-  // monta URL só com phone_id se existir
   let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
   if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
+  if (incremental && ultimoMsgId) url += `&after=${encodeURIComponent(ultimoMsgId)}`;
 
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Erro ao obter histórico");
     const msgs = await res.json();
 
-    chat.innerHTML = "";
-    let ultimoDia = "";
+    if (!incremental) {
+      chat.innerHTML = "";
+    }
 
     msgs.forEach(m => {
+      // evita mensagens duplicadas
+      if (incremental && ultimoMsgId && m.msg_id <= ultimoMsgId) return;
+
       const data = new Date(m.data_hora);
       const dia = data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
       const hora = data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
-
-      if (dia !== ultimoDia) {
-        const sep = document.createElement("div");
-        sep.className = "dia";
-        sep.innerText = `— ${dia} —`;
-        chat.appendChild(sep);
-        ultimoDia = dia;
-      }
 
       const div = document.createElement("div");
       div.className = `msg ${m.status==="in" ? "recebida" : "enviada"}`;
 
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        // placeholder + botão
         div.innerHTML = `
           <div class="text-gray-600 italic">[imagem recebida]</div>
           <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
           <span class="hora">${hora}</span>
         `;
-
         const btn = div.querySelector(".btn-olhinho");
         btn.onclick = async () => {
           btn.disabled = true;
@@ -301,13 +295,11 @@ async function carregarMensagens() {
             const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
             const json = await res.json();
             if (json.ok && json.data_uri) {
-              // miniatura no chat
               const img = document.createElement("img");
               img.src = json.data_uri;
               img.alt = "Imagem recebida";
-              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer"; // thumbnail
-              img.onclick = () => abrirModalImagem(json.data_uri); // abre modal com a imagem grande
-
+              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer";
+              img.onclick = () => abrirModalImagem(json.data_uri);
               div.insertBefore(img, btn);
               btn.remove();
             } else {
@@ -324,17 +316,17 @@ async function carregarMensagens() {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
       }
 
-      // botão de resposta nas recebidas
       if (m.status === "in") {
-        const btn = document.createElement("button");
-        btn.className = "btn-responder";
-        btn.title = "Responder";
-        btn.innerHTML = "↩";
-        btn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final);
+        const btn=document.createElement("button");
+        btn.className="btn-responder";
+        btn.title="Responder";
+        btn.innerHTML="↩";
+        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
         div.appendChild(btn);
       }
 
       chat.appendChild(div);
+      ultimoMsgId = m.msg_id; // atualiza último id
     });
 
     chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
@@ -342,9 +334,6 @@ async function carregarMensagens() {
     console.error("Erro ao carregar mensagens", err);
   }
 }
-
-
-
 
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId;
@@ -390,7 +379,7 @@ async function enviarMensagem(){
     if(json.ok){
       textarea.value="";textarea.style.height="auto";
       cancelarResposta();
-      carregarMensagens();
+      carregarMensagens(true);
     } else {
       alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
     }
@@ -403,7 +392,6 @@ async function enviarMensagem(){
   }
 }
 
-/* Função para enviar PDF ajustada */
 async function enviarPDF(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -415,9 +403,7 @@ async function enviarPDF(event){
     alert("Somente arquivos PDF são permitidos");
     return;
   }
-
   try{
-    // 1. Solicita URL pré-assinada
     const res = await fetch(`${API_BASE}/api/upload/pdf`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -425,18 +411,13 @@ async function enviarPDF(event){
     });
     const json = await res.json();
     if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
-
-    const presignedUrl = json.upload_url;  // URL de upload
-    const fileUrl = json.file_url;         // URL pública do PDF
-
-    // 2. Upload do PDF para S3
+    const presignedUrl = json.upload_url;
+    const fileUrl = json.file_url;
     await fetch(presignedUrl, {
       method: "PUT",
       headers: {"Content-Type": "application/pdf"},
       body: file
     });
-
-    // 3. Envia mensagem via backend
     const body = { 
       phone_id: phoneIdAtual,
       file_url: fileUrl,
@@ -449,7 +430,7 @@ async function enviarPDF(event){
     });
     const sendJson = await sendRes.json();
     if(sendJson.ok){
-      carregarMensagens();
+      carregarMensagens(true);
     } else {
       alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson)));
     }
@@ -457,7 +438,7 @@ async function enviarPDF(event){
     console.error("Erro ao enviar PDF",err);
     alert("Erro ao enviar PDF");
   }finally{
-    event.target.value = ""; // reseta input file
+    event.target.value = "";
   }
 }
 
@@ -469,7 +450,8 @@ function startPolling(){
   contactsInterval=setInterval(()=>{carregarContatos();},5000);
 }
 startPolling();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens(true);}});
+
 // Modal
 const imageModal = document.getElementById("imageModal");
 const modalImg = document.getElementById("modalImg");
@@ -479,7 +461,6 @@ function abrirModalImagem(src){
   modalImg.src = src;
   imageModal.classList.remove("hidden");
 }
-
 closeModal.onclick = () => imageModal.classList.add("hidden");
 imageModal.onclick = (e) => { if (e.target === imageModal) imageModal.classList.add("hidden"); };
 
