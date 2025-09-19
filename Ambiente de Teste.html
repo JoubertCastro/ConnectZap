@@ -270,9 +270,14 @@ async function carregarMensagens(incremental = true) {
       chat.innerHTML = "";
     }
 
+    // ordena sempre por data_hora (garantia)
+    msgs.sort((a,b) => new Date(a.data_hora) - new Date(b.data_hora));
+
+    let lastId = ultimoMsgId;
+
     msgs.forEach(m => {
-      // evita mensagens duplicadas
-      if (incremental && ultimoMsgId && m.msg_id <= ultimoMsgId) return;
+      // se já exibimos essa mensagem, ignora
+      if (incremental && ultimoMsgId && m.msg_id === ultimoMsgId) return;
 
       const data = new Date(m.data_hora);
       const dia = data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
@@ -326,14 +331,19 @@ async function carregarMensagens(incremental = true) {
       }
 
       chat.appendChild(div);
-      ultimoMsgId = m.msg_id; // atualiza último id
+      lastId = m.msg_id; // guarda o último
     });
+
+    if (msgs.length > 0) {
+      ultimoMsgId = lastId; // atualiza só uma vez, no final
+    }
 
     chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
   } catch (err) {
     console.error("Erro ao carregar mensagens", err);
   }
 }
+
 
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId;
