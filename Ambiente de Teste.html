@@ -285,7 +285,6 @@ async function carregarMensagens(incremental = true) {
     if (!res.ok) throw new Error("Erro ao obter histórico");
     const msgs = await res.json();
 
-    // Ordena por data_hora para garantir consistência
     msgs.sort((a,b) => new Date(a.data_hora) - new Date(b.data_hora));
 
     if (!incremental) {
@@ -295,18 +294,14 @@ async function carregarMensagens(incremental = true) {
       renderedKeys.clear();
     }
 
-    // Verifica autoscroll apenas se usuário estiver perto do fim
     const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
 
     msgs.forEach(m => {
       const tMs = new Date(m.data_hora).getTime();
-
-      // chave de dedupe: data_hora + status + conteúdo (ou tipo)
       const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-      if (renderedKeys.has(key)) return;              // já renderizada
-      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return; // já vimos
+      if (renderedKeys.has(key)) return;
+      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
 
-      // separador de dia (somente quando muda)
       const dia = new Date(m.data_hora).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
       if (!lastDayRendered || lastDayRendered !== dia) {
         const sep = document.createElement("div");
@@ -320,8 +315,8 @@ async function carregarMensagens(incremental = true) {
       const div = document.createElement("div");
       div.className = `msg ${m.status==="in" ? "recebida" : "enviada"}`;
 
+      // === Imagem ===
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        // placeholder + botão
         div.innerHTML = `
           <div class="text-gray-600 italic">[imagem recebida]</div>
           <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
@@ -336,10 +331,10 @@ async function carregarMensagens(incremental = true) {
             const json = await res.json();
             if (json.ok && json.data_uri) {
               const img = document.createElement("img");
-              img.src = json.data_uri;                         // data:image/jpeg;base64,...
+              img.src = json.data_uri;
               img.alt = "Imagem recebida";
-              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer"; // miniatura
-              img.onclick = () => abrirModalImagem(json.data_uri); // modal grande
+              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer";
+              img.onclick = () => abrirModalImagem(json.data_uri);
               div.insertBefore(img, btn);
               btn.remove();
             } else {
@@ -352,12 +347,44 @@ async function carregarMensagens(incremental = true) {
             alert("Erro ao carregar imagem");
           }
         };
-      } else {
-        // mensagem de texto
+      }
+      // === Áudio ===
+      else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
+        div.innerHTML = `
+          <div class="text-gray-600 italic">[áudio recebido]</div>
+          <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
+          <span class="hora">${hora}</span>
+        `;
+        const btn = div.querySelector(".btn-audio");
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.innerText = "⏳ Carregando...";
+          try {
+            const res = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id || "")}`);
+            const json = await res.json();
+            if (json.ok && json.data_uri) {
+              const audio = document.createElement("audio");
+              audio.src = json.data_uri; // data:audio/ogg;base64,...
+              audio.controls = true;
+              audio.className = "mt-2 w-full max-w-xs";
+              div.insertBefore(audio, btn);
+              btn.remove();
+            } else {
+              throw new Error(json.erro || "Resposta inválida do backend");
+            }
+          } catch (e) {
+            console.error("Erro ao carregar áudio:", e);
+            btn.disabled = false;
+            btn.innerText = "▶ Reproduzir áudio";
+            alert("Erro ao carregar áudio");
+          }
+        };
+      }
+      // === Texto normal ===
+      else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
       }
 
-      // botão de resposta nas recebidas
       if (m.status === "in") {
         const btn=document.createElement("button");
         btn.className="btn-responder";
@@ -368,8 +395,6 @@ async function carregarMensagens(incremental = true) {
       }
 
       chat.appendChild(div);
-
-      // atualiza controles de incremento/dedupe
       renderedKeys.add(key);
       if (lastTimestampMs === null || tMs > lastTimestampMs) {
         lastTimestampMs = tMs;
@@ -383,6 +408,7 @@ async function carregarMensagens(incremental = true) {
     console.error("Erro ao carregar mensagens", err);
   }
 }
+
 
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId || null;
