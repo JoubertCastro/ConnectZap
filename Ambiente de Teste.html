@@ -277,6 +277,7 @@ async function carregarMensagens(incremental = true) {
   if (!contatoSelecionado) return;
   const chat = document.getElementById("chat");
 
+  // monta URL só com phone_id se existir
   let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
   if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
 
@@ -285,7 +286,8 @@ async function carregarMensagens(incremental = true) {
     if (!res.ok) throw new Error("Erro ao obter histórico");
     const msgs = await res.json();
 
-    msgs.sort((a,b) => new Date(a.data_hora) - new Date(b.data_hora));
+    // Ordena por data para garantir render consistente
+    msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
     if (!incremental) {
       chat.innerHTML = "";
@@ -294,15 +296,18 @@ async function carregarMensagens(incremental = true) {
       renderedKeys.clear();
     }
 
+    // Autoscroll apenas se usuário estiver perto do fim
     const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
 
-    msgs.forEach(m => {
+    msgs.forEach((m) => {
       const tMs = new Date(m.data_hora).getTime();
       const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-      if (renderedKeys.has(key)) return;
-      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
 
-      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+      if (renderedKeys.has(key)) return;                                   // já renderizada
+      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return; // já vimos
+
+      // separador de dia
+      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
       if (!lastDayRendered || lastDayRendered !== dia) {
         const sep = document.createElement("div");
         sep.className = "dia";
@@ -311,9 +316,9 @@ async function carregarMensagens(incremental = true) {
         lastDayRendered = dia;
       }
 
-      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
       const div = document.createElement("div");
-      div.className = `msg ${m.status==="in" ? "recebida" : "enviada"}`;
+      div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
 
       // === Imagem ===
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
@@ -323,30 +328,35 @@ async function carregarMensagens(incremental = true) {
           <span class="hora">${hora}</span>
         `;
         const btn = div.querySelector(".btn-olhinho");
-        btn.onclick = async () => {
+        if (!m.msg_id) {
           btn.disabled = true;
-          btn.innerText = "⏳ Carregando...";
-          try {
-            const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id || "")}`);
-            const json = await res.json();
-            if (json.ok && json.data_uri) {
-              const img = document.createElement("img");
-              img.src = json.data_uri;
-              img.alt = "Imagem recebida";
-              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer";
-              img.onclick = () => abrirModalImagem(json.data_uri);
-              div.insertBefore(img, btn);
-              btn.remove();
-            } else {
-              throw new Error(json.erro || "Resposta inválida do backend");
+          btn.innerText = "Imagem indisponível";
+        } else {
+          btn.onclick = async () => {
+            btn.disabled = true;
+            btn.innerText = "⏳ Carregando...";
+            try {
+              const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
+              const j = await r.json();
+              if (j.ok && j.data_uri) {
+                const img = document.createElement("img");
+                img.src = j.data_uri;
+                img.alt = "Imagem recebida";
+                img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer";
+                img.onclick = () => abrirModalImagem(j.data_uri);
+                div.insertBefore(img, btn);
+                btn.remove();
+              } else {
+                throw new Error(j.erro || "Resposta inválida do backend");
+              }
+            } catch (e) {
+              console.error("Erro ao carregar imagem:", e);
+              btn.disabled = false;
+              btn.innerText = "👁 Ver imagem";
+              alert("Erro ao carregar imagem");
             }
-          } catch (e) {
-            console.error("Erro ao carregar imagem:", e);
-            btn.disabled = false;
-            btn.innerText = "👁 Ver imagem";
-            alert("Erro ao carregar imagem");
-          }
-        };
+          };
+        }
       }
       // === Áudio ===
       else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
@@ -356,70 +366,93 @@ async function carregarMensagens(incremental = true) {
           <span class="hora">${hora}</span>
         `;
         const btn = div.querySelector(".btn-audio");
-        btn.onclick = async () => {
+        if (!m.msg_id) {
           btn.disabled = true;
-          btn.innerText = "⏳ Carregando...";
-          try {
-            const res = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id || "")}`);
-            const json = await res.json();
-            if (json.ok && json.data_uri) {
-              const audio = document.createElement("audio");
-              audio.src = json.data_uri; // data:audio/ogg;base64,...
-              audio.controls = true;
-              audio.className = "mt-2 w-full max-w-xs";
-              div.insertBefore(audio, btn);
-              btn.remove();
-            } else {
-              throw new Error(json.erro || "Resposta inválida do backend");
+          btn.innerText = "Áudio indisponível";
+        } else {
+          btn.onclick = async () => {
+            btn.disabled = true;
+            btn.innerText = "⏳ Carregando...";
+            try {
+              const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
+              const j = await r.json();
+              if (j.ok && j.data_uri) {
+                const audio = document.createElement("audio");
+                audio.src = j.data_uri; // data:audio/ogg;base64,...
+                audio.controls = true;
+                audio.className = "mt-2 w-full max-w-xs";
+                div.insertBefore(audio, btn);
+                btn.remove();
+              } else {
+                throw new Error(j.erro || "Resposta inválida do backend");
+              }
+            } catch (e) {
+              console.error("Erro ao carregar áudio:", e);
+              btn.disabled = false;
+              btn.innerText = "▶ Reproduzir áudio";
+              alert("Erro ao carregar áudio");
             }
-          } catch (e) {
-            console.error("Erro ao carregar áudio:", e);
-            btn.disabled = false;
-            btn.innerText = "▶ Reproduzir áudio";
-            alert("Erro ao carregar áudio");
-          }
-        };
-      }
-      // === Emoji ===
-      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-        try {
-          const res = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id || "")}`);
-          const json = await res.json();
-          if (json.ok && json.emoji) {
-            div.innerHTML = `
-              <div class="text-2xl">${json.emoji}</div>
-              <span class="hora">${hora}</span>
-            `;
-          } else {
-            div.innerHTML = `
-              <div class="italic text-gray-500">[emoji não carregado]</div>
-              <span class="hora">${hora}</span>
-            `;
-          }
-        } catch (e) {
-          console.error("Erro ao carregar emoji:", e);
-          div.innerHTML = `
-            <div class="italic text-gray-500">[falha ao carregar emoji]</div>
-            <span class="hora">${hora}</span>
-          `;
+          };
         }
       }
+      // === Emoji / Reaction ===
+      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
+        // render imediato com placeholder, e busca assíncrona sem travar o loop
+        const wrapper = document.createElement("div");
+        wrapper.className = "flex items-center gap-2";
+        const emojiEl = document.createElement("span");
+        emojiEl.className = "text-2xl leading-none";
+        emojiEl.textContent = "🙂"; // placeholder
+        wrapper.appendChild(emojiEl);
 
+        const label = document.createElement("span");
+        label.className = "text-gray-600 italic";
+        label.textContent = "reação";
+        wrapper.appendChild(label);
+
+        div.appendChild(wrapper);
+        const horaSpan = document.createElement("span");
+        horaSpan.className = "hora";
+        horaSpan.textContent = hora;
+        div.appendChild(horaSpan);
+
+        if (m.msg_id) {
+          (async () => {
+            try {
+              const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
+              const j = await r.json();
+              if (j.ok && j.emoji) {
+                emojiEl.textContent = j.emoji;  // ex: 👍 ❤️ 😂
+              } else {
+                label.textContent = "emoji não carregado";
+              }
+            } catch (e) {
+              console.error("Erro ao carregar emoji:", e);
+              label.textContent = "falha ao carregar emoji";
+            }
+          })();
+        } else {
+          label.textContent = "emoji indisponível";
+        }
+      }
       // === Texto normal ===
       else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
       }
 
+      // botão de resposta nas recebidas
       if (m.status === "in") {
-        const btn=document.createElement("button");
-        btn.className="btn-responder";
-        btn.title="Responder";
-        btn.innerHTML="↩";
-        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final || "");
+        const btn = document.createElement("button");
+        btn.className = "btn-responder";
+        btn.title = "Responder";
+        btn.innerHTML = "↩";
+        btn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
         div.appendChild(btn);
       }
 
       chat.appendChild(div);
+
+      // marca como renderizada e atualiza o maior timestamp visto
       renderedKeys.add(key);
       if (lastTimestampMs === null || tMs > lastTimestampMs) {
         lastTimestampMs = tMs;
@@ -433,6 +466,7 @@ async function carregarMensagens(incremental = true) {
     console.error("Erro ao carregar mensagens", err);
   }
 }
+
 
 
 function responderMensagem(msgId, conteudo){
