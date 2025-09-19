@@ -151,9 +151,10 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
 
 <script>
 const API_BASE = "https://conversas-api-production.up.railway.app";
-let contatoSelecionado = null, phoneIdAtual = null, ultimoMsgId = null;
+let contatoSelecionado = null, phoneIdAtual = null;
 let respostaMsgId = null;
 let contactsInterval = null, messagesInterval = null, userTyping = false;
+
 const phoneIdMap = {
   "732661079928516": "ConnectZap",
   "727586317113885": "Recovery PJ",
@@ -166,6 +167,12 @@ const phoneIdMap = {
 };
 let novasMensagens = {};
 let ultimoStatusContatos = {};
+
+// ====== NOVO: controle de incremento por data ======
+let lastTimestampMs = null;       // timestamp (ms) da última msg renderizada
+let lastDayRendered = null;       // string de data “pt-BR” do último separador de dia
+let renderedKeys = new Set();     // dedupe por (data_hora|status|conteudo)
+let isModalOpen = false;          // pausa polling enquanto o modal está aberto
 
 const textarea = document.getElementById("textoMensagem");
 const btnEnviar = document.getElementById("btnEnviar");
@@ -242,55 +249,144 @@ function abrirConversaFromElement(c,el){
 }
 
 async function abrirConversa(c){
-  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id; ultimoMsgId=null;
+  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
+
+  // reset de estado de incremento
+  lastTimestampMs = null;
+  lastDayRendered = null;
+  renderedKeys.clear();
+
   novasMensagens[c.remetente] = 0;
   document.getElementById("tituloConversa").innerText =
-  c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
+    c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
   document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
+
   if(messagesInterval) clearInterval(messagesInterval);
-  carregarMensagens();
-  messagesInterval=setInterval(()=>{if(!userTyping) carregarMensagens();},3000);
+
+  await carregarMensagens(false); // primeira carga: total
+
+  messagesInterval=setInterval(()=>{
+    if(!userTyping && !isModalOpen){
+      carregarMensagens(true); // apenas novas
+    }
+  }, 5000);
 }
 
-async function carregarMensagens(){
-  if(!contatoSelecionado) return;
-  const chat=document.getElementById("chat");
-  // ✅ agora envia também o phone_id
-  let url=`${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${phoneIdAtual}`;
-  try{
-    const res=await fetch(url);
-    if(!res.ok) throw new Error("Erro ao obter histórico");
-    const msgs=await res.json();
-    chat.innerHTML=""; let ultimoDia="";
-    msgs.forEach(m=>{
-      const data=new Date(m.data_hora);
-      const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
-      const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
-      if(dia!==ultimoDia){
-        const sep=document.createElement("div"); sep.className="dia"; sep.innerText=`— ${dia} —`;
-        chat.appendChild(sep); ultimoDia=dia;
+async function carregarMensagens(incremental = true) {
+  if (!contatoSelecionado) return;
+  const chat = document.getElementById("chat");
+
+  let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
+  if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Erro ao obter histórico");
+    const msgs = await res.json();
+
+    // Ordena por data_hora para garantir consistência
+    msgs.sort((a,b) => new Date(a.data_hora) - new Date(b.data_hora));
+
+    if (!incremental) {
+      chat.innerHTML = "";
+      lastTimestampMs = null;
+      lastDayRendered = null;
+      renderedKeys.clear();
+    }
+
+    // Verifica autoscroll apenas se usuário estiver perto do fim
+    const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
+
+    msgs.forEach(m => {
+      const tMs = new Date(m.data_hora).getTime();
+
+      // chave de dedupe: data_hora + status + conteúdo (ou tipo)
+      const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
+      if (renderedKeys.has(key)) return;              // já renderizada
+      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return; // já vimos
+
+      // separador de dia (somente quando muda)
+      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
+      if (!lastDayRendered || lastDayRendered !== dia) {
+        const sep = document.createElement("div");
+        sep.className = "dia";
+        sep.innerText = `— ${dia} —`;
+        chat.appendChild(sep);
+        lastDayRendered = dia;
       }
-      const div=document.createElement("div");
-      div.className=`msg ${m.status==="in"?"recebida":"enviada"}`;
-      div.innerHTML=`<div>${escapeHtml(m.mensagem_final)}</div><span class="hora">${hora}</span>`;
-      if(m.status==="in"){
+
+      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
+      const div = document.createElement("div");
+      div.className = `msg ${m.status==="in" ? "recebida" : "enviada"}`;
+
+      if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
+        // placeholder + botão
+        div.innerHTML = `
+          <div class="text-gray-600 italic">[imagem recebida]</div>
+          <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
+          <span class="hora">${hora}</span>
+        `;
+        const btn = div.querySelector(".btn-olhinho");
+        btn.onclick = async () => {
+          btn.disabled = true;
+          btn.innerText = "⏳ Carregando...";
+          try {
+            const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id || "")}`);
+            const json = await res.json();
+            if (json.ok && json.data_uri) {
+              const img = document.createElement("img");
+              img.src = json.data_uri;                         // data:image/jpeg;base64,...
+              img.alt = "Imagem recebida";
+              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer"; // miniatura
+              img.onclick = () => abrirModalImagem(json.data_uri); // modal grande
+              div.insertBefore(img, btn);
+              btn.remove();
+            } else {
+              throw new Error(json.erro || "Resposta inválida do backend");
+            }
+          } catch (e) {
+            console.error("Erro ao carregar imagem:", e);
+            btn.disabled = false;
+            btn.innerText = "👁 Ver imagem";
+            alert("Erro ao carregar imagem");
+          }
+        };
+      } else {
+        // mensagem de texto
+        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+      }
+
+      // botão de resposta nas recebidas
+      if (m.status === "in") {
         const btn=document.createElement("button");
         btn.className="btn-responder";
         btn.title="Responder";
         btn.innerHTML="↩";
-        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final);
+        btn.onclick=()=>responderMensagem(m.msg_id, m.mensagem_final || "");
         div.appendChild(btn);
       }
+
       chat.appendChild(div);
+
+      // atualiza controles de incremento/dedupe
+      renderedKeys.add(key);
+      if (lastTimestampMs === null || tMs > lastTimestampMs) {
+        lastTimestampMs = tMs;
+      }
     });
-    chat.scrollTo({top:chat.scrollHeight,behavior:"smooth"});
-  }catch(err){console.error("Erro ao carregar mensagens",err);}
+
+    if (isNearBottom) {
+      chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
+    }
+  } catch (err) {
+    console.error("Erro ao carregar mensagens", err);
+  }
 }
 
 function responderMensagem(msgId, conteudo){
-  respostaMsgId = msgId;
-  document.getElementById("respostaTexto").innerText = conteudo.slice(0,50);
+  respostaMsgId = msgId || null;
+  document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0,50);
   document.getElementById("respostaPreview").classList.remove("hidden");
   textarea.focus();
 }
@@ -332,7 +428,8 @@ async function enviarMensagem(){
     if(json.ok){
       textarea.value="";textarea.style.height="auto";
       cancelarResposta();
-      carregarMensagens();
+      // após enviar, vamos buscar incrementalmente (vai pegar pela data_hora)
+      await carregarMensagens(true);
     } else {
       alert("Erro ao enviar: "+(json.erro||JSON.stringify(json)));
     }
@@ -359,7 +456,6 @@ async function enviarPDF(event){
   }
 
   try{
-    // 1. Solicita URL pré-assinada
     const res = await fetch(`${API_BASE}/api/upload/pdf`, {
       method: "POST",
       headers: {"Content-Type":"application/json"},
@@ -368,17 +464,11 @@ async function enviarPDF(event){
     const json = await res.json();
     if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
 
-    const presignedUrl = json.upload_url;  // URL de upload
-    const fileUrl = json.file_url;         // URL pública do PDF
+    const presignedUrl = json.upload_url;
+    const fileUrl = json.file_url;
 
-    // 2. Upload do PDF para S3
-    await fetch(presignedUrl, {
-      method: "PUT",
-      headers: {"Content-Type": "application/pdf"},
-      body: file
-    });
+    await fetch(presignedUrl, { method: "PUT", headers: {"Content-Type": "application/pdf"}, body: file });
 
-    // 3. Envia mensagem via backend
     const body = { 
       phone_id: phoneIdAtual,
       file_url: fileUrl,
@@ -391,7 +481,7 @@ async function enviarPDF(event){
     });
     const sendJson = await sendRes.json();
     if(sendJson.ok){
-      carregarMensagens();
+      await carregarMensagens(true);
     } else {
       alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson)));
     }
@@ -411,7 +501,41 @@ function startPolling(){
   contactsInterval=setInterval(()=>{carregarContatos();},5000);
 }
 startPolling();
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){carregarContatos(); if(contatoSelecionado) carregarMensagens();}});
+
+document.addEventListener("visibilitychange",()=>{
+  if(!document.hidden){
+    carregarContatos();
+    if(contatoSelecionado) carregarMensagens(true);
+  }
+});
+
+// ====== Modal (pausa polling enquanto aberto) ======
+const imageModal = document.getElementById("imageModal");
+const modalImg = document.getElementById("modalImg");
+const closeModal = document.getElementById("closeModal");
+
+function abrirModalImagem(src){
+  isModalOpen = true;
+  modalImg.src = src;
+  imageModal.classList.remove("hidden");
+}
+closeModal.onclick = () => {
+  imageModal.classList.add("hidden");
+  modalImg.src = "";
+  isModalOpen = false;
+};
+imageModal.onclick = (e) => {
+  if (e.target === imageModal) {
+    imageModal.classList.add("hidden");
+    modalImg.src = "";
+    isModalOpen = false;
+  }
+};
 </script>
+<!-- Modal para visualização da imagem -->
+<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+  <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
+  <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
+</div>
 </body>
 </html>
