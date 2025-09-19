@@ -380,6 +380,31 @@ async function carregarMensagens(incremental = true) {
           }
         };
       }
+      // === Emoji ===
+      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
+        try {
+          const res = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id || "")}`);
+          const json = await res.json();
+          if (json.ok && json.emoji) {
+            div.innerHTML = `
+              <div class="text-2xl">${json.emoji}</div>
+              <span class="hora">${hora}</span>
+            `;
+          } else {
+            div.innerHTML = `
+              <div class="italic text-gray-500">[emoji não carregado]</div>
+              <span class="hora">${hora}</span>
+            `;
+          }
+        } catch (e) {
+          console.error("Erro ao carregar emoji:", e);
+          div.innerHTML = `
+            <div class="italic text-gray-500">[falha ao carregar emoji]</div>
+            <span class="hora">${hora}</span>
+          `;
+        }
+      }
+
       // === Texto normal ===
       else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
