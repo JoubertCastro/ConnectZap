@@ -301,11 +301,13 @@ async function carregarMensagens() {
             const res = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
             const json = await res.json();
             if (json.ok && json.data_uri) {
+              // miniatura no chat
               const img = document.createElement("img");
-              img.src = json.data_uri;  // já vem como data:image/jpeg;base64,...
+              img.src = json.data_uri;
               img.alt = "Imagem recebida";
-              img.className = "mt-2 rounded-lg max-w-xs border cursor-pointer";
-              img.onclick = () => abrirModalImagem(json.data_uri);
+              img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer"; // thumbnail
+              img.onclick = () => abrirModalImagem(json.data_uri); // abre modal com a imagem grande
+
               div.insertBefore(img, btn);
               btn.remove();
             } else {
@@ -340,6 +342,7 @@ async function carregarMensagens() {
     console.error("Erro ao carregar mensagens", err);
   }
 }
+
 
 
 
