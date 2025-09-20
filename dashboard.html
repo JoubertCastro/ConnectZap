@@ -17,65 +17,110 @@
   <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
     <!-- Filtros -->
     <section class="bg-white rounded-xl shadow-sm border p-4">
-      <div class="flex flex-col lg:flex-row gap-3 lg:items-end">
-        <div class="flex-1">
-          <label class="text-sm text-slate-500">Período rápido</label>
-          <div class="flex flex-wrap gap-2 mt-1">
-            <button class="chip" data-range="hoje">Hoje</button>
-            <button class="chip" data-range="7d">Últimos 7 dias</button>
-            <button class="chip" data-range="30d">Últimos 30 dias</button>
-            <button class="chip" data-range="mes">Mês atual</button>
-            <button class="chip" data-range="custom">Personalizado</button>
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm text-slate-500 mr-1">Período:</span>
+
+          <!-- #1 chips com cara de botão -->
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="hoje">Hoje</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="7d">Últimos 7 dias</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="30d">Últimos 30 dias</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="mes">Mês atual</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="custom">Personalizado</button>
+
+          <!-- #2 botão exportar discreto -->
+          <div class="ml-auto flex gap-2">
+            <button id="btnExport"
+              class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm">Exportar CSV</button>
           </div>
         </div>
-        <div>
-          <label class="text-sm text-slate-500">Início</label>
-          <input id="start" type="date" class="input" />
-        </div>
-        <div>
-          <label class="text-sm text-slate-500">Fim</label>
-          <input id="end" type="date" class="input" />
-        </div>
-        <div class="flex-1">
-          <label class="text-sm text-slate-500">Carteira</label>
-          <select id="carteira" class="input">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label class="text-sm text-slate-500">Nome do disparo</label>
-          <input id="q" type="text" placeholder="Buscar..." class="input" />
-        </div>
-        <div class="flex gap-2">
-          <button id="btnAplicar" class="btn-primary">Aplicar</button>
-          <button id="btnExport" class="btn-secondary">Exportar CSV</button>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="text-sm text-slate-500">Início</label>
+            <input id="start" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-500">Fim</label>
+            <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-500">Carteira</label>
+            <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div class="flex gap-2">
+            <div class="flex-1">
+              <label class="text-sm text-slate-500">Nome do disparo</label>
+              <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+            </div>
+            <!-- #3 botão aplicar com cara de botão primário -->
+            <div class="flex items-end">
+              <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">
+                Aplicar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Abas -->
+    <!-- #5 Segmented control (abas) -->
     <section class="bg-white rounded-xl shadow-sm border">
-      <div class="border-b flex">
-        <button class="tab active" data-tab="mensagens">Mensagens</button>
-        <button class="tab" data-tab="atendimentos">Atendimentos</button>
+      <div class="p-3">
+        <div class="inline-flex bg-slate-100 rounded-xl p-1">
+          <button class="seg-btn seg-active" data-tab="mensagens">
+            <span>✉️</span><span>Mensagens</span>
+          </button>
+          <button class="seg-btn" data-tab="atendimentos">
+            <span>🎧</span><span>Atendimentos</span>
+          </button>
+        </div>
       </div>
 
       <!-- Conteúdo: Mensagens -->
       <div id="tab-mensagens" class="p-4 space-y-6">
-        <!-- Cards -->
+        <!-- #4 KPIs em “balões” -->
         <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="kpi"><div class="kpi-title">Total</div><div id="k_total" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Enviados</div><div id="k_env" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Entregues</div><div id="k_ent" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Lidos</div><div id="k_lido" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Delivery rate</div><div id="k_dr" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Read rate</div><div id="k_rr" class="kpi-value">—</div></div>
+          <div class="balloon">
+            <div class="balloon-label">Total</div>
+            <div id="k_total" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Enviados</div>
+            <div id="k_env" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Entregues</div>
+            <div id="k_ent" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Lidos</div>
+            <div id="k_lido" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Delivery rate</div>
+            <div id="k_dr" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Read rate</div>
+            <div id="k_rr" class="balloon-value">—</div>
+          </div>
         </div>
 
         <!-- Gráfico -->
         <div class="space-y-2">
           <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
-          <canvas id="chartMensagens" height="140"></canvas>
+          <!-- #6 wrapper com altura fixa -->
+          <div class="h-72">
+            <canvas id="chartMensagens" class="w-full h-full"></canvas>
+          </div>
           <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
         </div>
 
@@ -102,25 +147,39 @@
 
       <!-- Conteúdo: Atendimentos -->
       <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
-        <!-- Cards -->
         <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="kpi"><div class="kpi-title">Em atendimento</div><div id="a_em" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">Concluídos</div><div id="a_conc" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">TMA</div><div id="a_tma" class="kpi-value">—</div></div>
-          <div class="kpi"><div class="kpi-title">1ª resposta</div><div id="a_tmr" class="kpi-value">—</div></div>
+          <div class="balloon">
+            <div class="balloon-label">Em atendimento</div>
+            <div id="a_em" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Concluídos</div>
+            <div id="a_conc" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">TMA</div>
+            <div id="a_tma" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">1ª resposta</div>
+            <div id="a_tmr" class="balloon-value">—</div>
+          </div>
         </div>
 
-        <!-- Grids -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="space-y-2">
             <div class="text-sm text-slate-500">Motivos de conclusão</div>
-            <canvas id="chartMotivos" height="180"></canvas>
+            <div class="h-72">
+              <canvas id="chartMotivos" class="w-full h-full"></canvas>
+            </div>
             <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
           </div>
 
           <div class="space-y-2">
             <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
-            <canvas id="chartSeries" height="180"></canvas>
+            <div class="h-72">
+              <canvas id="chartSeries" class="w-full h-full"></canvas>
+            </div>
             <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
           </div>
         </div>
@@ -132,17 +191,25 @@
   </main>
 
   <style>
-    .chip{ @apply px-3 py-1 text-sm rounded-full border border-slate-300 bg-white hover:bg-slate-50; }
-    .input{ @apply w-full px-3 py-2 rounded-lg border border-slate-300 bg-white; }
-    .btn-primary{ @apply px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700; }
-    .btn-secondary{ @apply px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200; }
-    .tab{ @apply px-4 py-3 text-sm font-medium hover:bg-slate-50 border-b-2 border-transparent; }
-    .tab.active{ @apply border-blue-600 text-blue-600; }
-    .kpi{ @apply bg-white border rounded-xl p-4 shadow-sm; }
-    .kpi-title{ @apply text-xs uppercase tracking-wide text-slate-500; }
-    .kpi-value{ @apply text-2xl font-semibold mt-1; }
-    .th{ @apply text-left text-xs font-semibold uppercase tracking-wide text-slate-500 px-3 py-2; }
-    td{ @apply px-3 py-2 border-t; }
+    .seg-btn{
+      display:flex; align-items:center; gap:.5rem;
+      padding:.5rem .75rem; border-radius:.75rem;
+      font-weight:600; color:#334155; transition:all .15s;
+    }
+    .seg-btn:hover{ background:#fff; }
+    .seg-active{ background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.06); color:#1d4ed8 }
+    .balloon{
+      background: linear-gradient(180deg,#ffffff, #f8fafc);
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px; /* pílula */
+      padding: 14px 18px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.05);
+      text-align:center;
+    }
+    .balloon-label{ font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; color:#64748b; }
+    .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
+    .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
+    td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
   </style>
 
   <script>
@@ -165,10 +232,10 @@
     const cartEl = document.getElementById("carteira");
     const qEl = document.getElementById("q");
     const alertEl = document.getElementById("alert");
-    const chips = [...document.querySelectorAll(".chip")];
+    const chips = [...document.querySelectorAll("[data-range]")];
 
     // tabs
-    const tabs = [...document.querySelectorAll(".tab")];
+    const segBtns = [...document.querySelectorAll(".seg-btn")];
     const tabMensagens = document.getElementById("tab-mensagens");
     const tabAtend = document.getElementById("tab-atendimentos");
 
@@ -184,7 +251,7 @@
     const tbodyMensagens = document.getElementById("tbodyMensagens");
     const tblEmpty = document.getElementById("tblEmpty");
 
-    // Charts
+    // Charts (uma instância por gráfico)
     let chartMensagens, chartMotivos, chartSeries;
     const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
     const chartMotivosEmpty = document.getElementById("chartMotivosEmpty");
@@ -220,8 +287,8 @@
     }
     function readFromQS(){
       const u = new URL(location.href);
-      startEl.value = u.searchParams.get("start") || "";
-      endEl.value   = u.searchParams.get("end") || "";
+      startEl.value = u.searchParams.get("start") || startEl.value;
+      endEl.value   = u.searchParams.get("end") || endEl.value;
       cartEl.value  = u.searchParams.get("phone_id") || "";
       qEl.value     = u.searchParams.get("q") || "";
     }
@@ -230,29 +297,32 @@
       const pad = n => String(n).padStart(2,"0");
       const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       let a = new Date(), b = new Date();
-      if(kind==="hoje"){ /* a=b=hoje */ }
+      if(kind==="hoje"){ /* a=b hoje */ }
       if(kind==="7d"){ a.setDate(now.getDate()-6); }
       if(kind==="30d"){ a.setDate(now.getDate()-29); }
       if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
       startEl.value = toISO(a); endEl.value = toISO(b);
     }
 
-    // ===== Abas =====
-    tabs.forEach(t => t.addEventListener("click", () => {
-      tabs.forEach(x => x.classList.remove("active"));
-      t.classList.add("active");
-      const id = t.dataset.tab;
-      tabMensagens.classList.toggle("hidden", id!=="mensagens");
-      tabAtend.classList.toggle("hidden", id!=="atendimentos");
-      render(); // recarrega o que estiver visível
+    // chips comportamento visual
+    function highlightChip(ch){
+      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
+      if(ch) ch.classList.add("bg-blue-600","text-white","border-blue-600");
+    }
+    chips.forEach(ch => ch.addEventListener("click", () => {
+      const k = ch.dataset.range;
+      if(k!=="custom") setQuickRange(k);
+      highlightChip(ch);
     }));
 
-    // Chips período
-    chips.forEach(ch => ch.addEventListener("click", () => {
-      chips.forEach(x => x.classList.remove("ring-2","ring-blue-600"));
-      ch.classList.add("ring-2","ring-blue-600");
-      const k = ch.dataset.range;
-      if(k !== "custom") setQuickRange(k);
+    // segmented tabs
+    segBtns.forEach(btn => btn.addEventListener("click", () => {
+      segBtns.forEach(x => x.classList.remove("seg-active"));
+      btn.classList.add("seg-active");
+      const id = btn.dataset.tab;
+      tabMensagens.classList.toggle("hidden", id!=="mensagens");
+      tabAtend.classList.toggle("hidden", id!=="atendimentos");
+      render(); // recarrega o conteúdo visível
     }));
 
     // Preenche carteiras
@@ -295,18 +365,16 @@
 
     // ===== Render =====
     async function renderMensagens(){
-      // KPIs
       try{
         setAlert(""); 
         k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
         const r = await loadResumoMensagens();
         const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
         k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
-        k_dr.textContent = toPct(ent, env || total); // fallback se não tiver "enviados"
+        k_dr.textContent = toPct(ent, env || total);
         k_rr.textContent = toPct(lido, ent || total);
       }catch(e){ setAlert(e.message); }
 
-      // Tabela + Gráfico
       try{
         tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
         const data = await loadEnvios();
@@ -329,15 +397,16 @@
           lidos.push(e.lidos||0);
         });
 
-        // gráfico
+        if(chartMensagens){ chartMensagens.destroy(); chartMensagens = null; }
         document.getElementById("chartMensagens").classList.remove("hidden");
         chartMensagensEmpty.classList.add("hidden");
-        if(chartMensagens) chartMensagens.destroy();
+
         if(labels.length===0){
           document.getElementById("chartMensagens").classList.add("hidden");
           chartMensagensEmpty.classList.remove("hidden");
         }else{
-          chartMensagens = new Chart(document.getElementById("chartMensagens").getContext("2d"), {
+          const ctx = document.getElementById("chartMensagens").getContext("2d");
+          chartMensagens = new Chart(ctx, {
             type: "bar",
             data: {
               labels,
@@ -348,7 +417,8 @@
             },
             options: {
               responsive:true,
-              maintainAspectRatio:false,
+              maintainAspectRatio:false,   // <- evita loop; usamos altura fixa no pai
+              resizeDelay: 200,
               plugins:{ legend:{ position:"top" } },
               scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
             }
@@ -358,7 +428,6 @@
     }
 
     async function renderAtend(){
-      // KPIs
       try{
         a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
         const r = await loadAtendResumo();
@@ -371,7 +440,7 @@
       // Motivos (pizza)
       try{
         const dados = await loadAtendMotivos();
-        if(chartMotivos) chartMotivos.destroy();
+        if(chartMotivos){ chartMotivos.destroy(); chartMotivos=null; }
         document.getElementById("chartMotivos").classList.remove("hidden");
         chartMotivosEmpty.classList.add("hidden");
 
@@ -381,11 +450,8 @@
         }else{
           chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
             type:"pie",
-            data:{
-              labels: dados.map(d=>d.motivo),
-              datasets:[{ data: dados.map(d=>d.qtd) }]
-            },
-            options:{ responsive:true, maintainAspectRatio:false }
+            data:{ labels: dados.map(d=>d.motivo), datasets:[{ data: dados.map(d=>d.qtd) }] },
+            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200 }
           });
         }
       }catch(e){ setAlert("Motivos — " + e.message); }
@@ -399,7 +465,7 @@
         const dias = Object.keys(map).sort();
         const inb = dias.map(d=>map[d].in), outb = dias.map(d=>map[d].out), conc = dias.map(d=>map[d].conc);
 
-        if(chartSeries) chartSeries.destroy();
+        if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
         document.getElementById("chartSeries").classList.remove("hidden");
         chartSeriesEmpty.classList.add("hidden");
 
@@ -417,7 +483,7 @@
                 {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
               ]
             },
-            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
+            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
           });
         }
       }catch(e){ setAlert("Séries — " + e.message); }
@@ -425,7 +491,7 @@
 
     async function render(){
       savePermalink();
-      const active = document.querySelector(".tab.active")?.dataset.tab || "mensagens";
+      const active = document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
       if(active==="mensagens") await renderMensagens();
       else await renderAtend();
     }
@@ -455,6 +521,7 @@
       const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
       startEl.value = toISO(a); endEl.value = toISO(b);
       readFromQS(); // respeita parâmetros se vierem na URL
+      highlightChip(document.querySelector('[data-range="7d"]'));
     }
 
     initDefaults();
