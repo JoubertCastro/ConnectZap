@@ -8,34 +8,79 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <style>
-/* Bolhas estilo WhatsApp */
-.msg {
-  max-width: 70%;
-  padding: 10px 14px 24px 14px;
-  border-radius: 18px;
-  margin: 4px 0;
+/* ===== Balões de mensagem (versão monitoria, mais neutra) ===== */
+.msg{
+  max-width: 68%;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  margin: 6px 0;
   position: relative;
-  word-wrap: break-word;
   white-space: pre-wrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  transition: background 0.2s;
+  line-height: 1.45;
   font-size: 14px;
-  line-height: 1.4;
+  border: 1px solid #e5e7eb;           /* slate-200 */
+  box-shadow: 0 1px 1px rgb(0 0 0 / .04);
+  overflow-wrap: anywhere;
 }
-.msg.enviada { background: linear-gradient(120deg, #dcf8c6, #b8f0a4); align-self: flex-end; }
-.msg.recebida { background: #fff; align-self: flex-start; border: 1px solid #e2e8f0; }
-.msg .hora { font-size: 11px; color: #555; position: absolute; bottom: 4px; right: 8px; }
-.dia { text-align: center; margin: 12px 0; font-size: 12px; color: #888; }
+.msg.enviada{
+  background: #eef2ff;                  /* indigo-50 */
+  border-color: #e0e7ff;                /* indigo-100 */
+  align-self: flex-end;
+}
+.msg.recebida{
+  background: #ffffff;
+  border-color: #e5e7eb;                /* slate-200 */
+  align-self: flex-start;
+}
+.msg .hora{
+  display: block;
+  position: static;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #64748b;                       /* slate-500 */
+  text-align: right;
+}
+.dia{
+  text-align: center;
+  margin: 12px 0;
+  font-size: 12px;
+  color: #64748b;                       /* slate-500 */
+}
 
+/* ===== Pills / badges ===== */
 .chip-btn{
   padding:.4rem .7rem;border:1px solid #e2e8f0;border-radius:.6rem;background:#fff;color:#334155;font-weight:600;font-size:.8rem;
 }
 .chip-btn.active{ background:#1d4ed8;color:#fff;border-color:#1d4ed8; }
+
 .badge{ display:inline-flex; align-items:center; gap:.35rem; padding:.2rem .5rem; border-radius:9999px; font-size:.7rem; font-weight:700; }
 .badge-blue{ background:#eff6ff; color:#1d4ed8; }
 .badge-amber{ background:#fffbeb; color:#b45309; }
 .badge-slate{ background:#f1f5f9; color:#334155; }
+
 .contato-item:hover{ background:#f8fafc; }
+
+/* ===== details/summary (minimizar filtros) ===== */
+details.filter-block{
+  border:1px solid #e2e8f0;             /* slate-200 */
+  border-radius:.75rem;
+  background:#fff;
+}
+details.filter-block > summary{
+  list-style: none;
+  cursor: pointer;
+  padding:.6rem .8rem;
+  display:flex; align-items:center; justify-content:space-between;
+  font-weight:700; color:#334155;
+}
+details.filter-block > summary::-webkit-details-marker{ display:none; }
+details.filter-block[open] > summary{ border-bottom:1px dashed #e2e8f0; }
+.summary-label{ display:flex; align-items:center; gap:.5rem; }
+.summary-chevron{ transition: transform .2s ease; }
+details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
+
+/* borda sutil do painel direito para não “pesar” quando minimizado */
+aside.right-pane{ border-left:1px solid #e5e7eb; }
 </style>
 </head>
 <body class="h-screen flex bg-gray-100">
@@ -45,53 +90,72 @@
   <div class="p-3 border-b space-y-4">
     <h2 class="font-bold text-lg">Monitoria</h2>
 
-    <!-- Filtro básico: carteira + período -->
-    <div class="space-y-2">
-      <label class="text-xs text-gray-500 font-medium">Carteira</label>
-      <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
-        <option value="">— selecione —</option>
-        <option value="*">Todas as contas</option>
-        <option value="732661079928516">ConnectZap</option>
-        <option value="727586317113885">Recovery PJ</option>
-        <option value="802977069563598">Recovery PF</option>
-        <option value="821562937700669">Mercado Pago Cobrança</option>
-        <option value="779797401888141">DivZero</option>
-        <option value="829210283602406">Arc4U</option>
-        <option value="713021321904495">Serasa</option>
-        <option value="803535039503723">Mercado Pago Vendas</option>
-      </select>
+    <!-- Filtro básico: carteira + período (minimizável) -->
+    <details id="fltBasico" class="filter-block" open>
+      <summary>
+        <span class="summary-label">
+          <span>Filtro básico</span>
+          <span id="fltBasicoResumo" class="text-xs font-normal text-slate-500"></span>
+        </span>
+        <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/></svg>
+      </summary>
+      <div class="p-3 space-y-3">
+        <div>
+          <label class="text-xs text-gray-500 font-medium">Carteira</label>
+          <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
+            <option value="">— selecione —</option>
+            <option value="*">Todas as contas</option>
+            <option value="732661079928516">ConnectZap</option>
+            <option value="727586317113885">Recovery PJ</option>
+            <option value="802977069563598">Recovery PF</option>
+            <option value="821562937700669">Mercado Pago Cobrança</option>
+            <option value="779797401888141">DivZero</option>
+            <option value="829210283602406">Arc4U</option>
+            <option value="713021321904495">Serasa</option>
+            <option value="803535039503723">Mercado Pago Vendas</option>
+          </select>
+        </div>
 
-      <div class="text-xs text-gray-500 font-medium mt-2">Período</div>
-      <div class="flex flex-wrap gap-2">
-        <button class="chip-btn" data-range="hoje">Hoje</button>
-        <button class="chip-btn" data-range="ontem">Ontem</button>
-        <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
-        <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
-        <button class="chip-btn" data-range="mes">Mês atual</button>
-        <button class="chip-btn" data-range="custom">Personalizado</button>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <input id="dataInicioLista" type="date" class="p-2 border rounded-md text-sm" />
-        <input id="dataFimLista" type="date" class="p-2 border rounded-md text-sm" />
-      </div>
-      <div class="flex gap-2">
-        <button id="btnAplicarLista" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
-        <button id="btnLimparLista" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
-      </div>
+        <div>
+          <div class="text-xs text-gray-500 font-medium">Período</div>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <button class="chip-btn" data-range="hoje">Hoje</button>
+            <button class="chip-btn" data-range="ontem">Ontem</button>
+            <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
+            <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
+            <button class="chip-btn" data-range="mes">Mês atual</button>
+            <button class="chip-btn" data-range="custom">Personalizado</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <input id="dataInicioLista" type="date" class="p-2 border rounded-md text-sm" />
+            <input id="dataFimLista" type="date" class="p-2 border rounded-md text-sm" />
+          </div>
+        </div>
 
-      <div class="space-y-1">
-        <label class="text-xs text-gray-500 font-medium">Buscar contato/numero</label>
-        <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
-      </div>
+        <div class="flex gap-2">
+          <button id="btnAplicarLista" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
+          <button id="btnLimparLista" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
+        </div>
 
-      <div id="hintLista" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-        Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar os contatos.
+        <div class="space-y-1">
+          <label class="text-xs text-gray-500 font-medium">Buscar contato/numero</label>
+          <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
+        </div>
+
+        <div id="hintLista" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
+          Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar os contatos.
+        </div>
       </div>
-    </div>
+    </details>
 
     <!-- Filtro Avançado (conversas_em_andamento) -->
-    <details id="fx" class="rounded-lg border">
-      <summary class="cursor-pointer px-3 py-2 font-semibold text-slate-700">Filtro Avançado — conversas em andamento</summary>
+    <details id="fx" class="filter-block">
+      <summary>
+        <span class="summary-label">
+          <span>Filtro avançado — conversas em andamento</span>
+        </span>
+        <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/></svg>
+      </summary>
       <div class="p-3 space-y-2">
         <div>
           <label class="text-xs text-gray-500 font-medium">Carteira</label>
@@ -146,29 +210,41 @@
 
   <div class="flex flex-1">
     <!-- Chat -->
-    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-3 bg-gray-50">
+    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col bg-gray-50">
       <p class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
     </div>
 
-    <!-- Resumo + filtros da conversa aberta -->
-    <aside class="w-1/3 lg:w-1/4 bg-white border-l p-4 space-y-3">
-      <h3 class="font-bold text-gray-700 mb-2">Resumo</h3>
-      <div id="resumoCards" class="grid gap-2"></div>
+    <!-- Resumo + filtros da conversa (minimizáveis) -->
+    <aside class="right-pane w-1/3 lg:w-1/4 bg-white p-4 space-y-3">
+      <details class="filter-block" open>
+        <summary>
+          <span class="summary-label"><span>Resumo</span></span>
+          <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/></svg>
+        </summary>
+        <div id="resumoCards" class="grid gap-2 p-3"></div>
+      </details>
 
-      <h3 class="font-bold text-gray-700 mt-4">Filtros da conversa</h3>
-      <label class="block text-sm">Data Inicial:</label>
-      <input type="date" id="dataInicio" class="border p-1 rounded w-full">
-      <label class="block text-sm mt-2">Data Final:</label>
-      <input type="date" id="dataFim" class="border p-1 rounded w-full">
-      <label class="block text-sm mt-2">Tipo:</label>
-      <select id="filtroTipo" class="border p-1 rounded w-full">
-        <option value="">Todas</option>
-        <option value="in">Recebidas</option>
-        <option value="out">Enviadas</option>
-      </select>
-      <button onclick="carregarMensagens()" class="w-full mt-3 bg-green-500 text-white p-2 rounded hover:bg-green-600">Aplicar Filtros</button>
+      <details class="filter-block" open>
+        <summary>
+          <span class="summary-label"><span>Filtros da conversa</span></span>
+          <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/></svg>
+        </summary>
+        <div class="p-3 space-y-2">
+          <label class="block text-sm">Data Inicial:</label>
+          <input type="date" id="dataInicio" class="border p-1 rounded w-full">
+          <label class="block text-sm mt-2">Data Final:</label>
+          <input type="date" id="dataFim" class="border p-1 rounded w-full">
+          <label class="block text-sm mt-2">Tipo:</label>
+          <select id="filtroTipo" class="border p-1 rounded w-full">
+            <option value="">Todas</option>
+            <option value="in">Recebidas</option>
+            <option value="out">Enviadas</option>
+          </select>
+          <button onclick="carregarMensagens()" class="w-full mt-3 bg-green-500 text-white p-2 rounded hover:bg-green-600">Aplicar Filtros</button>
 
-      <div id="janelaTicket" class="text-xs text-slate-600 mt-3 hidden"></div>
+          <div id="janelaTicket" class="text-xs text-slate-600 mt-2 hidden"></div>
+        </div>
+      </details>
     </aside>
   </div>
 </main>
@@ -210,7 +286,6 @@ function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g,ch=>({'&':
 function gerarCor(nome){ let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash);} return `hsl(${hash % 360},70%,60%)`; }
 function toLocalYMD(iso){
   const d = new Date(iso);
-  // Para garantir janela por data, usamos timezone São Paulo
   const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
 }
@@ -236,6 +311,17 @@ chipBtns.forEach(btn=>btn.addEventListener("click", ()=>{ const k=btn.dataset.ra
 // default hoje
 setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
 
+/* resumo compacto no summary do filtro básico */
+function atualizarResumoBasico(){
+  const carteira = filtroContaEl.value || "—";
+  const di = diListaEl.value || "—";
+  const df = dfListaEl.value || "—";
+  const span = document.getElementById("fltBasicoResumo");
+  span.textContent = `(carteira: ${carteira === "*" ? "todas" : carteira} • ${di} → ${df})`;
+}
+[filtroContaEl, diListaEl, dfListaEl].forEach(el => el.addEventListener("change", atualizarResumoBasico));
+atualizarResumoBasico();
+
 /* ====== LISTA DE CONTATOS ====== */
 const contatosUL = document.getElementById("contatos");
 document.getElementById("btnAplicarLista").addEventListener("click", ()=>{
@@ -249,6 +335,7 @@ document.getElementById("btnLimparLista").addEventListener("click", ()=>{
   filtrosListaAplicados = false; hintLista.classList.remove("hidden");
   contatosUL.innerHTML="";
   if(contactsInterval) clearInterval(contactsInterval);
+  atualizarResumoBasico();
 });
 function filtrarContatos(q){
   q=(q||"").toLowerCase().trim();
@@ -368,7 +455,6 @@ async function carregarMensagens(){
   const chat=document.getElementById("chat");
   chat.innerHTML = `<p class="text-center text-gray-500">Carregando…</p>`;
 
-  // datas vindas da lateral OU da janelaAtiva
   const di = janelaAtiva?.inicio || document.getElementById("dataInicio").value || "";
   const df = janelaAtiva?.fim    || document.getElementById("dataFim").value || "";
   const tipo = document.getElementById("filtroTipo").value;
@@ -382,12 +468,8 @@ async function carregarMensagens(){
     if(!res.ok) throw new Error("Erro ao obter histórico");
     let todas = await res.json();
 
-    mensagens = todas.filter(m=>{
-      if(tipo && m.status !== tipo) return false;
-      return true;
-    });
+    mensagens = todas.filter(m=>!tipo || m.status === tipo);
 
-    // render
     chat.innerHTML=""; let ultimoDia=""; let enviadas=0, recebidas=0;
     mensagens.forEach(m=>{
       if(m.status==="in") recebidas++; else enviadas++;
@@ -421,7 +503,7 @@ function exportarTXT(){
   if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
   let conteudo = mensagens.map(m=>{
     const data=new Date(m.data_hora).toLocaleString("pt-BR");
-    return `[${data}] (${m.status==="in"?"Recebida":"Enviada"}) ${m.mensagem_final}`;
+    return `[${data}] (${m.status==="in"?"Recebida":"Enviada"}) ${m.mensagem_final||""}`;
   }).join("\n");
   const blob=new Blob([conteudo],{type:"text/plain"});
   const url=URL.createObjectURL(blob);
@@ -466,8 +548,6 @@ async function buscarAvancado(){
   fxLista.innerHTML = `<li class="text-sm text-slate-600">Buscando…</li>`;
   fxHint.classList.add("hidden");
 
-  // endpoint sugerido para listar conversas_em_andamento com filtros
-  // GET /api/monitoria/em_andamento?carteira=&nome_agente=&telefone=
   let url = `${API_BASE}/api/monitoria/em_andamento?`;
   if(carteira) url += `carteira=${encodeURIComponent(carteira)}&`;
   if(nome_agente) url += `nome_agente=${encodeURIComponent(nome_agente)}&`;
@@ -476,7 +556,7 @@ async function buscarAvancado(){
   try{
     const res = await fetch(url);
     if(!res.ok) throw new Error("endpoint indisponível");
-    const dados = await res.json(); // esperado: [{telefone, phone_id, carteira, nome_agente, started_at, ended_at}]
+    const dados = await res.json(); // [{telefone, phone_id, carteira, nome_agente, started_at, ended_at}]
     renderFX(dados);
   }catch(e){
     fxLista.innerHTML = "";
@@ -514,7 +594,7 @@ function renderFX(rows){
 }
 
 /* ====== START ====== */
-carregarContatos(); // só renderiza "carregando" quando aplicar
+carregarContatos(); // só mostra “carregando” depois que aplicar
 setInterval(()=>{ if(filtrosListaAplicados) carregarContatos(); }, 10000);
 </script>
 </body>
