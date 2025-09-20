@@ -6,7 +6,7 @@
 <title>Conversas WhatsApp — Supervisor</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-/* Bolhas de mensagem modernas */
+/* Bolhas de mensagem modernas (mantidas) */
 .msg {
   max-width: 70%;
   padding: 10px 14px 24px 14px;
@@ -34,6 +34,22 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
   border: 1px solid #e2e8f0; background: #fff; color: #334155; font-weight: 600;
 }
 .chip-btn.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+
+/* Filtros minimizáveis */
+details.filter-block{
+  border:1px solid #e2e8f0; border-radius:.75rem; background:#fff;
+}
+details.filter-block > summary{
+  list-style: none; cursor: pointer; padding:.6rem .8rem;
+  display:flex; align-items:center; justify-content:space-between;
+  font-weight:700; color:#334155;
+}
+details.filter-block > summary::-webkit-details-marker{ display:none; }
+details.filter-block[open] > summary{ border-bottom:1px dashed #e2e8f0; }
+.summary-label{ display:flex; align-items:center; gap:.5rem; }
+.summary-chevron{ transition: transform .2s ease; }
+details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
+
 @media (max-width: 768px) { aside { width: 42%; } .msg { max-width: 80%; } }
 </style>
 </head>
@@ -41,52 +57,66 @@ mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
 
 <!-- =========== SIDEBAR =========== -->
 <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
-  <!-- Filtros -->
-  <div class="p-3 border-b space-y-3">
-    <div class="space-y-1">
-      <label class="text-xs text-gray-500 font-medium">Carteira</label>
-      <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
-        <option value="">— selecione —</option>
-        <option value="*">Todas as contas</option>
-        <option value="732661079928516">ConnectZap</option>
-        <option value="727586317113885">Recovery PJ</option>
-        <option value="802977069563598">Recovery PF</option>
-        <option value="821562937700669">Mercado Pago Cobrança</option>
-        <option value="779797401888141">DivZero</option>
-        <option value="829210283602406">Arc4U</option>
-        <option value="713021321904495">Serasa</option>
-        <option value="803535039503723">Mercado Pago Vendas</option>
-      </select>
-    </div>
+  <!-- Filtros (agora minimizáveis) -->
+  <div class="p-3 border-b">
+    <details id="fltBasico" class="filter-block" open>
+      <summary>
+        <span class="summary-label">
+          <span>Filtros</span>
+          <span id="fltResumo" class="text-xs font-normal text-slate-500"></span>
+        </span>
+        <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
+        </svg>
+      </summary>
 
-    <div class="space-y-2">
-      <div class="text-xs text-gray-500 font-medium">Período</div>
-      <div class="flex flex-wrap gap-2">
-        <button class="chip-btn" data-range="hoje">Hoje</button>
-        <button class="chip-btn" data-range="ontem">Ontem</button>
-        <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
-        <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
-        <button class="chip-btn" data-range="mes">Mês atual</button>
-        <button class="chip-btn" data-range="custom">Personalizado</button>
-      </div>
-      <div class="grid grid-cols-2 gap-2">
-        <input id="dataInicio" type="date" class="p-2 border rounded-md text-sm" />
-        <input id="dataFim" type="date" class="p-2 border rounded-md text-sm" />
-      </div>
-      <div class="flex gap-2">
-        <button id="btnAplicarFiltros" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
-        <button id="btnLimparFiltros" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
-      </div>
-    </div>
+      <div class="p-3 space-y-3">
+        <div class="space-y-1">
+          <label class="text-xs text-gray-500 font-medium">Carteira</label>
+          <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
+            <option value="">— selecione —</option>
+            <option value="*">Todas as contas</option>
+            <option value="732661079928516">ConnectZap</option>
+            <option value="727586317113885">Recovery PJ</option>
+            <option value="802977069563598">Recovery PF</option>
+            <option value="821562937700669">Mercado Pago Cobrança</option>
+            <option value="779797401888141">DivZero</option>
+            <option value="829210283602406">Arc4U</option>
+            <option value="713021321904495">Serasa</option>
+            <option value="803535039503723">Mercado Pago Vendas</option>
+          </select>
+        </div>
 
-    <div class="space-y-1">
-      <label class="text-xs text-gray-500 font-medium">Buscar contato ou número</label>
-      <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
-    </div>
+        <div class="space-y-2">
+          <div class="text-xs text-gray-500 font-medium">Período</div>
+          <div class="flex flex-wrap gap-2">
+            <button class="chip-btn" data-range="hoje">Hoje</button>
+            <button class="chip-btn" data-range="ontem">Ontem</button>
+            <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
+            <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
+            <button class="chip-btn" data-range="mes">Mês atual</button>
+            <button class="chip-btn" data-range="custom">Personalizado</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <input id="dataInicio" type="date" class="p-2 border rounded-md text-sm" />
+            <input id="dataFim" type="date" class="p-2 border rounded-md text-sm" />
+          </div>
+          <div class="flex gap-2">
+            <button id="btnAplicarFiltros" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
+            <button id="btnLimparFiltros" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
+          </div>
+        </div>
 
-    <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-      Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar a lista.
-    </div>
+        <div class="space-y-1">
+          <label class="text-xs text-gray-500 font-medium">Buscar contato ou número</label>
+          <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
+        </div>
+
+        <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
+          Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar a lista.
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- Lista de contatos -->
@@ -155,12 +185,12 @@ let novasMensagens = {};
 let ultimoStatusContatos = {};
 let filtrosAplicados = false;
 
-// ====== incremento por data no chat ======
+// incremento por data no chat
 let lastTimestampMs = null;
 let lastDayRendered = null;
 let renderedKeys = new Set();
 
-// ====== DOM refs ======
+// refs
 const textarea = document.getElementById("textoMensagem");
 const btnEnviar = document.getElementById("btnEnviar");
 const digitando = document.getElementById("digitando");
@@ -172,8 +202,9 @@ const hintFiltro = document.getElementById("hintFiltro");
 const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
 const btnLimparFiltros = document.getElementById("btnLimparFiltros");
 const chipBtns = [...document.querySelectorAll(".chip-btn")];
+const fltResumoEl = document.getElementById("fltResumo");
 
-// ====== Textarea UX ======
+// Textarea UX
 textarea.addEventListener("input", () => {
   textarea.style.height = "auto";
   textarea.style.height = textarea.scrollHeight + "px";
@@ -184,7 +215,7 @@ textarea.addEventListener("keydown", e => {
   if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
 });
 
-// ====== Período rápido ======
+// Período rápido
 function pad(n){ return String(n).padStart(2,"0"); }
 function toYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 function setQuickRange(kind){
@@ -196,6 +227,7 @@ function setQuickRange(kind){
   if(kind==="30d"){ a.setDate(now.getDate()-29); }
   if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
   dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
+  atualizarResumo();
 }
 function highlightChip(btn){
   chipBtns.forEach(b=>b.classList.remove("active"));
@@ -209,13 +241,13 @@ chipBtns.forEach(btn=>{
   });
 });
 
-// Default: sugerir “Hoje”, mas só carregar ao aplicar
+// Default: sugere “Hoje”
 (function initPeriodoDefault(){
   setQuickRange("hoje");
   highlightChip(document.querySelector('[data-range="hoje"]'));
 })();
 
-// ====== Util ======
+// helpers
 function gerarCor(nome){
   let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
   return `hsl(${hash % 360},70%,60%)`;
@@ -227,14 +259,23 @@ function toLocalDateYMD(isoString){
   return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
 }
 
-// ====== Aplicar/Limpar filtros ======
+// resumo compacto no summary
+function atualizarResumo(){
+  const carteira = filtroContaEl.value || "—";
+  const di = dataInicioEl.value || "—";
+  const df = dataFimEl.value || "—";
+  fltResumoEl.textContent = `(carteira: ${carteira === "*" ? "todas" : carteira} • ${di} → ${df})`;
+}
+[filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
+atualizarResumo();
+
+// Aplicar/Limpar filtros
 btnAplicarFiltros.addEventListener("click", ()=>{
   if(!filtroContaEl.value){ alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
   filtrosAplicados = true;
   hintFiltro.classList.add("hidden");
   startContactsPolling();
 });
-
 btnLimparFiltros.addEventListener("click", ()=>{
   filtroContaEl.value = "";
   setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
@@ -244,9 +285,10 @@ btnLimparFiltros.addEventListener("click", ()=>{
   hintFiltro.classList.remove("hidden");
   contatosUL.innerHTML = "";
   if(contactsInterval) clearInterval(contactsInterval);
+  atualizarResumo();
 });
 
-// ====== Carregar contatos (só após aplicar) ======
+// Carregar contatos (só após aplicar)
 async function carregarContatos(){
   if(!filtrosAplicados) return;
   try{
@@ -328,14 +370,13 @@ async function carregarContatos(){
     contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
   }
 }
-
 function startContactsPolling(){
   if(contactsInterval) clearInterval(contactsInterval);
   carregarContatos();
   contactsInterval = setInterval(()=>{ if(filtrosAplicados) carregarContatos(); }, 10000);
 }
 
-// ====== Busca local highlight ======
+// Busca local highlight
 function filtrarContatos(q){
   q=(q||"").toLowerCase().trim();
   document.querySelectorAll("#contatos li").forEach(li=>{
@@ -349,7 +390,7 @@ function filtrarContatos(q){
   });
 }
 
-// ====== Abrir conversa ======
+// Abrir conversa
 function abrirConversaFromElement(c,el){
   document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
   el.classList.add("contato-selected");
@@ -366,11 +407,11 @@ async function abrirConversa(c){
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
 
   if(messagesInterval) clearInterval(messagesInterval);
-  await carregarMensagens(false); // full
+  await carregarMensagens(false);
   messagesInterval=setInterval(()=>{ if(!userTyping && !isModalOpen){ carregarMensagens(true); } }, 5000);
 }
 
-// ====== Mensagens ======
+// Mensagens
 async function carregarMensagens(incremental = true) {
   if (!contatoSelecionado) return;
   const chat = document.getElementById("chat");
@@ -383,7 +424,6 @@ async function carregarMensagens(incremental = true) {
     if (!res.ok) throw new Error("Erro ao obter histórico");
     const msgs = await res.json();
 
-    // Ordena por data para garantir render consistente
     msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
     if (!incremental) {
@@ -414,7 +454,6 @@ async function carregarMensagens(incremental = true) {
       const div = document.createElement("div");
       div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
 
-      // Imagem
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
         div.innerHTML = `
           <div class="text-gray-600 italic">[imagem recebida]</div>
@@ -441,7 +480,6 @@ async function carregarMensagens(incremental = true) {
           };
         }
       }
-      // Áudio
       else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
         div.innerHTML = `
           <div class="text-gray-600 italic">[áudio recebido]</div>
@@ -465,7 +503,6 @@ async function carregarMensagens(incremental = true) {
           };
         }
       }
-      // Reaction
       else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
         const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
         const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
@@ -480,12 +517,10 @@ async function carregarMensagens(incremental = true) {
           } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
         } else { label.textContent = "emoji indisponível"; }
       }
-      // Texto
       else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
       }
 
-      // botão de resposta
       if (m.status === "in") {
         const btn = document.createElement("button");
         btn.className = "btn-responder"; btn.title = "Responder"; btn.innerHTML = "↩";
@@ -504,7 +539,7 @@ async function carregarMensagens(incremental = true) {
   }
 }
 
-// ====== Responder / Cancelar ======
+// Responder / Cancelar
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId || null;
   document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0,50);
@@ -517,7 +552,7 @@ function cancelarResposta(){
   document.getElementById("respostaTexto").innerText = "";
 }
 
-// ====== Enviar texto ======
+// Enviar texto
 async function enviarMensagem(){
   const texto=textarea.value.trim(); 
   if(!texto||!contatoSelecionado) return;
@@ -537,7 +572,7 @@ async function enviarMensagem(){
   finally{ userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0; }
 }
 
-// ====== Enviar PDF ======
+// Enviar PDF
 async function enviarPDF(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -566,7 +601,7 @@ async function enviarPDF(event){
   }finally{ event.target.value = ""; }
 }
 
-// ====== Modal imagem ======
+// Modal imagem
 const imageModal = document.getElementById("imageModal");
 const modalImg = document.getElementById("modalImg");
 const closeModal = document.getElementById("closeModal");
@@ -574,10 +609,10 @@ function abrirModalImagem(src){ isModalOpen = true; modalImg.src = src; imageMod
 closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
 imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
 
-// ====== Page visibility ======
+// Page visibility
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(filtrosAplicados) carregarContatos(); if(contatoSelecionado) carregarMensagens(true); } });
 
-// ====== Inicial: NÃO carrega até aplicar filtros ======
+// Inicial: NÃO carrega até aplicar filtros
 </script>
 </body>
 </html>

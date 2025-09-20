@@ -1,618 +1,380 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Conversas WhatsApp — Supervisor</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-/* Bolhas de mensagem modernas (mantidas) */
-.msg {
-  max-width: 70%;
-  padding: 10px 14px 24px 14px;
-  border-radius: 18px;
-  margin: 4px 0;
-  position: relative;
-  word-wrap: break-word;
-  white-space: pre-wrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  transition: background 0.2s;
-}
-.msg.enviada { background: linear-gradient(120deg, #dcf8c6, #b8f0a4); align-self: flex-end; }
-.msg.recebida { background: #fff; align-self: flex-start; border: 1px solid #e2e8f0; }
-.msg .hora { font-size: 11px; color: #555; position: absolute; bottom: 4px; right: 8px; }
-.msg .btn-responder { position: absolute; top: 6px; right: 6px; font-size: 14px; color: #4b5563; opacity: 0; transition: opacity 0.2s; }
-.msg.recebida:hover .btn-responder { opacity: 1; }
-.msg .btn-responder:hover { color: #2563eb; }
-.badge { position: absolute; top: 8px; right: 8px; background: #22c55e; color: #fff; font-size: 10px; font-weight: bold; border-radius: 9999px; padding: 2px 6px; min-width: 18px; text-align: center; }
-.dia { text-align: center; margin: 12px 0; font-size: 12px; color: #888; }
-.contato-selected { background: #f0f9ff !important; }
-mark { background: #ffef6b; color: #000; padding: 0 2px; border-radius: 2px; }
-#digitando { font-size: 12px; color: #666; margin-bottom: 4px; }
-.chip-btn {
-  padding: .4rem .7rem; font-size: .8rem; border-radius: .6rem;
-  border: 1px solid #e2e8f0; background: #fff; color: #334155; font-weight: 600;
-}
-.chip-btn.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+  <meta charset="utf-8" />
+  <title>Status das Mensagens WhatsApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f5f7fb;--card:#ffffff;--txt:#222;--muted:#6b7280;--primary:#2563eb;--primary-d:#1d4ed8;
+      --success:#16a34a;--warn:#d97706;--danger:#dc2626;--outline:#e5e7eb;--radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
+      margin:0;padding:24px;background:var(--bg);color:var(--txt);
+    }
+    .container{max-width:1200px;margin:0 auto}
+    .card{
+      background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
+      box-shadow:0 6px 24px rgba(0,0,0,.04);
+    }
+    h1{margin:0 0 10px;font-size:22px}
+    .muted{color:var(--muted);font-size:14px;margin-bottom:15px}
 
-/* Filtros minimizáveis */
-details.filter-block{
-  border:1px solid #e2e8f0; border-radius:.75rem; background:#fff;
-}
-details.filter-block > summary{
-  list-style: none; cursor: pointer; padding:.6rem .8rem;
-  display:flex; align-items:center; justify-content:space-between;
-  font-weight:700; color:#334155;
-}
-details.filter-block > summary::-webkit-details-marker{ display:none; }
-details.filter-block[open] > summary{ border-bottom:1px dashed #e2e8f0; }
-.summary-label{ display:flex; align-items:center; gap:.5rem; }
-.summary-chevron{ transition: transform .2s ease; }
-details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
+    /* Filtros minimizáveis */
+    details.filter-block{border:1px solid var(--outline);border-radius:10px;background:#fff;margin-bottom:14px}
+    details.filter-block > summary{
+      list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;
+      font-weight:700;color:#334155
+    }
+    details.filter-block > summary::-webkit-details-marker{display:none}
+    details.filter-block[open] > summary{border-bottom:1px dashed var(--outline)}
+    .summary-chevron{transition:transform .2s}
+    details.filter-block[open] .summary-chevron{transform:rotate(180deg)}
+    .summary-right{font-size:12px;color:#64748b;font-weight:600}
 
-@media (max-width: 768px) { aside { width: 42%; } .msg { max-width: 80%; } }
-</style>
+    .filtros{display:flex;flex-wrap:wrap;gap:12px}
+    .filtros > .field{min-width:220px}
+    .filtros label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+    .filtros select,.filtros input{
+      width:100%;padding:8px 10px;border:1px solid var(--outline);border-radius:8px;font-size:14px;background:#fff
+    }
+    .btn{
+      padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;
+      background:var(--primary);color:#fff
+    }
+    .btn:hover{background:var(--primary-d)}
+    .btn-outline{
+      padding:10px 14px;border:1px solid var(--outline);border-radius:8px;background:#fff;color:#334155;font-weight:700
+    }
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{
+      border:1px solid var(--outline);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#334155;background:#fff;cursor:pointer
+    }
+    .chip.active{background:#eaf1ff;border-color:#c7d7fe;color:#1d4ed8}
+
+    .resumo{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;border:1px solid var(--outline);background:#fff;border-radius:999px;
+      padding:6px 10px;font-size:12px;font-weight:700;color:#334155
+    }
+
+    table{
+      width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:var(--radius);overflow:hidden
+    }
+    thead th{
+      position:sticky;top:0;background:#f9fafb;border-bottom:1px solid var(--outline);
+      padding:12px 14px;text-align:left;font-size:13px;font-weight:700;color:var(--muted);z-index:1
+    }
+    tbody td{padding:12px 14px;border-bottom:1px solid var(--outline);font-size:14px}
+    tbody tr:nth-child(even){background:#fcfdff}
+    tr:last-child td{border-bottom:none}
+
+    .status-pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid}
+    .sent{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+    .delivered{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+    .read{background:#dcfce7;color:#166534;border-color:#86efac}
+    .failed{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+    .other{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
+
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .grow{flex:1}
+  </style>
 </head>
-<body class="h-screen flex bg-gray-100">
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Status das Mensagens WhatsApp</h1>
+      <div class="muted">Atualiza automaticamente a cada 5 segundos. Você pode refinar por conta, telefone do cliente, período e status.</div>
 
-<!-- =========== SIDEBAR =========== -->
-<aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
-  <!-- Filtros (agora minimizáveis) -->
-  <div class="p-3 border-b">
-    <details id="fltBasico" class="filter-block" open>
-      <summary>
-        <span class="summary-label">
+      <!-- Filtros -->
+      <details id="flt" class="filter-block" open>
+        <summary>
           <span>Filtros</span>
-          <span id="fltResumo" class="text-xs font-normal text-slate-500"></span>
-        </span>
-        <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
-        </svg>
-      </summary>
+          <span id="fltResumo" class="summary-right"></span>
+          <svg class="summary-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
+          </svg>
+        </summary>
+        <div class="p-2">
+          <div class="filtros">
+            <div class="field">
+              <label for="filtroConta">Conta (telefone da conta)</label>
+              <select id="filtroConta">
+                <option value="">Todas as contas</option>
+                <option value="556192281391">ConnectZap</option>
+                <option value="558000562426">Recovery PF</option>
+                <option value="558009414344">DivZero</option>
+                <option value="558009000557">Arc4U</option>
+                <option value="558000420762">Serasa</option>
+                <option value="558002020074">Vendas MP</option>
+              </select>
+            </div>
 
-      <div class="p-3 space-y-3">
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500 font-medium">Carteira</label>
-          <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
-            <option value="">— selecione —</option>
-            <option value="*">Todas as contas</option>
-            <option value="732661079928516">ConnectZap</option>
-            <option value="727586317113885">Recovery PJ</option>
-            <option value="802977069563598">Recovery PF</option>
-            <option value="821562937700669">Mercado Pago Cobrança</option>
-            <option value="779797401888141">DivZero</option>
-            <option value="829210283602406">Arc4U</option>
-            <option value="713021321904495">Serasa</option>
-            <option value="803535039503723">Mercado Pago Vendas</option>
-          </select>
-        </div>
+            <div class="field">
+              <label for="filtroCliente">Telefone do cliente</label>
+              <input type="text" id="filtroCliente" placeholder="Ex.: 5511999999999" />
+            </div>
 
-        <div class="space-y-2">
-          <div class="text-xs text-gray-500 font-medium">Período</div>
-          <div class="flex flex-wrap gap-2">
-            <button class="chip-btn" data-range="hoje">Hoje</button>
-            <button class="chip-btn" data-range="ontem">Ontem</button>
-            <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
-            <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
-            <button class="chip-btn" data-range="mes">Mês atual</button>
-            <button class="chip-btn" data-range="custom">Personalizado</button>
+            <div class="field">
+              <label for="filtroStatus">Status</label>
+              <select id="filtroStatus">
+                <option value="">Todos</option>
+                <!-- opções serão preenchidas dinamicamente -->
+              </select>
+            </div>
+
+            <div class="field" style="min-width:260px">
+              <label>Período rápido</label>
+              <div class="chips">
+                <button type="button" class="chip" data-range="hoje">Hoje</button>
+                <button type="button" class="chip" data-range="ontem">Ontem</button>
+                <button type="button" class="chip" data-range="7d">Últimos 7 dias</button>
+                <button type="button" class="chip" data-range="30d">Últimos 30 dias</button>
+                <button type="button" class="chip" data-range="mes">Mês atual</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="dataInicio">De</label>
+              <input type="datetime-local" id="dataInicio">
+            </div>
+            <div class="field">
+              <label for="dataFim">Até</label>
+              <input type="datetime-local" id="dataFim">
+            </div>
+
+            <div class="field" style="min-width:180px">
+              <label for="ordem">Ordenar por</label>
+              <select id="ordem">
+                <option value="desc">Mais recentes primeiro</option>
+                <option value="asc">Mais antigas primeiro</option>
+              </select>
+            </div>
+
+            <div class="field" style="display:flex;gap:8px;align-items:flex-end">
+              <button class="btn" id="btnAplicar">Aplicar Filtros</button>
+              <button class="btn-outline" id="btnLimpar">Limpar</button>
+            </div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="dataInicio" type="date" class="p-2 border rounded-md text-sm" />
-            <input id="dataFim" type="date" class="p-2 border rounded-md text-sm" />
-          </div>
-          <div class="flex gap-2">
-            <button id="btnAplicarFiltros" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
-            <button id="btnLimparFiltros" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
-          </div>
-        </div>
 
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500 font-medium">Buscar contato ou número</label>
-          <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
+          <div id="resumo" class="resumo"></div>
         </div>
+      </details>
 
-        <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-          Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar a lista.
-        </div>
+      <div class="toolbar">
+        <div class="muted grow" id="contadorResultados">—</div>
       </div>
-    </details>
-  </div>
 
-  <!-- Lista de contatos -->
-  <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
-
-  <div class="p-2 text-xs text-gray-500 border-t">
-    Atualiza automaticamente após aplicar os filtros.
-  </div>
-</aside>
-
-<!-- =========== MAIN CHAT =========== -->
-<main class="flex-1 flex flex-col">
-  <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
-    <div class="flex items-center space-x-3 min-w-0">
-      <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
-      <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26%">Data/Hora</th>
+            <th style="width:28%">Telefone do cliente</th>
+            <th style="width:28%">Telefone da conta</th>
+            <th style="width:18%">Status</th>
+          </tr>
+        </thead>
+        <tbody id="statusTable">
+          <tr><td colspan="4">Carregando...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
-    <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
-  </div>
-  <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
+  <script>
+    const API = "https://whatsapp-webhook-production-9a27.up.railway.app/api/status";
 
-  <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
-    <div class="truncate max-w-[80%]">
-      <span class="font-semibold">Respondendo:</span> 
-      <span id="respostaTexto" class="text-gray-600"></span>
-    </div>
-    <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
-  </div>
+    const filtroConta   = document.getElementById("filtroConta");
+    const filtroCliente = document.getElementById("filtroCliente"); // recipient_id
+    const filtroStatus  = document.getElementById("filtroStatus");
+    const dataInicio    = document.getElementById("dataInicio");
+    const dataFim       = document.getElementById("dataFim");
+    const ordemSel      = document.getElementById("ordem");
+    const tbody         = document.getElementById("statusTable");
+    const resumoDiv     = document.getElementById("resumo");
+    const contador      = document.getElementById("contadorResultados");
+    const fltResumo     = document.getElementById("fltResumo");
 
-  <div class="p-3 border-t flex space-x-2 bg-white items-center">
-    <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
-    <button onclick="document.getElementById('fileInput').click()" class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
+    const chips = Array.from(document.querySelectorAll(".chip"));
 
-    <textarea id="textoMensagem" rows="1" class="flex-1 border rounded-md p-2 resize-none" placeholder="Digite uma mensagem..." disabled></textarea>
-    <button id="btnEnviar" onclick="enviarMensagem()" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50" disabled>Enviar</button>
-  </div>
-</main>
+    let cache = [];
+    let isLoading = false;
+    let statusesConhecidos = new Set();
+    let firstBuildStatus = true;
 
-<!-- Modal de imagem -->
-<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-  <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
-  <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
-</div>
-
-<script>
-const API_BASE = "https://conversas-api-production.up.railway.app";
-const phoneIdMap = {
-  "732661079928516": "ConnectZap",
-  "727586317113885": "Recovery PJ",
-  "802977069563598": "Recovery PF",
-  "821562937700669": "Mercado Pago Cobrança",
-  "779797401888141": "DivZero",
-  "829210283602406": "Arc4U",
-  "713021321904495": "Serasa",
-  "803535039503723": "Mercado Pago Vendas"
-};
-
-let contatoSelecionado = null, phoneIdAtual = null;
-let respostaMsgId = null;
-let contactsInterval = null, messagesInterval = null, userTyping = false, isModalOpen = false;
-
-let novasMensagens = {};
-let ultimoStatusContatos = {};
-let filtrosAplicados = false;
-
-// incremento por data no chat
-let lastTimestampMs = null;
-let lastDayRendered = null;
-let renderedKeys = new Set();
-
-// refs
-const textarea = document.getElementById("textoMensagem");
-const btnEnviar = document.getElementById("btnEnviar");
-const digitando = document.getElementById("digitando");
-const contatosUL = document.getElementById("contatos");
-const filtroContaEl = document.getElementById("filtroConta");
-const dataInicioEl = document.getElementById("dataInicio");
-const dataFimEl = document.getElementById("dataFim");
-const hintFiltro = document.getElementById("hintFiltro");
-const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
-const btnLimparFiltros = document.getElementById("btnLimparFiltros");
-const chipBtns = [...document.querySelectorAll(".chip-btn")];
-const fltResumoEl = document.getElementById("fltResumo");
-
-// Textarea UX
-textarea.addEventListener("input", () => {
-  textarea.style.height = "auto";
-  textarea.style.height = textarea.scrollHeight + "px";
-  btnEnviar.disabled = textarea.value.trim().length === 0;
-  digitando.style.display = textarea.value.trim() ? "block" : "none";
-});
-textarea.addEventListener("keydown", e => {
-  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
-});
-
-// Período rápido
-function pad(n){ return String(n).padStart(2,"0"); }
-function toYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function setQuickRange(kind){
-  const now = new Date();
-  let a = new Date(), b = new Date();
-  if(kind==="hoje"){ /* a=b hoje */ }
-  if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
-  if(kind==="7d"){ a.setDate(now.getDate()-6); }
-  if(kind==="30d"){ a.setDate(now.getDate()-29); }
-  if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
-  dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
-  atualizarResumo();
-}
-function highlightChip(btn){
-  chipBtns.forEach(b=>b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-}
-chipBtns.forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const k = btn.dataset.range;
-    if(k!=="custom") setQuickRange(k);
-    highlightChip(btn);
-  });
-});
-
-// Default: sugere “Hoje”
-(function initPeriodoDefault(){
-  setQuickRange("hoje");
-  highlightChip(document.querySelector('[data-range="hoje"]'));
-})();
-
-// helpers
-function gerarCor(nome){
-  let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
-  return `hsl(${hash % 360},70%,60%)`;
-}
-function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function toLocalDateYMD(isoString){
-  const d = new Date(isoString);
-  const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
-}
-
-// resumo compacto no summary
-function atualizarResumo(){
-  const carteira = filtroContaEl.value || "—";
-  const di = dataInicioEl.value || "—";
-  const df = dataFimEl.value || "—";
-  fltResumoEl.textContent = `(carteira: ${carteira === "*" ? "todas" : carteira} • ${di} → ${df})`;
-}
-[filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
-atualizarResumo();
-
-// Aplicar/Limpar filtros
-btnAplicarFiltros.addEventListener("click", ()=>{
-  if(!filtroContaEl.value){ alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
-  filtrosAplicados = true;
-  hintFiltro.classList.add("hidden");
-  startContactsPolling();
-});
-btnLimparFiltros.addEventListener("click", ()=>{
-  filtroContaEl.value = "";
-  setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
-  dataInicioEl.value = ""; dataFimEl.value = "";
-  document.getElementById("searchInput").value = "";
-  filtrosAplicados = false;
-  hintFiltro.classList.remove("hidden");
-  contatosUL.innerHTML = "";
-  if(contactsInterval) clearInterval(contactsInterval);
-  atualizarResumo();
-});
-
-// Carregar contatos (só após aplicar)
-async function carregarContatos(){
-  if(!filtrosAplicados) return;
-  try{
-    if(!contatosUL.children.length){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Carregando contatos…</li>`;
+    const pad = n => String(n).padStart(2,"0");
+    const toYMD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    function soDigitos(s){ return (s||"").replace(/\D/g,""); }
+    function fmtData(s){
+      const d = new Date(s);
+      // se quiser fixar fuso: { timeZone: "America/Sao_Paulo" }
+      return d.toLocaleString("pt-BR");
     }
 
-    const res = await fetch(`${API_BASE}/api/conversas/contatos`);
-    if(!res.ok) throw new Error("Falha ao buscar contatos");
-    const contatos = await res.json();
-
-    const carteirafiltro = filtroContaEl.value; // "*" (todas) ou phone_id específico
-    const di = dataInicioEl.value || null;
-    const df = dataFimEl.value || null;
-    const busc = document.getElementById("searchInput").value.toLowerCase().trim();
-
-    let filtrados = contatos;
-    if(carteirafiltro && carteirafiltro !== "*"){
-      filtrados = filtrados.filter(c => c.phone_id === carteirafiltro);
+    function setQuickRange(kind){
+      const now = new Date();
+      let a = new Date(), b = new Date();
+      if(kind==="hoje"){ /* a=b hoje */ }
+      if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
+      if(kind==="7d"){ a.setDate(now.getDate()-6); }
+      if(kind==="30d"){ a.setDate(now.getDate()-29); }
+      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
+      dataInicio.value = `${toYMD(a)}T00:00`;
+      dataFim.value    = `${toYMD(b)}T23:59`;
     }
-    if(di || df){
-      filtrados = filtrados.filter(c=>{
-        if(!c.data_hora) return false;
-        const ymd = toLocalDateYMD(c.data_hora);
-        if(di && ymd < di) return false;
-        if(df && ymd > df) return false;
+    function highlightChip(btn){ chips.forEach(c=>c.classList.remove("active")); if(btn) btn.classList.add("active"); }
+    chips.forEach(btn => btn.addEventListener("click", () => { setQuickRange(btn.dataset.range); highlightChip(btn); atualizarResumoCompacto(); }));
+
+    // default: hoje
+    setQuickRange("hoje"); highlightChip(chips[0]);
+
+    function atualizarResumoCompacto(){
+      const conta = filtroConta.value || "todas";
+      const cli = filtroCliente.value ? soDigitos(filtroCliente.value) : "—";
+      const st  = filtroStatus.value || "todos";
+      const di  = dataInicio.value ? new Date(dataInicio.value).toLocaleString("pt-BR") : "—";
+      const df  = dataFim.value ? new Date(dataFim.value).toLocaleString("pt-BR") : "—";
+      fltResumo.textContent = `(conta: ${conta} • cliente: ${cli} • status: ${st} • ${di} → ${df})`;
+    }
+    [filtroConta, filtroCliente, filtroStatus, dataInicio, dataFim, ordemSel].forEach(el => el.addEventListener("change", atualizarResumoCompacto));
+    atualizarResumoCompacto();
+
+    async function fetchStatus(){
+      if(isLoading) return;
+      isLoading = true;
+      try{
+        const resp = await fetch(API);
+        const dados = await resp.json();
+        cache = Array.isArray(dados) ? dados : [];
+        buildStatusOptions(cache); // popula lista de status dinamicamente
+        aplicarFiltrosERender();
+      }catch(e){
+        console.error("Erro ao carregar status:", e);
+      }finally{
+        isLoading = false;
+      }
+    }
+
+    function buildStatusOptions(rows){
+      // coleta e ordena alfabeticamente
+      rows.forEach(r => r.status && statusesConhecidos.add(r.status));
+      if(!statusesConhecidos.size || !firstBuildStatus) return;
+      const atuais = new Set(Array.from(filtroStatus.options).map(o=>o.value));
+      statusesConhecidos.forEach(st=>{
+        if(!atuais.has(st)){
+          const opt = document.createElement("option");
+          opt.value = st; opt.textContent = st;
+          filtroStatus.appendChild(opt);
+        }
+      });
+      firstBuildStatus = false;
+    }
+
+    function aplicarFiltrosERender(){
+      const conta = filtroConta.value;
+      const clienteDigits = soDigitos(filtroCliente.value);
+      const st = filtroStatus.value;
+      const di = dataInicio.value ? new Date(dataInicio.value) : null;
+      const df = dataFim.value ? new Date(dataFim.value) : null;
+      const ordem = ordemSel.value;
+
+      let filtrados = cache.filter(l => {
+        if (conta && l.display_phone_number !== conta) return false;
+        if (clienteDigits){
+          const rec = soDigitos(l.recipient_id);
+          if (!rec.includes(clienteDigits)) return false;
+        }
+        if (st && l.status !== st) return false;
+        const d = new Date(l.data_hora);
+        if (di && d < di) return false;
+        if (df && d > df) return false;
         return true;
       });
+
+      filtrados.sort((a,b)=>{
+        const da = new Date(a.data_hora).getTime();
+        const db = new Date(b.data_hora).getTime();
+        return ordem === "asc" ? (da - db) : (db - da);
+      });
+
+      renderResumo(filtrados);
+      renderTabela(filtrados);
+      contador.textContent = `${filtrados.length} resultado(s)`;
     }
-    if(busc){
-      filtrados = filtrados.filter(c=>{
-        const nome = (c.nome_exibicao||"").toLowerCase();
-        const num  = (c.remetente||"").toLowerCase();
-        return nome.includes(busc) || num.includes(busc);
+
+    function renderResumo(rows){
+      const map = new Map();
+      rows.forEach(r=>{
+        const k = r.status || "other";
+        map.set(k, (map.get(k)||0)+1);
+      });
+      resumoDiv.innerHTML = "";
+      if(!rows.length){ return; }
+      // cria uma pill para cada status encontrado
+      Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).forEach(([k,qt])=>{
+        const p = document.createElement("span");
+        p.className = "pill";
+        p.innerHTML = `<strong>${k}</strong> ${qt}`;
+        resumoDiv.appendChild(p);
+      });
+      // total
+      const total = document.createElement("span");
+      total.className = "pill";
+      total.innerHTML = `<strong>Total</strong> ${rows.length}`;
+      resumoDiv.appendChild(total);
+    }
+
+    function renderTabela(rows){
+      tbody.innerHTML = "";
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="4">Nenhum status encontrado</td></tr>`;
+        return;
+      }
+      rows.forEach(l=>{
+        const tr = document.createElement("tr");
+
+        const tdData = document.createElement("td");
+        tdData.textContent = fmtData(l.data_hora);
+        tr.appendChild(tdData);
+
+        const tdRec = document.createElement("td");
+        tdRec.textContent = l.recipient_id; // telefone do cliente
+        tr.appendChild(tdRec);
+
+        const tdTel = document.createElement("td");
+        tdTel.textContent = l.display_phone_number; // telefone da conta
+        tr.appendChild(tdTel);
+
+        const tdStatus = document.createElement("td");
+        const span = document.createElement("span");
+        const cls = (l.status||"other").toLowerCase();
+        span.textContent = l.status || "other";
+        span.className = `status-pill ${["sent","delivered","read","failed"].includes(cls)?cls:"other"}`;
+        tdStatus.appendChild(span);
+        tr.appendChild(tdStatus);
+
+        tbody.appendChild(tr);
       });
     }
 
-    contatosUL.innerHTML = "";
-    if(filtrados.length === 0){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato no período/filtros.</li>`;
-      return;
-    }
-
-    filtrados.forEach(c=>{
-      const nome = c.nome_exibicao||c.remetente;
-      const ultimaMsg = c.mensagem_final?c.mensagem_final.substring(0,70):"";
-      const hora = c.data_hora?new Date(c.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
-
-      if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
-        novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
-      }
-      ultimoStatusContatos[c.remetente] = c.data_hora;
-
-      const li = document.createElement("li");
-      li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
-      li.dataset.remetente=c.remetente.toLowerCase();
-
-      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
-        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
-        : "";
-
-      li.innerHTML=`
-        <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
-             style="background:${gerarCor(nome)};color:white;">
-          ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold truncate">${escapeHtml(nome)}</div>
-          <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
-        </div>
-        <div class="text-xs text-gray-400 pl-2">${hora}</div>
-        ${badge}
-      `;
-      li.onclick = ()=>abrirConversaFromElement(c,li);
-      contatosUL.appendChild(li);
-    });
-  }catch(err){
-    console.error("Erro ao carregar contatos",err);
-    contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
-  }
-}
-function startContactsPolling(){
-  if(contactsInterval) clearInterval(contactsInterval);
-  carregarContatos();
-  contactsInterval = setInterval(()=>{ if(filtrosAplicados) carregarContatos(); }, 10000);
-}
-
-// Busca local highlight
-function filtrarContatos(q){
-  q=(q||"").toLowerCase().trim();
-  document.querySelectorAll("#contatos li").forEach(li=>{
-    if(!li.dataset.remetente){ return; }
-    const hay=li.textContent.toLowerCase();
-    if(hay.includes(q)){
-      li.style.display="flex";
-      const nameDiv=li.querySelector(".font-bold");
-      nameDiv.innerHTML=q?nameDiv.textContent.replace(new RegExp(q,"ig"),match=>`<mark>${match}</mark>`):nameDiv.textContent;
-    }else li.style.display="none";
-  });
-}
-
-// Abrir conversa
-function abrirConversaFromElement(c,el){
-  document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
-  el.classList.add("contato-selected");
-  abrirConversa(c);
-}
-async function abrirConversa(c){
-  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
-
-  lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
-  novasMensagens[c.remetente] = 0;
-
-  document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
-  document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
-  textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
-
-  if(messagesInterval) clearInterval(messagesInterval);
-  await carregarMensagens(false);
-  messagesInterval=setInterval(()=>{ if(!userTyping && !isModalOpen){ carregarMensagens(true); } }, 5000);
-}
-
-// Mensagens
-async function carregarMensagens(incremental = true) {
-  if (!contatoSelecionado) return;
-  const chat = document.getElementById("chat");
-
-  let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
-  if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Erro ao obter histórico");
-    const msgs = await res.json();
-
-    msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
-
-    if (!incremental) {
-      chat.innerHTML = "";
-      lastTimestampMs = null;
-      lastDayRendered = null;
-      renderedKeys.clear();
-    }
-
-    const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
-
-    msgs.forEach((m) => {
-      const tMs = new Date(m.data_hora).getTime();
-      const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-      if (renderedKeys.has(key)) return;
-      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
-
-      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      if (!lastDayRendered || lastDayRendered !== dia) {
-        const sep = document.createElement("div");
-        sep.className = "dia";
-        sep.innerText = `— ${dia} —`;
-        chat.appendChild(sep);
-        lastDayRendered = dia;
-      }
-
-      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-      const div = document.createElement("div");
-      div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
-
-      if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[imagem recebida]</div>
-          <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-olhinho");
-        if (!m.msg_id) {
-          btn.disabled = true; btn.innerText = "Imagem indisponível";
-        } else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const img = document.createElement("img");
-                img.src = j.data_uri; img.alt = "Imagem recebida";
-                img.className = "mt-2 rounded-lg max-w-[150px] border cursor-pointer";
-                img.onclick = () => abrirModalImagem(j.data_uri);
-                div.insertBefore(img, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro imagem:", e); btn.disabled=false; btn.innerText="👁 Ver imagem"; alert("Erro ao carregar imagem"); }
-          };
-        }
-      }
-      else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[áudio recebido]</div>
-          <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-audio");
-        if (!m.msg_id) { btn.disabled = true; btn.innerText="Áudio indisponível"; }
-        else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const audio = document.createElement("audio");
-                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2 w-full max-w-xs";
-                div.insertBefore(audio, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
-          };
-        }
-      }
-      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-        const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
-        const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
-        const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
-        wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
-        const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
-        if (m.msg_id) {
-          (async ()=>{ try {
-            const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
-            const j = await r.json();
-            if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
-          } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
-        } else { label.textContent = "emoji indisponível"; }
-      }
-      else {
-        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
-      }
-
-      if (m.status === "in") {
-        const btn = document.createElement("button");
-        btn.className = "btn-responder"; btn.title = "Responder"; btn.innerHTML = "↩";
-        btn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
-        div.appendChild(btn);
-      }
-
-      chat.appendChild(div);
-      renderedKeys.add(key);
-      if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
+    // Botões
+    document.getElementById("btnAplicar").addEventListener("click", aplicarFiltrosERender);
+    document.getElementById("btnLimpar").addEventListener("click", ()=>{
+      filtroConta.value = "";
+      filtroCliente.value = "";
+      filtroStatus.value = "";
+      setQuickRange("hoje"); highlightChip(chips[0]);
+      ordemSel.value = "desc";
+      aplicarFiltrosERender();
+      atualizarResumoCompacto();
     });
 
-    if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  } catch (err) {
-    console.error("Erro ao carregar mensagens", err);
-  }
-}
-
-// Responder / Cancelar
-function responderMensagem(msgId, conteudo){
-  respostaMsgId = msgId || null;
-  document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0,50);
-  document.getElementById("respostaPreview").classList.remove("hidden");
-  textarea.focus();
-}
-function cancelarResposta(){
-  respostaMsgId = null;
-  document.getElementById("respostaPreview").classList.add("hidden");
-  document.getElementById("respostaTexto").innerText = "";
-}
-
-// Enviar texto
-async function enviarMensagem(){
-  const texto=textarea.value.trim(); 
-  if(!texto||!contatoSelecionado) return;
-  userTyping=true; btnEnviar.disabled=true;
-  try{
-    const body = { texto, phone_id: phoneIdAtual, msg_id: respostaMsgId || null };
-    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
-    });
-    const json=await res.json();
-    if(json.ok){
-      textarea.value="";textarea.style.height="auto";
-      cancelarResposta();
-      await carregarMensagens(true);
-    } else { alert("Erro ao enviar: "+(json.erro||JSON.stringify(json))); }
-  }catch(err){ console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network."); }
-  finally{ userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0; }
-}
-
-// Enviar PDF
-async function enviarPDF(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  if(!contatoSelecionado || !phoneIdAtual){ alert("Selecione uma conversa antes de enviar PDF"); return; }
-  if(file.type !== "application/pdf"){ alert("Somente arquivos PDF são permitidos"); return; }
-
-  try{
-    const res = await fetch(`${API_BASE}/api/upload/pdf`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({filename: file.name})
-    });
-    const json = await res.json();
-    if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
-
-    await fetch(json.upload_url, { method: "PUT", headers: {"Content-Type": "application/pdf"}, body: file });
-
-    const body = { phone_id: phoneIdAtual, file_url: json.file_url, original_filename: file.name };
-    const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
-    });
-    const sendJson = await sendRes.json();
-    if(sendJson.ok){ await carregarMensagens(true); }
-    else { alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson))); }
-  }catch(err){
-    console.error("Erro ao enviar PDF",err); alert("Erro ao enviar PDF");
-  }finally{ event.target.value = ""; }
-}
-
-// Modal imagem
-const imageModal = document.getElementById("imageModal");
-const modalImg = document.getElementById("modalImg");
-const closeModal = document.getElementById("closeModal");
-function abrirModalImagem(src){ isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
-closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
-imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
-
-// Page visibility
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(filtrosAplicados) carregarContatos(); if(contatoSelecionado) carregarMensagens(true); } });
-
-// Inicial: NÃO carrega até aplicar filtros
-</script>
+    // Polling
+    setInterval(fetchStatus, 5000);
+    fetchStatus();
+  </script>
 </body>
 </html>
