@@ -21,7 +21,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm text-slate-500 mr-1">Período:</span>
 
-          <!-- #1 chips com cara de botão -->
+          <!-- chips de período -->
           <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
                   data-range="hoje">Hoje</button>
           <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -32,12 +32,6 @@
                   data-range="mes">Mês atual</button>
           <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
                   data-range="custom">Personalizado</button>
-
-          <!-- #2 botão exportar discreto -->
-          <div class="ml-auto flex gap-2">
-            <button id="btnExport"
-              class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 text-sm">Exportar CSV</button>
-          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -49,37 +43,52 @@
             <label class="text-sm text-slate-500">Fim</label>
             <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
-          <div>
+
+          <!-- Filtros EXTRAS da aba Atendimentos -->
+          <div id="fltCarteira" class="hidden">
             <label class="text-sm text-slate-500">Carteira</label>
             <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
               <option value="">Todas</option>
             </select>
           </div>
-          <div>
+          <div id="fltAgentes" class="hidden">
             <label class="text-sm text-slate-500">Agentes</label>
-            <div id="agentesWrap" class="flex flex-wrap gap-2 p-2 border border-slate-300 rounded-lg bg-white min-h-[44px]"></div>
+            <div class="relative">
+              <button id="btnAgentes" type="button"
+                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
+                <span class="truncate">Todos</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+              <!-- dropdown -->
+              <div id="panelAgentes" class="hidden absolute z-20 mt-2 w-80 bg-white border rounded-lg shadow-lg p-2">
+                <div class="flex items-center gap-2 mb-2">
+                  <input id="agSearch" type="text" placeholder="Buscar agente..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
+                  <button id="agSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
+                  <button id="agClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
+                </div>
+                <div id="agList" class="max-h-56 overflow-y-auto space-y-1"></div>
+              </div>
+            </div>
           </div>
+
+          <!-- botões -->
           <div class="flex items-end gap-2">
             <button id="btnClearDates" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
             <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
           </div>
-          <div class="flex gap-2">
-            <div class="flex-1">
-              <label class="text-sm text-slate-500">Nome do disparo</label>
-              <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-            </div>
-            <!-- #3 botão aplicar com cara de botão primário -->
-            <div class="flex items-end">
-              <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">
-                Aplicar
-              </button>
-            </div>
+
+          <!-- Filtro EXCLUSIVO da aba Mensagens -->
+          <div id="fltNomeDisparo" class="md:col-span-2">
+            <label class="text-sm text-slate-500">Nome do disparo</label>
+            <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
         </div>
       </div>
     </section>
 
-    <!-- #5 Segmented control (abas) -->
+    <!-- Abas -->
     <section class="bg-white rounded-xl shadow-sm border">
       <div class="p-3">
         <div class="inline-flex bg-slate-100 rounded-xl p-1">
@@ -92,47 +101,23 @@
         </div>
       </div>
 
-      <!-- Conteúdo: Mensagens -->
+      <!-- Aba: Mensagens -->
       <div id="tab-mensagens" class="p-4 space-y-6">
-        <!-- #4 KPIs em “balões” -->
         <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="balloon">
-            <div class="balloon-label">Total</div>
-            <div id="k_total" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Enviados</div>
-            <div id="k_env" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Entregues</div>
-            <div id="k_ent" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Lidos</div>
-            <div id="k_lido" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Delivery rate</div>
-            <div id="k_dr" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Read rate</div>
-            <div id="k_rr" class="balloon-value">—</div>
-          </div>
+          <div class="balloon"><div class="balloon-label">Total</div><div id="k_total" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Enviados</div><div id="k_env" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Entregues</div><div id="k_ent" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Lidos</div><div id="k_lido" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Delivery rate</div><div id="k_dr" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Read rate</div><div id="k_rr" class="balloon-value">—</div></div>
         </div>
 
-        <!-- Gráfico -->
         <div class="space-y-2">
           <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
-          <!-- #6 wrapper com altura fixa -->
-          <div class="h-72">
-            <canvas id="chartMensagens" class="w-full h-full"></canvas>
-          </div>
+          <div class="h-72"><canvas id="chartMensagens" class="w-full h-full"></canvas></div>
           <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
         </div>
 
-        <!-- Tabela -->
         <div class="overflow-hidden rounded-xl border">
           <div class="overflow-x-auto">
             <table class="min-w-full">
@@ -153,41 +138,25 @@
         </div>
       </div>
 
-      <!-- Conteúdo: Atendimentos -->
+      <!-- Aba: Atendimentos -->
       <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
         <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="balloon">
-            <div class="balloon-label">Em atendimento</div>
-            <div id="a_em" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Concluídos</div>
-            <div id="a_conc" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">TMA</div>
-            <div id="a_tma" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">1ª resposta</div>
-            <div id="a_tmr" class="balloon-value">—</div>
-          </div>
+          <div class="balloon"><div class="balloon-label">Em atendimento</div><div id="a_em" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Concluídos</div><div id="a_conc" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">TMA</div><div id="a_tma" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">1ª resposta</div><div id="a_tmr" class="balloon-value">—</div></div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="space-y-2">
             <div class="text-sm text-slate-500">Motivos de conclusão</div>
-            <div class="h-72">
-              <canvas id="chartMotivos" class="w-full h-full"></canvas>
-            </div>
+            <div class="h-72"><canvas id="chartMotivos" class="w-full h-full"></canvas></div>
             <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
           </div>
 
           <div class="space-y-2">
             <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
-            <div class="h-72">
-              <canvas id="chartSeries" class="w-full h-full"></canvas>
-            </div>
+            <div class="h-72"><canvas id="chartSeries" class="w-full h-full"></canvas></div>
             <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
           </div>
         </div>
@@ -209,7 +178,7 @@
     .balloon{
       background: linear-gradient(180deg,#ffffff, #f8fafc);
       border: 1px solid #e2e8f0;
-      border-radius: 9999px; /* pílula */
+      border-radius: 9999px;
       padding: 14px 18px;
       box-shadow: 0 1px 2px rgba(0,0,0,.05);
       text-align:center;
@@ -218,10 +187,6 @@
     .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
     .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
     td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
-    .chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .6rem;
-            border:1px solid #e2e8f0; border-radius:9999px; background:#fff; cursor:pointer; }
-    .chip input { accent-color:#2563eb; }
-  
   </style>
 
   <script>
@@ -240,16 +205,24 @@
 
     // ===== DOM =====
     const startEl = document.getElementById("start");
-    const endEl = document.getElementById("end");
-    const cartEl = document.getElementById("carteira");
-    const qEl = document.getElementById("q");
+    const endEl   = document.getElementById("end");
+    const qEl     = document.getElementById("q");
+
+    const fltCarteira = document.getElementById("fltCarteira");
+    const fltAgentes  = document.getElementById("fltAgentes");
+    const fltNomeDisparo = document.getElementById("fltNomeDisparo");
+
+    const cartEl  = document.getElementById("carteira");
+    const btnAplicar = document.getElementById("btnAplicar");
+    const btnClearDates = document.getElementById("btnClearDates");
+
     const alertEl = document.getElementById("alert");
-    const chips = [...document.querySelectorAll("[data-range]")];
+    const chips   = [...document.querySelectorAll("[data-range]")];
 
     // tabs
     const segBtns = [...document.querySelectorAll(".seg-btn")];
     const tabMensagens = document.getElementById("tab-mensagens");
-    const tabAtend = document.getElementById("tab-atendimentos");
+    const tabAtend     = document.getElementById("tab-atendimentos");
 
     // KPIs Mensagens
     const k_total = document.getElementById("k_total");
@@ -263,47 +236,146 @@
     const tbodyMensagens = document.getElementById("tbodyMensagens");
     const tblEmpty = document.getElementById("tblEmpty");
 
-    // Charts (uma instância por gráfico)
+    // Charts
     let chartMensagens, chartMotivos, chartSeries;
     const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
-    const chartMotivosEmpty = document.getElementById("chartMotivosEmpty");
-    const chartSeriesEmpty = document.getElementById("chartSeriesEmpty");
+    const chartMotivosEmpty   = document.getElementById("chartMotivosEmpty");
+    const chartSeriesEmpty    = document.getElementById("chartSeriesEmpty");
 
     // KPIs Atend
-    const a_em = document.getElementById("a_em");
-    const a_conc = document.getElementById("a_conc");
+    const a_em  = document.getElementById("a_em");
+    const a_conc= document.getElementById("a_conc");
     const a_tma = document.getElementById("a_tma");
     const a_tmr = document.getElementById("a_tmr");
+
+    // ===== Multi-select Agentes (dropdown) =====
+    const btnAgentes  = document.getElementById("btnAgentes");
+    const panelAgentes= document.getElementById("panelAgentes");
+    const agSearch    = document.getElementById("agSearch");
+    const agSelectAll = document.getElementById("agSelectAll");
+    const agClear     = document.getElementById("agClear");
+    const agList      = document.getElementById("agList");
+
+    let agentsAll = [];           // [{codigo_do_agente, nome}]
+    const selectedAgents = new Set();
+
+    function togglePanelAgentes(show){
+      panelAgentes.classList.toggle("hidden", !show);
+    }
+    btnAgentes.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePanelAgentes(panelAgentes.classList.contains("hidden"));
+    });
+    document.addEventListener("click", (e) => {
+      if(!panelAgentes.contains(e.target) && !btnAgentes.contains(e.target)){
+        togglePanelAgentes(false);
+      }
+    });
+
+    function renderAgentesList(filter=""){
+      agList.innerHTML = "";
+      const term = filter.trim().toLowerCase();
+      const data = agentsAll.filter(a => (a.nome||"").toLowerCase().includes(term));
+      if(!data.length){
+        agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
+        return;
+      }
+      data.forEach(a => {
+        const id = `ag_${a.codigo_do_agente}`;
+        const row = document.createElement("label");
+        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
+        row.innerHTML = `
+          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked":""}>
+          <span class="text-sm">${a.nome || ("Agente "+a.codigo_do_agente)}</span>
+        `;
+        row.querySelector("input").addEventListener("change", (ev) => {
+          const v = String(ev.target.value);
+          if(ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
+          updateAgentesButtonLabel();
+        });
+        agList.appendChild(row);
+      });
+    }
+    function updateAgentesButtonLabel(){
+      const n = selectedAgents.size;
+      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n>1?"s":""}` : "Todos";
+    }
+    agSearch.addEventListener("input", () => renderAgentesList(agSearch.value));
+    agSelectAll.addEventListener("click", () => {
+      agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
+      renderAgentesList(agSearch.value);
+      updateAgentesButtonLabel();
+    });
+    agClear.addEventListener("click", () => {
+      selectedAgents.clear();
+      renderAgentesList(agSearch.value);
+      updateAgentesButtonLabel();
+    });
 
     // ===== Utils =====
     function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
     function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
     function fmtDurSec(s){
       if(s == null) return "—";
-      const m = Math.floor(s/60), sec = s%60; 
+      const m = Math.floor(s/60), sec = s%60;
       if(m>=60){ const h=Math.floor(m/60), mm=m%60; return `${h}h ${mm}m`; }
       return `${m}m ${sec}s`;
     }
-    function params(){ 
+    function selectedAgentesCSV(){
+      return [...selectedAgents].join(",");
+    }
+
+    function getActiveTab(){
+      return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
+    }
+
+    function buildParams(tab){
       const p = new URLSearchParams();
       if(startEl.value) p.set("start", startEl.value);
-      if(endEl.value) p.set("end", endEl.value);
-      if(cartEl.value) p.set("phone_id", cartEl.value);
-      if(qEl.value) p.set("q", qEl.value.trim());
+      if(endEl.value)   p.set("end",   endEl.value);
+
+      if(tab === "mensagens"){
+        if(qEl.value) p.set("q", qEl.value.trim());
+      }else if(tab === "atendimentos"){
+        if(cartEl.value) p.set("phone_id", cartEl.value);
+        const ags = selectedAgentesCSV();
+        if(ags) p.set("agentes", ags);
+      }
+      p.set("tab", tab);
       return p.toString();
     }
+
     function savePermalink(){
-      const qs = params();
+      const tab = getActiveTab();
+      const qs = buildParams(tab);
       const url = location.origin + location.pathname + (qs ? "?"+qs : "");
       history.replaceState(null, "", url);
     }
+
     function readFromQS(){
       const u = new URL(location.href);
+      const tabQS = u.searchParams.get("tab");
+      if(tabQS === "atendimentos"){
+        segBtns.forEach(x => x.classList.remove("seg-active"));
+        segBtns.find(b => b.dataset.tab==="atendimentos").classList.add("seg-active");
+        tabMensagens.classList.add("hidden");
+        tabAtend.classList.remove("hidden");
+        toggleFiltersForTab("atendimentos");
+      }
+
       startEl.value = u.searchParams.get("start") || startEl.value;
       endEl.value   = u.searchParams.get("end") || endEl.value;
-      cartEl.value  = u.searchParams.get("phone_id") || "";
+
+      // mensagens
       qEl.value     = u.searchParams.get("q") || "";
+
+      // atendimentos
+      const phone = u.searchParams.get("phone_id") || "";
+      if(phone) cartEl.value = phone;
+      const agentesQS = u.searchParams.get("agentes");
+      if(agentesQS) pendingAgents = agentesQS.split(",").map(String);
     }
+
     function setQuickRange(kind){
       const now = new Date();
       const pad = n => String(n).padStart(2,"0");
@@ -316,7 +388,6 @@
       startEl.value = toISO(a); endEl.value = toISO(b);
     }
 
-    // chips comportamento visual
     function highlightChip(ch){
       chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
       if(ch) ch.classList.add("bg-blue-600","text-white","border-blue-600");
@@ -327,102 +398,67 @@
       highlightChip(ch);
     }));
 
-    // segmented tabs
-    segBtns.forEach(btn => btn.addEventListener("click", () => {
-      segBtns.forEach(x => x.classList.remove("seg-active"));
-      btn.classList.add("seg-active");
-      const id = btn.dataset.tab;
-      tabMensagens.classList.toggle("hidden", id!=="mensagens");
-      tabAtend.classList.toggle("hidden", id!=="atendimentos");
-      render(); // recarrega o conteúdo visível
-    }));
+    // Toggle filtros conforme aba
+    function toggleFiltersForTab(tab){
+      const isMsg = tab === "mensagens";
+      fltNomeDisparo.classList.toggle("hidden", !isMsg);
+      fltCarteira.classList.toggle("hidden", isMsg);
+      fltAgentes.classList.toggle("hidden", isMsg);
+    }
 
-    // Preenche carteiras
-    (function fillCarteiras(){
-      const frag = document.createDocumentFragment();
-      Object.keys(phoneIdMap).forEach(id => {
-        const opt = document.createElement("option");
-        opt.value = id; opt.textContent = phoneIdMap[id];
-        frag.appendChild(opt);
-      });
-      cartEl.appendChild(frag);
-    })();
-    // busca agentes (filtrando por carteira quando selecionada)
-    async function loadAgentes() {
+    // ===== Data loaders =====
+    async function loadAgentes(){
       const selPhone = cartEl.value || "";
       const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
       const res = await fetch(url);
-      const data = await res.json(); // [{codigo_do_agente, nome, carteira, ...}]
-      const wrap = document.getElementById("agentesWrap");
-      wrap.innerHTML = "";
-      data.forEach(a => {
-        const id = `ag-${a.codigo_do_agente}`;
-        const lab = document.createElement("label");
-        lab.className = "chip";
-        lab.innerHTML = `<input type="checkbox" value="${a.codigo_do_agente}" id="${id}"><span>${a.nome || ("Agente "+a.codigo_do_agente)}</span>`;
-        wrap.appendChild(lab);
-      });
+      const data = await res.json(); // [{codigo_do_agente, nome}]
+      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente "+a.codigo_do_agente) }));
+      // se trocar de carteira, limpamos seleção para evitar agentes cruzados
+      selectedAgents.clear();
+      if(pendingAgents && pendingAgents.length){
+        pendingAgents.forEach(v => selectedAgents.add(String(v)));
+        pendingAgents = null;
+      }
+      agSearch.value = "";
+      renderAgentesList("");
+      updateAgentesButtonLabel();
     }
 
-    // incluir agentes nos parâmetros
-    function selectedAgentes(){
-      return [...document.querySelectorAll("#agentesWrap input[type=checkbox]:checked")].map(i => i.value).join(",");
-    }
-    function params(){
-      const p = new URLSearchParams();
-      if(startEl.value) p.set("start", startEl.value);
-      if(endEl.value)   p.set("end", endEl.value);
-      if(cartEl.value)  p.set("phone_id", cartEl.value);
-      if(qEl.value)     p.set("q", qEl.value.trim());
-      const ags = selectedAgentes();
-      if(ags) p.set("agentes", ags);
-      return p.toString();
-    }
-
-    // reagir à mudança de carteira recarregando a lista de agentes
-    cartEl.addEventListener("change", async () => {
-      await loadAgentes();
-    });
-
-    // botão “Limpar datas”
-    document.getElementById("btnClearDates").addEventListener("click", () => {
-      startEl.value = ""; endEl.value = "";
-      // remove destaque dos chips rápidos, se houver
-      document.querySelectorAll("[data-range]").forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
-    });
-    // ===== Data loaders =====
-    async function loadResumoMensagens(){
-      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${params()}`);
+    async function loadResumoMensagens(qs){
+      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
       if(!res.ok) throw new Error("Falha no resumo (mensagens)");
       return res.json();
     }
-    async function loadEnvios(){
-      const res = await fetch(`${API_BASE}/api/dashboard/envios?${params()}`);
+    async function loadEnvios(qs){
+      const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
       if(!res.ok) throw new Error("Falha nos envios");
       return res.json();
     }
-    async function loadAtendResumo(){
-      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${params()}`);
+    async function loadAtendResumo(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
       if(!res.ok) throw new Error("Falha no resumo (atendimentos)");
       return res.json();
     }
-    async function loadAtendMotivos(){
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${params()}`);
+    async function loadAtendMotivos(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
       if(!res.ok) throw new Error("Falha nos motivos");
       return res.json();
     }
-    async function loadAtendSeries(){
-      const res = await fetch(`${API_BASE}/api/atendimentos/series?${params()}`);
+    async function loadAtendSeries(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
       if(!res.ok) throw new Error("Falha nas séries");
       return res.json();
     }
 
     // ===== Render =====
     async function renderMensagens(){
+      const qs = buildParams("mensagens");
+      savePermalink();
+
       try{
-        setAlert(""); 
+        setAlert("");
         k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
-        const r = await loadResumoMensagens();
+        const r = await loadResumoMensagens(qs);
         const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
         k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
         k_dr.textContent = toPct(ent, env || total);
@@ -431,7 +467,7 @@
 
       try{
         tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
-        const data = await loadEnvios();
+        const data = await loadEnvios(qs);
         tbodyMensagens.innerHTML = "";
         tblEmpty.classList.toggle("hidden", data.length>0);
 
@@ -466,13 +502,13 @@
               labels,
               datasets: [
                 {label:"Entregues", data:entregues, backgroundColor:"#3b82f6", stack:"s"},
-                {label:"Lidos", data:lidos, backgroundColor:"#10b981", stack:"s"}
+                {label:"Lidos",     data:lidos,     backgroundColor:"#10b981", stack:"s"}
               ]
             },
             options: {
               responsive:true,
-              maintainAspectRatio:false,   // <- evita loop; usamos altura fixa no pai
-              resizeDelay: 200,
+              maintainAspectRatio:false,
+              resizeDelay:200,
               plugins:{ legend:{ position:"top" } },
               scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
             }
@@ -482,18 +518,21 @@
     }
 
     async function renderAtend(){
+      const qs = buildParams("atendimentos");
+      savePermalink();
+
       try{
         a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
-        const r = await loadAtendResumo();
-        a_em.textContent = r.em_atendimento ?? 0;
+        const r = await loadAtendResumo(qs);
+        a_em.textContent   = r.em_atendimento ?? 0;
         a_conc.textContent = r.concluidos ?? 0;
-        a_tma.textContent = fmtDurSec(r.tma_segundos);
-        a_tmr.textContent = fmtDurSec(r.tmr_segundos);
+        a_tma.textContent  = fmtDurSec(r.tma_segundos);
+        a_tmr.textContent  = fmtDurSec(r.tmr_segundos);
       }catch(e){ setAlert("Aba Atendimentos — " + e.message); }
 
-      // Motivos (pizza)
+      // Motivos
       try{
-        const dados = await loadAtendMotivos();
+        const dados = await loadAtendMotivos(qs);
         if(chartMotivos){ chartMotivos.destroy(); chartMotivos=null; }
         document.getElementById("chartMotivos").classList.remove("hidden");
         chartMotivosEmpty.classList.add("hidden");
@@ -510,14 +549,14 @@
         }
       }catch(e){ setAlert("Motivos — " + e.message); }
 
-      // Séries (linha)
+      // Séries
       try{
-        const s = await loadAtendSeries();
+        const s = await loadAtendSeries(qs);
         const map = {};
         (s.mensagens||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].in=r.inbound; map[k].out=r.outbound; });
         (s.concluidos||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].conc=r.concluidos; });
         const dias = Object.keys(map).sort();
-        const inb = dias.map(d=>map[d].in), outb = dias.map(d=>map[d].out), conc = dias.map(d=>map[d].conc);
+        const inb  = dias.map(d=>map[d].in), outb=dias.map(d=>map[d].out), conc=dias.map(d=>map[d].conc);
 
         if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
         document.getElementById("chartSeries").classList.remove("hidden");
@@ -532,8 +571,8 @@
             data:{
               labels: dias,
               datasets: [
-                {label:"Inbound", data:inb, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
-                {label:"Outbound", data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
+                {label:"Inbound",    data:inb,  borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
+                {label:"Outbound",   data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
                 {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
               ]
             },
@@ -544,41 +583,66 @@
     }
 
     async function render(){
-      savePermalink();
-      const active = document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
-      if(active==="mensagens") await renderMensagens();
-      else await renderAtend();
+      const tab = getActiveTab();
+      if(tab==="mensagens") await renderMensagens();
+      else {
+        // quando entrar na aba Atendimentos, garantir agentes carregados conforme carteira
+        if(cartEl.value && !agentsAll.length) await loadAgentes();
+        await renderAtend();
+      }
     }
 
-    // Export CSV
-    document.getElementById("btnExport").addEventListener("click", () => {
-      const rows = [["Nome Disparo","Grupo","Data","Total","Entregues","Lidos"]];
-      [...tbodyMensagens.querySelectorAll("tr")].forEach(tr => {
-        const tds = [...tr.querySelectorAll("td")].map(td => `"${(td.innerText||"").replace(/"/g,'""')}"`);
-        rows.push(tds);
+    // ===== Eventos =====
+    segBtns.forEach(btn => btn.addEventListener("click", async () => {
+      segBtns.forEach(x => x.classList.remove("seg-active"));
+      btn.classList.add("seg-active");
+      const tab = btn.dataset.tab;
+      tabMensagens.classList.toggle("hidden", tab!=="mensagens");
+      tabAtend.classList.toggle("hidden",     tab!=="atendimentos");
+      toggleFiltersForTab(tab);
+      if(tab === "atendimentos" && cartEl.value){
+        await loadAgentes();
+      }
+      render();
+    }));
+
+    // preencher carteiras
+    (function fillCarteiras(){
+      const frag = document.createDocumentFragment();
+      Object.keys(phoneIdMap).forEach(id => {
+        const opt = document.createElement("option");
+        opt.value = id; opt.textContent = phoneIdMap[id];
+        frag.appendChild(opt);
       });
-      const csv = rows.map(r=>r.join(",")).join("\n");
-      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `envios_${new Date().toISOString().slice(0,10)}.csv`;
-      a.click();
+      cartEl.appendChild(frag);
+    })();
+
+    // mudanças de carteira -> recarregar agentes
+    cartEl.addEventListener("change", async () => {
+      if(getActiveTab()==="atendimentos") await loadAgentes();
+    });
+
+    // Limpar datas
+    btnClearDates.addEventListener("click", () => {
+      startEl.value = ""; endEl.value = "";
+      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
     });
 
     // Aplicar
-    document.getElementById("btnAplicar").addEventListener("click", render);
+    btnAplicar.addEventListener("click", render);
 
-    // Init: período padrão últimos 7 dias
+    // ===== Init =====
+    let pendingAgents = null;
     function initDefaults(){
       const now = new Date(); const pad = n=>String(n).padStart(2,"0");
       const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
       startEl.value = toISO(a); endEl.value = toISO(b);
-      readFromQS(); // respeita parâmetros se vierem na URL
       highlightChip(document.querySelector('[data-range="7d"]'));
     }
-
     initDefaults();
+    readFromQS();
+    toggleFiltersForTab(getActiveTab());
     render();
   </script>
 </body>
