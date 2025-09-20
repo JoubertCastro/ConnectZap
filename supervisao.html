@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ConnectZap — Supervisão</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{--ok:#16a34a;--warn:#d97706;--err:#dc2626}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
+  .kpi{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:14px}
+  .pill{padding:2px 8px;border-radius:9999px;background:#f3f4f6;font-size:12px}
+  .dot{width:10px;height:10px;border-radius:9999px;display:inline-block;margin-right:6px}
+  .dot.online{background:#16a34a}.dot.offline{background:#9ca3af}
+  .btn{padding:10px 14px;border-radius:10px}
+  .btn-primary{background:#2563eb;color:#fff}
+  .btn-muted{background:#f3f4f6}
+</style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white border-b">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">ConnectZap — Supervisão</h1>
+    <div class="text-sm text-gray-500">Administração de agentes & visão operacional</div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 space-y-6">
+  <!-- KPIs -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="kpi">
+      <div class="text-gray-500 text-sm">Agentes online (total)</div>
+      <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
+      <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+    </div>
+    <div class="kpi">
+      <div class="text-gray-500 text-sm">Conversas em andamento</div>
+      <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
+      <div class="text-xs text-gray-500 mt-2">Soma dos tickets alocados aos agentes online</div>
+    </div>
+    <div class="kpi">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-gray-500 text-sm">Atualização</div>
+          <div id="kpiAtualizado" class="text-sm font-semibold mt-1">—</div>
+        </div>
+        <button id="btnRefresh" class="btn btn-primary">Atualizar agora</button>
+      </div>
+      <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
+    </div>
+  </section>
+
+  <!-- Cadastrar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Cadastrar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-sm text-gray-700">Nome completo</label>
+        <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Carteira</label>
+        <select id="cadCarteira" class="w-full border rounded-md p-2">
+          <option value="">Selecione</option>
+          <option>ConnectZap</option><option>Recovery PJ</option><option>Recovery PF</option>
+          <option>Mercado Pago Cobrança</option><option>DivZero</option><option>Arc4U</option>
+          <option>Serasa</option><option>Mercado Pago Vendas</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Origem BD</label>
+        <select id="cadOrigem" class="w-full border rounded-md p-2">
+          <option value="">Selecione</option>
+          <option>Bd4</option><option>Bd5</option><option>Bd7</option><option>Bd8</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
+      <div id="cadMsg" class="text-sm hidden"></div>
+    </div>
+  </section>
+
+  <!-- Buscar/editar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Buscar & editar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
+      </div>
+      <div class="flex items-end">
+        <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
+      </div>
+      <div class="flex items-end">
+        <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
+      </div>
+    </div>
+
+    <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <span class="text-xs text-gray-500 block">Código</span>
+          <span id="edCodigo" class="font-medium">—</span>
+        </div>
+        <div class="md:col-span-2">
+          <span class="text-xs text-gray-500 block">Nome</span>
+          <span id="edNome" class="font-medium">—</span>
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Carteira</label>
+          <select id="edCarteira" class="w-full border rounded-md p-2">
+            <option>ConnectZap</option><option>Recovery PJ</option><option>Recovery PF</option>
+            <option>Mercado Pago Cobrança</option><option>DivZero</option><option>Arc4U</option>
+            <option>Serasa</option><option>Mercado Pago Vendas</option>
+          </select>
+        </div>
+        <div>
+          <span class="text-xs text-gray-500 block">Origem BD</span>
+          <span id="edOrigem" class="font-medium">—</span>
+        </div>
+      </div>
+      <div class="flex gap-2 mt-3">
+        <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+        <div id="editMsg" class="text-sm hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agentes online -->
+  <section class="card">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <h2 class="font-bold text-lg">Agentes online agora</h2>
+      <div class="flex items-center gap-2">
+        <span class="pill"><span class="dot online"></span> Online</span>
+        <!-- Filtro por carteira -->
+        <label for="filtroCarteira" class="text-sm text-gray-600">Carteira:</label>
+        <select id="filtroCarteira" class="border rounded-md p-2 text-sm">
+          <option value="">Todas</option>
+          <option>ConnectZap</option><option>Recovery PJ</option><option>Recovery PF</option>
+          <option>Mercado Pago Cobrança</option><option>DivZero</option><option>Arc4U</option>
+          <option>Serasa</option><option>Mercado Pago Vendas</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="overflow-auto border rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-3 py-2">Código</th>
+            <th class="text-left px-3 py-2">Nome</th>
+            <th class="text-left px-3 py-2">Carteira</th>
+            <th class="text-left px-3 py-2">Desde</th>
+            <th class="text-left px-3 py-2">Tickets ativos</th>
+            <th class="text-left px-3 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyOnline"></tbody>
+      </table>
+    </div>
+    <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
+  </section>
+</main>
+
+<script>
+/* === Bases de API === */
+const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/,''); // fila/agentes
+const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/,''); // tickets
+
+/* === Helpers UI === */
+function showMsg(el, text, type="ok"){ el.classList.remove("hidden"); el.textContent=text; el.style.color=(type==="ok"?"var(--ok)":type==="warn"?"var(--warn)":"var(--err)"); }
+function hideMsg(el){ el.classList.add("hidden"); el.textContent=""; }
+function fmt(dt){ try{ return new Date(dt).toLocaleString("pt-BR"); }catch{ return dt||"—"; } }
+
+/* === Estados ===== */
+let ultimoOnline = []; // [{codigo_do_agente,nome,carteira,data_hora}]
+let mapaTicketsAtivos = {}; // key `${codigo}-${carteira}` => count
+
+/* === KPIs / Online === */
+async function carregarOnlineEMetricas(){
+  const kpiMsg = document.getElementById("kpiMsg");
+  kpiMsg.textContent = "Atualizando…";
+  try{
+    // 1) Quem está online
+    const r = await fetch(`${API_BASE}/fila/status`);
+    const lista = await r.json();
+    ultimoOnline = Array.isArray(lista) ? lista : [];
+
+    // 2) KPI: total e por carteira
+    document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
+    const porCarteira = {};
+    ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
+    const wrap = document.getElementById("kpiOnlineCarteiras");
+    wrap.innerHTML = "";
+    Object.entries(porCarteira).forEach(([car,qt])=>{
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = `${car}: ${qt}`;
+      wrap.appendChild(span);
+    });
+
+    // 3) Tickets ativos: para cada online, busca /api/tickets/minhas
+    const prom = ultimoOnline.map(async a => {
+      const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(a.codigo_do_agente)}&carteira=${encodeURIComponent(a.carteira)}`;
+      try{
+        const rr = await fetch(url);
+        const rows = rr.ok ? await rr.json() : [];
+        mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = Array.isArray(rows) ? rows.length : 0;
+      }catch{ mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = 0; }
+    });
+    await Promise.all(prom);
+
+    // 4) KPI em andamento (soma)
+    const totalTickets = Object.values(mapaTicketsAtivos).reduce((s,n)=>s+(n||0),0);
+    document.getElementById("kpiEmAndamento").textContent = totalTickets;
+    document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
+
+    // 5) Tabela de online
+    renderOnlineTable();
+    kpiMsg.textContent = "OK";
+  }catch(e){
+    kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
+  }
+}
+
+function renderOnlineTable(){
+  const tbody = document.getElementById("tbodyOnline");
+  tbody.innerHTML = "";
+  const filtro = document.getElementById("filtroCarteira").value || "";
+
+  const filtrados = ultimoOnline.filter(a => !filtro || a.carteira === filtro);
+  filtrados.forEach(a=>{
+    const tr = document.createElement("tr");
+    const key = `${a.codigo_do_agente}-${a.carteira}`;
+    const tickets = mapaTicketsAtivos[key] ?? "—";
+    tr.innerHTML = `
+      <td class="px-3 py-2">${a.codigo_do_agente}</td>
+      <td class="px-3 py-2">${a.nome||"-"}</td>
+      <td class="px-3 py-2">${a.carteira}</td>
+      <td class="px-3 py-2">${fmt(a.data_hora)}</td>
+      <td class="px-3 py-2">${tickets}</td>
+      <td class="px-3 py-2">
+        <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g,"\\'")}')">Forçar offline</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const msg = document.getElementById("onlineMsg");
+  if(!filtrados.length){
+    msg.textContent = filtro ? `Nenhum agente online na carteira "${filtro}".` : "Nenhum agente online no momento.";
+  }else{
+    msg.textContent = "";
+  }
+}
+
+async function forcarOffline(codigo, carteira){
+  if(!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
+  try{
+    const r = await fetch(`${API_BASE}/fila/offline`,{
+      method:"DELETE", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ codigo_do_agente: codigo, carteira })
+    });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.erro||"Falha ao forçar offline");
+    await carregarOnlineEMetricas();
+  }catch(e){ alert(e.message||"Erro ao forçar offline"); }
+}
+
+/* === Cadastro de agente === */
+document.getElementById("btnCadastrar").onclick = async () =>{
+  const msg = document.getElementById("cadMsg"); hideMsg(msg);
+  const codigo = Number(document.getElementById("cadCodigo").value);
+  const nome = (document.getElementById("cadNome").value||"").trim();
+  const carteira = document.getElementById("cadCarteira").value;
+  const origem = document.getElementById("cadOrigem").value;
+  if(!codigo||!Number.isInteger(codigo)) return showMsg(msg,"Código precisa ser inteiro.","warn");
+  if(!nome || nome.split(" ").length<2) return showMsg(msg,"Informe o nome completo.","warn");
+  if(!carteira) return showMsg(msg,"Selecione a carteira.","warn");
+  if(!origem) return showMsg(msg,"Selecione a origem BD.","warn");
+
+  try{
+    const r = await fetch(`${API_BASE}/agentes`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+    });
+    const j = await r.json();
+    if(!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
+    showMsg(msg, "Agente cadastrado com sucesso.", "ok");
+    document.getElementById("cadCodigo").value="";
+    document.getElementById("cadNome").value="";
+    document.getElementById("cadCarteira").value="";
+    document.getElementById("cadOrigem").value="";
+    carregarOnlineEMetricas();
+  }catch(e){ showMsg(msg,"Erro de rede ao cadastrar.","err"); }
+};
+
+/* === Buscar/editar agente === */
+document.getElementById("btnBuscar").onclick = async () => {
+  const cod = Number(document.getElementById("buscaCodigo").value);
+  const msg = document.getElementById("editMsg"); hideMsg(msg);
+  if(!cod||!Number.isInteger(cod)) return showMsg(msg,"Informe um código inteiro válido.","warn");
+  try{
+    const r = await fetch(`${API_BASE}/agentes/${cod}`);
+    const j = await r.json();
+    if(!j.ok) { showMsg(msg, j.erro || "Não encontrado.", "warn"); document.getElementById("editBox").classList.add("hidden"); return; }
+    const ag = j.agente;
+    document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
+    document.getElementById("edNome").textContent = ag.nome;
+    document.getElementById("edCarteira").value = ag.carteira;
+    document.getElementById("edOrigem").textContent = ag.origem_bd;
+    document.getElementById("editBox").classList.remove("hidden");
+  }catch(e){ showMsg(msg, "Erro ao buscar agente.", "err"); }
+};
+document.getElementById("btnLimparBusca").onclick = () => {
+  document.getElementById("buscaCodigo").value="";
+  document.getElementById("editBox").classList.add("hidden");
+  hideMsg(document.getElementById("editMsg"));
+};
+document.getElementById("btnSalvarEdicao").onclick = async () => {
+  const msg = document.getElementById("editMsg"); hideMsg(msg);
+  const codigo = Number(document.getElementById("edCodigo").textContent);
+  const nova = document.getElementById("edCarteira").value;
+  if(!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
+  try{
+    const r = await fetch(`${API_BASE}/agentes/${codigo}`,{
+      method:"PUT", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ carteira: nova })
+    });
+    const j = await r.json();
+    if(!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
+    showMsg(msg, "Carteira atualizada.", "ok");
+    carregarOnlineEMetricas();
+  }catch(e){ showMsg(msg, "Erro de rede ao salvar.", "err"); }
+};
+
+/* === Eventos === */
+document.getElementById("btnRefresh").onclick = carregarOnlineEMetricas;
+document.getElementById("filtroCarteira").addEventListener("change", renderOnlineTable);
+
+/* === Auto refresh a cada 10s === */
+carregarOnlineEMetricas();
+setInterval(carregarOnlineEMetricas, 10000);
+</script>
+</body>
+</html>
