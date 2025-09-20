@@ -93,12 +93,17 @@
       </li>
       <li>
         <a href="#" id="entregasLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/Verificar_entregas.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
-          <i class="fas fa-chart-line mr-3"></i> Verificar Entregas
+          <i class="fas fa-clipboard-check mr-3"></i> Verificar Entregas
         </a>
       </li>
       <li>
         <a href="#" id="dashboardLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/dashboard.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
           <i class="fas fa-chart-line mr-3"></i> Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="#" id="SupervisaoLink" onclick="loadPage('https://joubertcastro.github.io/ConnectZap/supervisao.html')" class="flex items-center px-6 py-3 rounded-lg desktop-only disabled">
+          <i class="fas fa-user-tie mr-3"></i> Painel Supervisão
         </a>
       </li>
       <li>
@@ -136,7 +141,7 @@
 </div>
 
 <!-- Modal Login -->
-<div id="modalLogin" class="modal flex">
+<div id="modalLogin" class="modal">
   <div class="modal-content">
     <span class="modal-close" onclick="fecharModalLogin()">&times;</span>
     <h2 class="text-xl font-bold mb-4 text-center">Login</h2>
@@ -181,55 +186,58 @@
     }, 200);
   }
 
-  function abrirModalLogin() {
-    // ✅ só abre o modal se NÃO estiver logado
-    const usuario = localStorage.getItem('usuario');
-    if (usuario) {
-      console.log("Usuário já está logado, não exibindo modal.");
-      return;
+function isLogged() {
+  try { return !!JSON.parse(localStorage.getItem('usuario')); }
+  catch { return false; }
+}
+
+function abrirModalLogin() {
+  if (isLogged()) return;                // já logado, não abre
+  document.getElementById('modalLogin').style.display = 'flex';
+}
+
+function fecharModalLogin() {
+  document.getElementById('modalLogin').style.display = 'none';
+  document.getElementById('erro').textContent = '';
+}
+
+async function login() {
+  const email = document.getElementById('email').value;
+  const senha = document.getElementById('senha').value;
+  const aceito = document.getElementById('aceitoTermos').checked;
+  const erroDiv = document.getElementById('erro');
+
+  if (!email || !senha) { erroDiv.textContent = "Preencha todos os campos!"; return; }
+  if (!aceito) { erroDiv.textContent = "Você deve aceitar os Termos de Serviço e a Política de Privacidade."; return; }
+
+  try {
+    const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, senha })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      localStorage.setItem("usuario", JSON.stringify(data.user));
+      habilitarLinks();      // aplica estado logado agora
+      fecharModalLogin();    // fecha modal agora
+    } else {
+      erroDiv.textContent = data.erro || "Erro ao fazer login";
     }
-    document.getElementById('modalLogin').style.display = 'flex';
+  } catch {
+    erroDiv.textContent = "Erro de conexão com o servidor";
   }
+}
 
-  function fecharModalLogin() {
-    document.getElementById('modalLogin').style.display = 'none';
-    document.getElementById('erro').textContent = '';
+// garante estado correto após F5
+document.addEventListener('DOMContentLoaded', () => {
+  if (isLogged()) {
+    habilitarLinks();
+    fecharModalLogin(); // não deixa o modal aparecer
   }
+});
 
-  async function login() {
-    const email = document.getElementById('email').value;
-    const senha = document.getElementById('senha').value;
-    const aceito = document.getElementById('aceitoTermos').checked;
-    const erroDiv = document.getElementById('erro');
-
-    if(!email || !senha) {
-      erroDiv.textContent = "Preencha todos os campos!";
-      return;
-    }
-    if(!aceito) {
-      erroDiv.textContent = "Você deve aceitar os Termos de Serviço e a Política de Privacidade.";
-      return;
-    }
-
-    try {
-      const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha })
-      });
-      const data = await res.json();
-
-      if(data.ok) {
-        localStorage.setItem("usuario", JSON.stringify(data.user));
-        habilitarLinks();
-        fecharModalLogin();
-      } else {
-        erroDiv.textContent = data.erro || "Erro ao fazer login";
-      }
-    } catch(err) {
-      erroDiv.textContent = "Erro de conexão com o servidor";
-    }
-  }
 
   function habilitarLinks() {
     enviosLink.classList.remove('disabled');
