@@ -1,130 +1,464 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Dashboard — Connect ZAP</title>
+  <meta charset="UTF-8" />
+  <title>Dashboard — ConnectZap</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {font-family: Arial, sans-serif; margin: 0; background: #f5f7fb; color: #222;}
-    header {background: #2563eb; color: #fff; padding: 16px; text-align: center;}
-    .container {max-width: 1200px; margin: 20px auto; padding: 0 20px;}
-    .cards {display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 20px; margin-bottom: 30px;}
-    .card {background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.05); text-align: center;}
-    .card h3 {margin: 0; font-size: 18px; color: #555;}
-    .card p {font-size: 22px; font-weight: bold; margin: 8px 0 0;}
-    canvas {background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,.05);}
-    table {width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,.05); margin-top: 30px;}
-    th, td {padding: 12px; border-bottom: 1px solid #eee; text-align: left;}
-    th {background: #f9fafb;}
-    tr:hover {background: #f3f4f6;}
-    .filters {margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap;}
-    .filters input, .filters select {padding: 8px; border: 1px solid #ccc; border-radius: 6px;}
-  </style>
 </head>
-<body>
-  <header>
-    <h1>📊 Dashboard de Relatórios — Connect ZAP</h1>
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-blue-600 text-white py-4">
+    <div class="max-w-7xl mx-auto px-4">
+      <h1 class="text-xl sm:text-2xl font-semibold">📊 Dashboard — ConnectZap</h1>
+    </div>
   </header>
 
-  <div class="container">
-    <!-- Cards -->
-    <div class="cards">
-      <div class="card"><h3>Total de Disparos</h3><p id="total">0</p></div>
-      <div class="card"><h3>Enviados</h3><p id="enviados">0</p></div>
-      <div class="card"><h3>Entregues</h3><p id="entregues">0</p></div>
-      <div class="card"><h3>Lidos</h3><p id="lidos">0</p></div>
-    </div>
-
-    <!-- Gráfico -->
-    <canvas id="grafico"></canvas>
-
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
     <!-- Filtros -->
-    <div class="filters">
-      <input type="text" id="filtroNome" placeholder="Filtrar por nome do disparo">
-      <input type="date" id="filtroData">
-      <button onclick="carregarEnvios()">Aplicar Filtros</button>
-    </div>
+    <section class="bg-white rounded-xl shadow-sm border p-4">
+      <div class="flex flex-col lg:flex-row gap-3 lg:items-end">
+        <div class="flex-1">
+          <label class="text-sm text-slate-500">Período rápido</label>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <button class="chip" data-range="hoje">Hoje</button>
+            <button class="chip" data-range="7d">Últimos 7 dias</button>
+            <button class="chip" data-range="30d">Últimos 30 dias</button>
+            <button class="chip" data-range="mes">Mês atual</button>
+            <button class="chip" data-range="custom">Personalizado</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-slate-500">Início</label>
+          <input id="start" type="date" class="input" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-500">Fim</label>
+          <input id="end" type="date" class="input" />
+        </div>
+        <div class="flex-1">
+          <label class="text-sm text-slate-500">Carteira</label>
+          <select id="carteira" class="input">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="text-sm text-slate-500">Nome do disparo</label>
+          <input id="q" type="text" placeholder="Buscar..." class="input" />
+        </div>
+        <div class="flex gap-2">
+          <button id="btnAplicar" class="btn-primary">Aplicar</button>
+          <button id="btnExport" class="btn-secondary">Exportar CSV</button>
+        </div>
+      </div>
+    </section>
 
-    <!-- Tabela -->
-    <table>
-      <thead>
-        <tr>
-          <th>Nome Disparo</th>
-          <th>Grupo</th>
-          <th>Data</th>
-          <th>Total</th>
-          <th>Entregues</th>
-          <th>Lidos</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaEnvios"></tbody>
-    </table>
-  </div>
+    <!-- Abas -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <div class="border-b flex">
+        <button class="tab active" data-tab="mensagens">Mensagens</button>
+        <button class="tab" data-tab="atendimentos">Atendimentos</button>
+      </div>
+
+      <!-- Conteúdo: Mensagens -->
+      <div id="tab-mensagens" class="p-4 space-y-6">
+        <!-- Cards -->
+        <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div class="kpi"><div class="kpi-title">Total</div><div id="k_total" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Enviados</div><div id="k_env" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Entregues</div><div id="k_ent" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Lidos</div><div id="k_lido" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Delivery rate</div><div id="k_dr" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Read rate</div><div id="k_rr" class="kpi-value">—</div></div>
+        </div>
+
+        <!-- Gráfico -->
+        <div class="space-y-2">
+          <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
+          <canvas id="chartMensagens" height="140"></canvas>
+          <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
+        </div>
+
+        <!-- Tabela -->
+        <div class="overflow-hidden rounded-xl border">
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-slate-50 sticky top-0">
+                <tr>
+                  <th class="th">Disparo</th>
+                  <th class="th">Grupo</th>
+                  <th class="th">Data</th>
+                  <th class="th text-right">Total</th>
+                  <th class="th text-right">Entregues</th>
+                  <th class="th text-right">Lidos</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMensagens" class="bg-white"></tbody>
+            </table>
+          </div>
+          <div id="tblEmpty" class="p-3 text-sm text-slate-500 hidden">Nenhum envio encontrado.</div>
+        </div>
+      </div>
+
+      <!-- Conteúdo: Atendimentos -->
+      <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
+        <!-- Cards -->
+        <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="kpi"><div class="kpi-title">Em atendimento</div><div id="a_em" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">Concluídos</div><div id="a_conc" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">TMA</div><div id="a_tma" class="kpi-value">—</div></div>
+          <div class="kpi"><div class="kpi-title">1ª resposta</div><div id="a_tmr" class="kpi-value">—</div></div>
+        </div>
+
+        <!-- Grids -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Motivos de conclusão</div>
+            <canvas id="chartMotivos" height="180"></canvas>
+            <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
+            <canvas id="chartSeries" height="180"></canvas>
+            <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Avisos -->
+    <div id="alert" class="hidden rounded-lg border border-amber-300 bg-amber-50 text-amber-800 p-3 text-sm"></div>
+  </main>
+
+  <style>
+    .chip{ @apply px-3 py-1 text-sm rounded-full border border-slate-300 bg-white hover:bg-slate-50; }
+    .input{ @apply w-full px-3 py-2 rounded-lg border border-slate-300 bg-white; }
+    .btn-primary{ @apply px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700; }
+    .btn-secondary{ @apply px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200; }
+    .tab{ @apply px-4 py-3 text-sm font-medium hover:bg-slate-50 border-b-2 border-transparent; }
+    .tab.active{ @apply border-blue-600 text-blue-600; }
+    .kpi{ @apply bg-white border rounded-xl p-4 shadow-sm; }
+    .kpi-title{ @apply text-xs uppercase tracking-wide text-slate-500; }
+    .kpi-value{ @apply text-2xl font-semibold mt-1; }
+    .th{ @apply text-left text-xs font-semibold uppercase tracking-wide text-slate-500 px-3 py-2; }
+    td{ @apply px-3 py-2 border-t; }
+  </style>
 
   <script>
-    async function carregarResumo() {
-      const res = await fetch("https://dashboard-production-4c05.up.railway.app/api/dashboard/resumo");
-      const data = await res.json();
-      document.getElementById("total").textContent = data.total;
-      document.getElementById("enviados").textContent = data.enviados;
-      document.getElementById("entregues").textContent = data.entregues;
-      document.getElementById("lidos").textContent = data.lidos;
+    // ===== CONFIG =====
+    const API_BASE = "https://dashboard-production-4c05.up.railway.app";
+    const phoneIdMap = {
+      "732661079928516": "ConnectZap",
+      "727586317113885": "Recovery PJ",
+      "802977069563598": "Recovery PF",
+      "821562937700669": "Mercado Pago Cobrança",
+      "779797401888141": "DivZero",
+      "829210283602406": "Arc4U",
+      "713021321904495": "Serasa",
+      "803535039503723": "Mercado Pago Vendas"
+    };
+
+    // ===== DOM =====
+    const startEl = document.getElementById("start");
+    const endEl = document.getElementById("end");
+    const cartEl = document.getElementById("carteira");
+    const qEl = document.getElementById("q");
+    const alertEl = document.getElementById("alert");
+    const chips = [...document.querySelectorAll(".chip")];
+
+    // tabs
+    const tabs = [...document.querySelectorAll(".tab")];
+    const tabMensagens = document.getElementById("tab-mensagens");
+    const tabAtend = document.getElementById("tab-atendimentos");
+
+    // KPIs Mensagens
+    const k_total = document.getElementById("k_total");
+    const k_env   = document.getElementById("k_env");
+    const k_ent   = document.getElementById("k_ent");
+    const k_lido  = document.getElementById("k_lido");
+    const k_dr    = document.getElementById("k_dr");
+    const k_rr    = document.getElementById("k_rr");
+
+    // Tabela
+    const tbodyMensagens = document.getElementById("tbodyMensagens");
+    const tblEmpty = document.getElementById("tblEmpty");
+
+    // Charts
+    let chartMensagens, chartMotivos, chartSeries;
+    const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
+    const chartMotivosEmpty = document.getElementById("chartMotivosEmpty");
+    const chartSeriesEmpty = document.getElementById("chartSeriesEmpty");
+
+    // KPIs Atend
+    const a_em = document.getElementById("a_em");
+    const a_conc = document.getElementById("a_conc");
+    const a_tma = document.getElementById("a_tma");
+    const a_tmr = document.getElementById("a_tmr");
+
+    // ===== Utils =====
+    function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
+    function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
+    function fmtDurSec(s){
+      if(s == null) return "—";
+      const m = Math.floor(s/60), sec = s%60; 
+      if(m>=60){ const h=Math.floor(m/60), mm=m%60; return `${h}h ${mm}m`; }
+      return `${m}m ${sec}s`;
+    }
+    function params(){ 
+      const p = new URLSearchParams();
+      if(startEl.value) p.set("start", startEl.value);
+      if(endEl.value) p.set("end", endEl.value);
+      if(cartEl.value) p.set("phone_id", cartEl.value);
+      if(qEl.value) p.set("q", qEl.value.trim());
+      return p.toString();
+    }
+    function savePermalink(){
+      const qs = params();
+      const url = location.origin + location.pathname + (qs ? "?"+qs : "");
+      history.replaceState(null, "", url);
+    }
+    function readFromQS(){
+      const u = new URL(location.href);
+      startEl.value = u.searchParams.get("start") || "";
+      endEl.value   = u.searchParams.get("end") || "";
+      cartEl.value  = u.searchParams.get("phone_id") || "";
+      qEl.value     = u.searchParams.get("q") || "";
+    }
+    function setQuickRange(kind){
+      const now = new Date();
+      const pad = n => String(n).padStart(2,"0");
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      let a = new Date(), b = new Date();
+      if(kind==="hoje"){ /* a=b=hoje */ }
+      if(kind==="7d"){ a.setDate(now.getDate()-6); }
+      if(kind==="30d"){ a.setDate(now.getDate()-29); }
+      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
+      startEl.value = toISO(a); endEl.value = toISO(b);
     }
 
-    async function carregarEnvios() {
-      const res = await fetch("https://dashboard-production-4c05.up.railway.app/api/dashboard/envios");
-      const data = await res.json();
+    // ===== Abas =====
+    tabs.forEach(t => t.addEventListener("click", () => {
+      tabs.forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      const id = t.dataset.tab;
+      tabMensagens.classList.toggle("hidden", id!=="mensagens");
+      tabAtend.classList.toggle("hidden", id!=="atendimentos");
+      render(); // recarrega o que estiver visível
+    }));
 
-      const filtroNome = document.getElementById("filtroNome").value.toLowerCase();
-      const filtroData = document.getElementById("filtroData").value;
+    // Chips período
+    chips.forEach(ch => ch.addEventListener("click", () => {
+      chips.forEach(x => x.classList.remove("ring-2","ring-blue-600"));
+      ch.classList.add("ring-2","ring-blue-600");
+      const k = ch.dataset.range;
+      if(k !== "custom") setQuickRange(k);
+    }));
 
-      const tbody = document.getElementById("tabelaEnvios");
-      tbody.innerHTML = "";
-
-      let labels = [], entregues = [], lidos = [];
-
-      data.filter(e => {
-        return (!filtroNome || e.nome_disparo.toLowerCase().includes(filtroNome)) &&
-               (!filtroData || e.criado_em.startsWith(filtroData));
-      }).forEach(e => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${e.nome_disparo}</td>
-          <td>${e.grupo_trabalho}</td>
-          <td>${new Date(e.criado_em).toLocaleString()}</td>
-          <td>${e.total}</td>
-          <td>${e.entregues}</td>
-          <td>${e.lidos}</td>`;
-        tbody.appendChild(tr);
-
-        labels.push(e.nome_disparo);
-        entregues.push(e.entregues);
-        lidos.push(e.lidos);
+    // Preenche carteiras
+    (function fillCarteiras(){
+      const frag = document.createDocumentFragment();
+      Object.keys(phoneIdMap).forEach(id => {
+        const opt = document.createElement("option");
+        opt.value = id; opt.textContent = phoneIdMap[id];
+        frag.appendChild(opt);
       });
+      cartEl.appendChild(frag);
+    })();
 
-      renderizarGrafico(labels, entregues, lidos);
+    // ===== Data loaders =====
+    async function loadResumoMensagens(){
+      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${params()}`);
+      if(!res.ok) throw new Error("Falha no resumo (mensagens)");
+      return res.json();
+    }
+    async function loadEnvios(){
+      const res = await fetch(`${API_BASE}/api/dashboard/envios?${params()}`);
+      if(!res.ok) throw new Error("Falha nos envios");
+      return res.json();
+    }
+    async function loadAtendResumo(){
+      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${params()}`);
+      if(!res.ok) throw new Error("Falha no resumo (atendimentos)");
+      return res.json();
+    }
+    async function loadAtendMotivos(){
+      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${params()}`);
+      if(!res.ok) throw new Error("Falha nos motivos");
+      return res.json();
+    }
+    async function loadAtendSeries(){
+      const res = await fetch(`${API_BASE}/api/atendimentos/series?${params()}`);
+      if(!res.ok) throw new Error("Falha nas séries");
+      return res.json();
     }
 
-    let chart;
-    function renderizarGrafico(labels, entregues, lidos) {
-      if (chart) chart.destroy();
-      const ctx = document.getElementById("grafico").getContext("2d");
-      chart = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: labels,
-          datasets: [
-            {label: "Entregues", data: entregues, backgroundColor: "#3b82f6"},
-            {label: "Lidos", data: lidos, backgroundColor: "#10b981"}
-          ]
-        },
-        options: {responsive: true, plugins: {legend: {position: "top"}}}
+    // ===== Render =====
+    async function renderMensagens(){
+      // KPIs
+      try{
+        setAlert(""); 
+        k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
+        const r = await loadResumoMensagens();
+        const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
+        k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
+        k_dr.textContent = toPct(ent, env || total); // fallback se não tiver "enviados"
+        k_rr.textContent = toPct(lido, ent || total);
+      }catch(e){ setAlert(e.message); }
+
+      // Tabela + Gráfico
+      try{
+        tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
+        const data = await loadEnvios();
+        tbodyMensagens.innerHTML = "";
+        tblEmpty.classList.toggle("hidden", data.length>0);
+
+        const labels = [], entregues=[], lidos=[];
+        data.forEach(e => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${e.nome_disparo||"-"}</td>
+            <td>${e.grupo_trabalho||"-"}</td>
+            <td>${e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "-"}</td>
+            <td class="text-right">${e.total||0}</td>
+            <td class="text-right">${e.entregues||0}</td>
+            <td class="text-right">${e.lidos||0}</td>`;
+          tbodyMensagens.appendChild(tr);
+          labels.push(e.nome_disparo||"(sem nome)");
+          entregues.push(e.entregues||0);
+          lidos.push(e.lidos||0);
+        });
+
+        // gráfico
+        document.getElementById("chartMensagens").classList.remove("hidden");
+        chartMensagensEmpty.classList.add("hidden");
+        if(chartMensagens) chartMensagens.destroy();
+        if(labels.length===0){
+          document.getElementById("chartMensagens").classList.add("hidden");
+          chartMensagensEmpty.classList.remove("hidden");
+        }else{
+          chartMensagens = new Chart(document.getElementById("chartMensagens").getContext("2d"), {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {label:"Entregues", data:entregues, backgroundColor:"#3b82f6", stack:"s"},
+                {label:"Lidos", data:lidos, backgroundColor:"#10b981", stack:"s"}
+              ]
+            },
+            options: {
+              responsive:true,
+              maintainAspectRatio:false,
+              plugins:{ legend:{ position:"top" } },
+              scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
+            }
+          });
+        }
+      }catch(e){ setAlert(e.message); }
+    }
+
+    async function renderAtend(){
+      // KPIs
+      try{
+        a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
+        const r = await loadAtendResumo();
+        a_em.textContent = r.em_atendimento ?? 0;
+        a_conc.textContent = r.concluidos ?? 0;
+        a_tma.textContent = fmtDurSec(r.tma_segundos);
+        a_tmr.textContent = fmtDurSec(r.tmr_segundos);
+      }catch(e){ setAlert("Aba Atendimentos — " + e.message); }
+
+      // Motivos (pizza)
+      try{
+        const dados = await loadAtendMotivos();
+        if(chartMotivos) chartMotivos.destroy();
+        document.getElementById("chartMotivos").classList.remove("hidden");
+        chartMotivosEmpty.classList.add("hidden");
+
+        if(!dados.length){
+          document.getElementById("chartMotivos").classList.add("hidden");
+          chartMotivosEmpty.classList.remove("hidden");
+        }else{
+          chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
+            type:"pie",
+            data:{
+              labels: dados.map(d=>d.motivo),
+              datasets:[{ data: dados.map(d=>d.qtd) }]
+            },
+            options:{ responsive:true, maintainAspectRatio:false }
+          });
+        }
+      }catch(e){ setAlert("Motivos — " + e.message); }
+
+      // Séries (linha)
+      try{
+        const s = await loadAtendSeries();
+        const map = {};
+        (s.mensagens||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].in=r.inbound; map[k].out=r.outbound; });
+        (s.concluidos||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].conc=r.concluidos; });
+        const dias = Object.keys(map).sort();
+        const inb = dias.map(d=>map[d].in), outb = dias.map(d=>map[d].out), conc = dias.map(d=>map[d].conc);
+
+        if(chartSeries) chartSeries.destroy();
+        document.getElementById("chartSeries").classList.remove("hidden");
+        chartSeriesEmpty.classList.add("hidden");
+
+        if(!dias.length){
+          document.getElementById("chartSeries").classList.add("hidden");
+          chartSeriesEmpty.classList.remove("hidden");
+        }else{
+          chartSeries = new Chart(document.getElementById("chartSeries").getContext("2d"), {
+            type:"line",
+            data:{
+              labels: dias,
+              datasets: [
+                {label:"Inbound", data:inb, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
+                {label:"Outbound", data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
+                {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
+              ]
+            },
+            options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
+          });
+        }
+      }catch(e){ setAlert("Séries — " + e.message); }
+    }
+
+    async function render(){
+      savePermalink();
+      const active = document.querySelector(".tab.active")?.dataset.tab || "mensagens";
+      if(active==="mensagens") await renderMensagens();
+      else await renderAtend();
+    }
+
+    // Export CSV
+    document.getElementById("btnExport").addEventListener("click", () => {
+      const rows = [["Nome Disparo","Grupo","Data","Total","Entregues","Lidos"]];
+      [...tbodyMensagens.querySelectorAll("tr")].forEach(tr => {
+        const tds = [...tr.querySelectorAll("td")].map(td => `"${(td.innerText||"").replace(/"/g,'""')}"`);
+        rows.push(tds);
       });
+      const csv = rows.map(r=>r.join(",")).join("\n");
+      const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `envios_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    });
+
+    // Aplicar
+    document.getElementById("btnAplicar").addEventListener("click", render);
+
+    // Init: período padrão últimos 7 dias
+    function initDefaults(){
+      const now = new Date(); const pad = n=>String(n).padStart(2,"0");
+      const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
+      startEl.value = toISO(a); endEl.value = toISO(b);
+      readFromQS(); // respeita parâmetros se vierem na URL
     }
 
-    carregarResumo();
-    carregarEnvios();
+    initDefaults();
+    render();
   </script>
 </body>
 </html>
