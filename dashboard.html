@@ -55,6 +55,14 @@
               <option value="">Todas</option>
             </select>
           </div>
+          <div>
+            <label class="text-sm text-slate-500">Agentes</label>
+            <div id="agentesWrap" class="flex flex-wrap gap-2 p-2 border border-slate-300 rounded-lg bg-white min-h-[44px]"></div>
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btnClearDates" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
+            <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
+          </div>
           <div class="flex gap-2">
             <div class="flex-1">
               <label class="text-sm text-slate-500">Nome do disparo</label>
@@ -210,6 +218,10 @@
     .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
     .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
     td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
+    .chip { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .6rem;
+            border:1px solid #e2e8f0; border-radius:9999px; background:#fff; cursor:pointer; }
+    .chip input { accent-color:#2563eb; }
+  
   </style>
 
   <script>
@@ -335,7 +347,49 @@
       });
       cartEl.appendChild(frag);
     })();
+    // busca agentes (filtrando por carteira quando selecionada)
+    async function loadAgentes() {
+      const selPhone = cartEl.value || "";
+      const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
+      const res = await fetch(url);
+      const data = await res.json(); // [{codigo_do_agente, nome, carteira, ...}]
+      const wrap = document.getElementById("agentesWrap");
+      wrap.innerHTML = "";
+      data.forEach(a => {
+        const id = `ag-${a.codigo_do_agente}`;
+        const lab = document.createElement("label");
+        lab.className = "chip";
+        lab.innerHTML = `<input type="checkbox" value="${a.codigo_do_agente}" id="${id}"><span>${a.nome || ("Agente "+a.codigo_do_agente)}</span>`;
+        wrap.appendChild(lab);
+      });
+    }
 
+    // incluir agentes nos parâmetros
+    function selectedAgentes(){
+      return [...document.querySelectorAll("#agentesWrap input[type=checkbox]:checked")].map(i => i.value).join(",");
+    }
+    function params(){
+      const p = new URLSearchParams();
+      if(startEl.value) p.set("start", startEl.value);
+      if(endEl.value)   p.set("end", endEl.value);
+      if(cartEl.value)  p.set("phone_id", cartEl.value);
+      if(qEl.value)     p.set("q", qEl.value.trim());
+      const ags = selectedAgentes();
+      if(ags) p.set("agentes", ags);
+      return p.toString();
+    }
+
+    // reagir à mudança de carteira recarregando a lista de agentes
+    cartEl.addEventListener("change", async () => {
+      await loadAgentes();
+    });
+
+    // botão “Limpar datas”
+    document.getElementById("btnClearDates").addEventListener("click", () => {
+      startEl.value = ""; endEl.value = "";
+      // remove destaque dos chips rápidos, se houver
+      document.querySelectorAll("[data-range]").forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
+    });
     // ===== Data loaders =====
     async function loadResumoMensagens(){
       const res = await fetch(`${API_BASE}/api/dashboard/resumo?${params()}`);
