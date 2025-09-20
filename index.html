@@ -170,6 +170,7 @@
   const entregasLink = document.getElementById('entregasLink');
   const dashboardLink = document.getElementById('dashboardLink');
   const monitoriaLink = document.getElementById('monitoriaLink');
+  const SupervisaoLink = document.getElementById('SupervisaoLink');
   const conversasLink = document.getElementById('conversasLink');
   const loginBtn = document.getElementById('loginBtn');
   const loginBtnMobile = document.getElementById('loginBtnMobile');
@@ -244,6 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     entregasLink.classList.remove('disabled');
     dashboardLink.classList.remove('disabled');
     monitoriaLink.classList.remove('disabled');
+    SupervisaoLink.classList.remove('disabled');
     conversasLink.classList.remove('disabled');
 
     loginBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-3"></i> Logout';
@@ -258,6 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
     entregasLink.classList.add('disabled');
     dashboardLink.classList.add('disabled');
     monitoriaLink.classList.add('disabled');
+    SupervisaoLink.classList.add('disabled');
     conversasLink.classList.add('disabled');
 
     loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-3"></i> Login';
