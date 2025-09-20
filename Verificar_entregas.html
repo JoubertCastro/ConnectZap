@@ -21,77 +21,160 @@
     }
     h1{margin:0 0 10px;font-size:22px}
     .muted{color:var(--muted);font-size:14px;margin-bottom:15px}
-    table{
-      width:100%;border-collapse:collapse;margin-top:15px;background:#fff;border-radius:var(--radius);overflow:hidden
+
+    /* Filtros minimizáveis */
+    details.filter-block{border:1px solid var(--outline);border-radius:10px;background:#fff;margin-bottom:14px}
+    details.filter-block > summary{
+      list-style:none;cursor:pointer;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;
+      font-weight:700;color:#334155
     }
-    th, td{
-      padding:12px 14px;border-bottom:1px solid var(--outline);text-align:left;font-size:14px
-    }
-    th{background:#f9fafb;font-weight:600;color:var(--muted)}
-    tr:last-child td{border-bottom:none}
-    .status-pill{
-      display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600
-    }
-    .sent{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
-    .delivered{background:#dbeafe;color:#1e40af;border:1px solid #93c5fd}
-    .read{background:#dcfce7;color:#166534;border:1px solid #86efac}
-    .filtros{
-      display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;align-items:flex-end
-    }
+    details.filter-block > summary::-webkit-details-marker{display:none}
+    details.filter-block[open] > summary{border-bottom:1px dashed var(--outline)}
+    .summary-chevron{transition:transform .2s}
+    details.filter-block[open] .summary-chevron{transform:rotate(180deg)}
+    .summary-right{font-size:12px;color:#64748b;font-weight:600}
+
+    .filtros{display:flex;flex-wrap:wrap;gap:12px}
+    .filtros > .field{min-width:220px}
     .filtros label{font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
     .filtros select,.filtros input{
-      padding:6px 10px;border:1px solid var(--outline);border-radius:6px;font-size:14px
+      width:100%;padding:8px 10px;border:1px solid var(--outline);border-radius:8px;font-size:14px;background:#fff
     }
     .btn{
-      padding:8px 14px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;
+      padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;
       background:var(--primary);color:#fff
     }
     .btn:hover{background:var(--primary-d)}
+    .btn-outline{
+      padding:10px 14px;border:1px solid var(--outline);border-radius:8px;background:#fff;color:#334155;font-weight:700
+    }
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{
+      border:1px solid var(--outline);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;color:#334155;background:#fff;cursor:pointer
+    }
+    .chip.active{background:#eaf1ff;border-color:#c7d7fe;color:#1d4ed8}
+
+    .resumo{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;border:1px solid var(--outline);background:#fff;border-radius:999px;
+      padding:6px 10px;font-size:12px;font-weight:700;color:#334155
+    }
+
+    table{
+      width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border-radius:var(--radius);overflow:hidden
+    }
+    thead th{
+      position:sticky;top:0;background:#f9fafb;border-bottom:1px solid var(--outline);
+      padding:12px 14px;text-align:left;font-size:13px;font-weight:700;color:var(--muted);z-index:1
+    }
+    tbody td{padding:12px 14px;border-bottom:1px solid var(--outline);font-size:14px}
+    tbody tr:nth-child(even){background:#fcfdff}
+    tr:last-child td{border-bottom:none}
+
+    .status-pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid}
+    .sent{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+    .delivered{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+    .read{background:#dcfce7;color:#166534;border-color:#86efac}
+    .failed{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+    .other{background:#f1f5f9;color:#334155;border-color:#e2e8f0}
+
+    .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+    .grow{flex:1}
   </style>
 </head>
 <body>
   <div class="container">
     <div class="card">
       <h1>Status das Mensagens WhatsApp</h1>
-      <div class="muted">Atualiza automaticamente a cada 5 segundos mostrando o status mais recente de cada mensagem.</div>
+      <div class="muted">Atualiza automaticamente a cada 5 segundos. Você pode refinar por conta, telefone do cliente, período e status.</div>
 
-      <div class="filtros">
-        <!-- Filtro por conta -->
-        <div>
-          <label for="filtroConta">Conta:</label>
-          <select id="filtroConta">
-            <option value="">Todas as contas</option>
-            <option value="556192281391">ConnectZap</option>
-            <option value="558000562426">Recovery PF</option>
-            <option value="558009414344">DivZero</option>
-            <option value="558009000557">Arc4U</option>
-            <option value="558000420762">Serasa</option>
-            <option value="558002020074">Vendas MP</option>
-          </select>
+      <!-- Filtros -->
+      <details id="flt" class="filter-block" open>
+        <summary>
+          <span>Filtros</span>
+          <span id="fltResumo" class="summary-right"></span>
+          <svg class="summary-chevron" width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
+          </svg>
+        </summary>
+        <div class="p-2">
+          <div class="filtros">
+            <div class="field">
+              <label for="filtroConta">Conta (telefone da conta)</label>
+              <select id="filtroConta">
+                <option value="">Todas as contas</option>
+                <option value="556192281391">ConnectZap</option>
+                <option value="558000562426">Recovery PF</option>
+                <option value="558009414344">DivZero</option>
+                <option value="558009000557">Arc4U</option>
+                <option value="558000420762">Serasa</option>
+                <option value="558002020074">Vendas MP</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="filtroCliente">Telefone do cliente</label>
+              <input type="text" id="filtroCliente" placeholder="Ex.: 5511999999999" />
+            </div>
+
+            <div class="field">
+              <label for="filtroStatus">Status</label>
+              <select id="filtroStatus">
+                <option value="">Todos</option>
+                <!-- opções serão preenchidas dinamicamente -->
+              </select>
+            </div>
+
+            <div class="field" style="min-width:260px">
+              <label>Período rápido</label>
+              <div class="chips">
+                <button type="button" class="chip" data-range="hoje">Hoje</button>
+                <button type="button" class="chip" data-range="ontem">Ontem</button>
+                <button type="button" class="chip" data-range="7d">Últimos 7 dias</button>
+                <button type="button" class="chip" data-range="30d">Últimos 30 dias</button>
+                <button type="button" class="chip" data-range="mes">Mês atual</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="dataInicio">De</label>
+              <input type="datetime-local" id="dataInicio">
+            </div>
+            <div class="field">
+              <label for="dataFim">Até</label>
+              <input type="datetime-local" id="dataFim">
+            </div>
+
+            <div class="field" style="min-width:180px">
+              <label for="ordem">Ordenar por</label>
+              <select id="ordem">
+                <option value="desc">Mais recentes primeiro</option>
+                <option value="asc">Mais antigas primeiro</option>
+              </select>
+            </div>
+
+            <div class="field" style="display:flex;gap:8px;align-items:flex-end">
+              <button class="btn" id="btnAplicar">Aplicar Filtros</button>
+              <button class="btn-outline" id="btnLimpar">Limpar</button>
+            </div>
+          </div>
+
+          <div id="resumo" class="resumo"></div>
         </div>
+      </details>
 
-<!-- Filtro Personalizado -->
-<div style="display:flex;gap:10px;align-items:flex-end">
-  <div>
-    <label for="dataInicio">De:</label>
-    <input type="datetime-local" id="dataInicio">
-  </div>
-  <div>
-    <label for="dataFim">Até:</label>
-    <input type="datetime-local" id="dataFim">
-  </div>
-</div>
-
-        <button class="btn" onclick="carregarStatus()">Aplicar Filtros</button>
+      <div class="toolbar">
+        <div class="muted grow" id="contadorResultados">—</div>
       </div>
 
       <table>
         <thead>
           <tr>
-            <th>Data/Hora</th>
-            <th>Recipient ID</th>
-            <th>Telefone</th>
-            <th>Status</th>
+            <th style="width:26%">Data/Hora</th>
+            <th style="width:28%">Telefone do cliente</th>
+            <th style="width:28%">Telefone da conta</th>
+            <th style="width:18%">Status</th>
           </tr>
         </thead>
         <tbody id="statusTable">
@@ -102,72 +185,196 @@
   </div>
 
   <script>
-    function toggleCustomInterval(){
-      const periodo = document.getElementById("filtroPeriodo").value;
-      document.getElementById("customInterval").style.display = periodo==="custom" ? "flex":"none";
+    const API = "https://whatsapp-webhook-production-9a27.up.railway.app/api/status";
+
+    const filtroConta   = document.getElementById("filtroConta");
+    const filtroCliente = document.getElementById("filtroCliente"); // recipient_id
+    const filtroStatus  = document.getElementById("filtroStatus");
+    const dataInicio    = document.getElementById("dataInicio");
+    const dataFim       = document.getElementById("dataFim");
+    const ordemSel      = document.getElementById("ordem");
+    const tbody         = document.getElementById("statusTable");
+    const resumoDiv     = document.getElementById("resumo");
+    const contador      = document.getElementById("contadorResultados");
+    const fltResumo     = document.getElementById("fltResumo");
+
+    const chips = Array.from(document.querySelectorAll(".chip"));
+
+    let cache = [];
+    let isLoading = false;
+    let statusesConhecidos = new Set();
+    let firstBuildStatus = true;
+
+    const pad = n => String(n).padStart(2,"0");
+    const toYMD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    function soDigitos(s){ return (s||"").replace(/\D/g,""); }
+    function fmtData(s){
+      const d = new Date(s);
+      // se quiser fixar fuso: { timeZone: "America/Sao_Paulo" }
+      return d.toLocaleString("pt-BR");
     }
 
-async function carregarStatus() {
-  try {
-    const resp = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/status");
-    const dados = await resp.json();
-    const tbody = document.getElementById("statusTable");
-    tbody.innerHTML = "";
+    function setQuickRange(kind){
+      const now = new Date();
+      let a = new Date(), b = new Date();
+      if(kind==="hoje"){ /* a=b hoje */ }
+      if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
+      if(kind==="7d"){ a.setDate(now.getDate()-6); }
+      if(kind==="30d"){ a.setDate(now.getDate()-29); }
+      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
+      dataInicio.value = `${toYMD(a)}T00:00`;
+      dataFim.value    = `${toYMD(b)}T23:59`;
+    }
+    function highlightChip(btn){ chips.forEach(c=>c.classList.remove("active")); if(btn) btn.classList.add("active"); }
+    chips.forEach(btn => btn.addEventListener("click", () => { setQuickRange(btn.dataset.range); highlightChip(btn); atualizarResumoCompacto(); }));
 
-    // aplica filtros
-    const filtroConta = document.getElementById("filtroConta").value;
-    const inicio = document.getElementById("dataInicio").value;
-    const fim = document.getElementById("dataFim").value;
+    // default: hoje
+    setQuickRange("hoje"); highlightChip(chips[0]);
 
-    let filtrados = dados.filter(linha => {
-      // filtro por conta
-      if (filtroConta && linha.display_phone_number !== filtroConta) return false;
+    function atualizarResumoCompacto(){
+      const conta = filtroConta.value || "todas";
+      const cli = filtroCliente.value ? soDigitos(filtroCliente.value) : "—";
+      const st  = filtroStatus.value || "todos";
+      const di  = dataInicio.value ? new Date(dataInicio.value).toLocaleString("pt-BR") : "—";
+      const df  = dataFim.value ? new Date(dataFim.value).toLocaleString("pt-BR") : "—";
+      fltResumo.textContent = `(conta: ${conta} • cliente: ${cli} • status: ${st} • ${di} → ${df})`;
+    }
+    [filtroConta, filtroCliente, filtroStatus, dataInicio, dataFim, ordemSel].forEach(el => el.addEventListener("change", atualizarResumoCompacto));
+    atualizarResumoCompacto();
 
-      // filtro por intervalo personalizado
-      const data = new Date(linha.data_hora);
-      if (inicio && data < new Date(inicio)) return false;
-      if (fim && data > new Date(fim)) return false;
-
-      return true;
-    });
-
-    if (!filtrados.length) {
-      tbody.innerHTML = "<tr><td colspan='4'>Nenhum status encontrado</td></tr>";
-      return;
+    async function fetchStatus(){
+      if(isLoading) return;
+      isLoading = true;
+      try{
+        const resp = await fetch(API);
+        const dados = await resp.json();
+        cache = Array.isArray(dados) ? dados : [];
+        buildStatusOptions(cache); // popula lista de status dinamicamente
+        aplicarFiltrosERender();
+      }catch(e){
+        console.error("Erro ao carregar status:", e);
+      }finally{
+        isLoading = false;
+      }
     }
 
-    filtrados.forEach(linha => {
-      const tr = document.createElement("tr");
+    function buildStatusOptions(rows){
+      // coleta e ordena alfabeticamente
+      rows.forEach(r => r.status && statusesConhecidos.add(r.status));
+      if(!statusesConhecidos.size || !firstBuildStatus) return;
+      const atuais = new Set(Array.from(filtroStatus.options).map(o=>o.value));
+      statusesConhecidos.forEach(st=>{
+        if(!atuais.has(st)){
+          const opt = document.createElement("option");
+          opt.value = st; opt.textContent = st;
+          filtroStatus.appendChild(opt);
+        }
+      });
+      firstBuildStatus = false;
+    }
 
-      const tdData = document.createElement("td");
-      tdData.textContent = linha.data_hora;
-      tr.appendChild(tdData);
+    function aplicarFiltrosERender(){
+      const conta = filtroConta.value;
+      const clienteDigits = soDigitos(filtroCliente.value);
+      const st = filtroStatus.value;
+      const di = dataInicio.value ? new Date(dataInicio.value) : null;
+      const df = dataFim.value ? new Date(dataFim.value) : null;
+      const ordem = ordemSel.value;
 
-      const tdRec = document.createElement("td");
-      tdRec.textContent = linha.recipient_id;
-      tr.appendChild(tdRec);
+      let filtrados = cache.filter(l => {
+        if (conta && l.display_phone_number !== conta) return false;
+        if (clienteDigits){
+          const rec = soDigitos(l.recipient_id);
+          if (!rec.includes(clienteDigits)) return false;
+        }
+        if (st && l.status !== st) return false;
+        const d = new Date(l.data_hora);
+        if (di && d < di) return false;
+        if (df && d > df) return false;
+        return true;
+      });
 
-      const tdTel = document.createElement("td");
-      tdTel.textContent = linha.display_phone_number;
-      tr.appendChild(tdTel);
+      filtrados.sort((a,b)=>{
+        const da = new Date(a.data_hora).getTime();
+        const db = new Date(b.data_hora).getTime();
+        return ordem === "asc" ? (da - db) : (db - da);
+      });
 
-      const tdStatus = document.createElement("td");
-      const span = document.createElement("span");
-      span.textContent = linha.status;
-      span.className = `status-pill ${linha.status}`;
-      tdStatus.appendChild(span);
-      tr.appendChild(tdStatus);
+      renderResumo(filtrados);
+      renderTabela(filtrados);
+      contador.textContent = `${filtrados.length} resultado(s)`;
+    }
 
-      tbody.appendChild(tr);
+    function renderResumo(rows){
+      const map = new Map();
+      rows.forEach(r=>{
+        const k = r.status || "other";
+        map.set(k, (map.get(k)||0)+1);
+      });
+      resumoDiv.innerHTML = "";
+      if(!rows.length){ return; }
+      // cria uma pill para cada status encontrado
+      Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).forEach(([k,qt])=>{
+        const p = document.createElement("span");
+        p.className = "pill";
+        p.innerHTML = `<strong>${k}</strong> ${qt}`;
+        resumoDiv.appendChild(p);
+      });
+      // total
+      const total = document.createElement("span");
+      total.className = "pill";
+      total.innerHTML = `<strong>Total</strong> ${rows.length}`;
+      resumoDiv.appendChild(total);
+    }
+
+    function renderTabela(rows){
+      tbody.innerHTML = "";
+      if(!rows.length){
+        tbody.innerHTML = `<tr><td colspan="4">Nenhum status encontrado</td></tr>`;
+        return;
+      }
+      rows.forEach(l=>{
+        const tr = document.createElement("tr");
+
+        const tdData = document.createElement("td");
+        tdData.textContent = fmtData(l.data_hora);
+        tr.appendChild(tdData);
+
+        const tdRec = document.createElement("td");
+        tdRec.textContent = l.recipient_id; // telefone do cliente
+        tr.appendChild(tdRec);
+
+        const tdTel = document.createElement("td");
+        tdTel.textContent = l.display_phone_number; // telefone da conta
+        tr.appendChild(tdTel);
+
+        const tdStatus = document.createElement("td");
+        const span = document.createElement("span");
+        const cls = (l.status||"other").toLowerCase();
+        span.textContent = l.status || "other";
+        span.className = `status-pill ${["sent","delivered","read","failed"].includes(cls)?cls:"other"}`;
+        tdStatus.appendChild(span);
+        tr.appendChild(tdStatus);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Botões
+    document.getElementById("btnAplicar").addEventListener("click", aplicarFiltrosERender);
+    document.getElementById("btnLimpar").addEventListener("click", ()=>{
+      filtroConta.value = "";
+      filtroCliente.value = "";
+      filtroStatus.value = "";
+      setQuickRange("hoje"); highlightChip(chips[0]);
+      ordemSel.value = "desc";
+      aplicarFiltrosERender();
+      atualizarResumoCompacto();
     });
-  } catch (e) {
-    console.error("Erro ao carregar status:", e);
-  }
-}
 
-
-    setInterval(carregarStatus, 5000);
-    carregarStatus();
+    // Polling
+    setInterval(fetchStatus, 5000);
+    fetchStatus();
   </script>
 </body>
 </html>
