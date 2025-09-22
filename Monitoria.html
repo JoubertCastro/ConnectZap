@@ -8,43 +8,58 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 <style>
-/* ===== Balões de mensagem (versão monitoria, mais neutra) ===== */
+/* ===== Bolhas de mensagem (ajustadas) ===== */
 .msg{
-  max-width: 68%;
-  padding: 10px 12px 8px;
-  border-radius: 14px;
-  margin: 6px 0;
-  position: relative;
-  white-space: pre-wrap;
-  line-height: 1.45;
-  font-size: 14px;
-  border: 1px solid #e5e7eb;           /* slate-200 */
-  box-shadow: 0 1px 1px rgb(0 0 0 / .04);
-  overflow-wrap: anywhere;
+  display:inline-block;                         /* encolhe ao conteúdo */
+  max-width:min(68%, 560px);
+  padding:10px 14px 18px;
+  border-radius:18px;
+  margin:6px 0;
+  position:relative;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  line-height:1.45;
+  font-size:14px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+  transition:background .18s ease;
 }
+@media (max-width:768px){ .msg{ max-width:86%; } }
+
 .msg.enviada{
-  background: #eef2ff;                  /* indigo-50 */
-  border-color: #e0e7ff;                /* indigo-100 */
-  align-self: flex-end;
+  align-self:flex-end;
+  background:linear-gradient(120deg,#eef2ff,#e0e7ff); /* indigo-50 -> indigo-100 */
+  color:#111827;
 }
 .msg.recebida{
-  background: #ffffff;
-  border-color: #e5e7eb;                /* slate-200 */
-  align-self: flex-start;
+  align-self:flex-start;
+  background:#ffffff;
+  border:1px solid #e5e7eb;                      /* slate-200 */
 }
+
 .msg .hora{
-  display: block;
-  position: static;
-  margin-top: 4px;
-  font-size: 11px;
-  color: #64748b;                       /* slate-500 */
-  text-align: right;
+  position:absolute; right:8px; bottom:4px;
+  font-size:11px; color:#64748b;                 /* slate-500 */
 }
+
+/* Caudas das bolhas */
+.msg.enviada::after,.msg.recebida::after{
+  content:""; position:absolute; bottom:0; width:14px; height:14px;
+  clip-path:polygon(0 0, 100% 0, 0 100%);
+}
+.msg.enviada::after{
+  right:-7px;
+  background:linear-gradient(120deg,#eef2ff,#e0e7ff);
+}
+.msg.recebida::after{
+  left:-7px;
+  background:#fff;
+  border-left:1px solid #e5e7eb;
+  border-bottom:1px solid #e5e7eb;
+}
+
+/* Separador de dia */
 .dia{
-  text-align: center;
-  margin: 12px 0;
-  font-size: 12px;
-  color: #64748b;                       /* slate-500 */
+  text-align:center; margin:12px 0; font-size:12px; color:#64748b;
 }
 
 /* ===== Pills / badges ===== */
@@ -60,16 +75,10 @@
 
 .contato-item:hover{ background:#f8fafc; }
 
-/* ===== details/summary (minimizar filtros) ===== */
-details.filter-block{
-  border:1px solid #e2e8f0;             /* slate-200 */
-  border-radius:.75rem;
-  background:#fff;
-}
+/* ===== details/summary ===== */
+details.filter-block{ border:1px solid #e2e8f0; border-radius:.75rem; background:#fff; }
 details.filter-block > summary{
-  list-style: none;
-  cursor: pointer;
-  padding:.6rem .8rem;
+  list-style:none; cursor:pointer; padding:.6rem .8rem;
   display:flex; align-items:center; justify-content:space-between;
   font-weight:700; color:#334155;
 }
@@ -79,7 +88,7 @@ details.filter-block[open] > summary{ border-bottom:1px dashed #e2e8f0; }
 .summary-chevron{ transition: transform .2s ease; }
 details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
 
-/* borda sutil do painel direito para não “pesar” quando minimizado */
+/* borda sutil do painel direito */
 aside.right-pane{ border-left:1px solid #e5e7eb; }
 </style>
 </head>
@@ -277,7 +286,7 @@ const carteiraToPhone = {
 let filtrosListaAplicados = false;
 let contatoSelecionado = null, phoneIdAtual = null;
 let mensagens = [];
-let janelaAtiva = null; // {inicio:'YYYY-MM-DD', fim:'YYYY-MM-DD'} quando vier de conversas_em_andamento
+let janelaAtiva = null; // {inicio:'YYYY-MM-DD', fim:'YYYY-MM-DD'}
 
 /* ====== HELPERS ====== */
 const pad = n => String(n).padStart(2,"0");
@@ -288,6 +297,16 @@ function toLocalYMD(iso){
   const d = new Date(iso);
   const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
+}
+
+/* Heurística robusta para direção da mensagem */
+function isIncoming(m){
+  const s = (m.status || "").toLowerCase();
+  if (typeof m.from_me === "boolean") return !m.from_me;
+  if (m.direction) return String(m.direction).toLowerCase().startsWith("in");
+  if (["in","received","incoming"].includes(s)) return true;
+  if (["out","sent","delivered","read","outgoing"].includes(s)) return false;
+  return s === "in"; // fallback
 }
 
 /* ====== UI: período rápido (lista) ====== */
@@ -308,10 +327,9 @@ function setQuickRange(kind){
 }
 function highlightChip(btn){ chipBtns.forEach(b=>b.classList.remove("active")); if(btn) btn.classList.add("active"); }
 chipBtns.forEach(btn=>btn.addEventListener("click", ()=>{ const k=btn.dataset.range; if(k!=="custom") setQuickRange(k); highlightChip(btn); }));
-// default hoje
 setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
 
-/* resumo compacto no summary do filtro básico */
+/* resumo no summary do filtro básico */
 function atualizarResumoBasico(){
   const carteira = filtroContaEl.value || "—";
   const di = diListaEl.value || "—";
@@ -382,7 +400,6 @@ async function carregarContatos(){
       });
     }
 
-    // atualiza lista
     const stateKey = JSON.stringify(filtrados.map(c=>c.remetente+"|"+c.data_hora));
     if(ultimoSnapshot.stateKey === stateKey) return;
     ultimoSnapshot.stateKey = stateKey;
@@ -423,7 +440,7 @@ function startContactsPolling(){
 
 /* ====== ABRIR CONVERSA ====== */
 async function abrirConversaBasica(c){
-  janelaAtiva = null; // limpa janela quando abre pela lista básica
+  janelaAtiva = null;
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
   document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
   document.getElementById("subInfo").innerText = c.phone_id ? `Conta: ${phoneIdMap[c.phone_id]||c.phone_id}` : "";
@@ -446,7 +463,7 @@ async function abrirConversaComJanela(telefone, phone_id, started_at, ended_at, 
   jDiv.innerHTML = `Janela do ticket: <span class="badge badge-amber">${inicio} → ${fim}</span>`;
   jDiv.classList.remove("hidden");
 
-  await carregarMensagens(); // já aplica janela ativa via query
+  await carregarMensagens();
 }
 
 /* ====== CARREGAR MENSAGENS ====== */
@@ -468,20 +485,32 @@ async function carregarMensagens(){
     if(!res.ok) throw new Error("Erro ao obter histórico");
     let todas = await res.json();
 
-    mensagens = todas.filter(m=>!tipo || m.status === tipo);
+    if(tipo === "in") mensagens = todas.filter(m => isIncoming(m));
+    else if(tipo === "out") mensagens = todas.filter(m => !isIncoming(m));
+    else mensagens = todas;
 
     chat.innerHTML=""; let ultimoDia=""; let enviadas=0, recebidas=0;
+
     mensagens.forEach(m=>{
-      if(m.status==="in") recebidas++; else enviadas++;
+      const incoming = isIncoming(m);
+      if(incoming) recebidas++; else enviadas++;
+
       const data=new Date(m.data_hora);
       const dia=data.toLocaleDateString("pt-BR",{timeZone:"America/Sao_Paulo"});
       const hora=data.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",timeZone:"America/Sao_Paulo"});
-      if(dia!==ultimoDia){ chat.innerHTML+=`<div class="dia">— ${dia} —</div>`; ultimoDia=dia; }
-      chat.innerHTML+=`
-        <div class="msg ${m.status==="in"?"recebida":"enviada"}">
-          <div>${escapeHtml(m.mensagem_final||"")}</div>
-          <span class="hora">${hora}</span>
-        </div>`;
+
+      if(dia!==ultimoDia){
+        const sep = document.createElement("div");
+        sep.className = "dia";
+        sep.textContent = `— ${dia} —`;
+        chat.appendChild(sep);
+        ultimoDia = dia;
+      }
+
+      const div = document.createElement("div");
+      div.className = `msg ${incoming ? "recebida" : "enviada"}`;
+      div.innerHTML = `<div>${escapeHtml(m.mensagem_final||"")}</div><span class="hora">${hora}</span>`;
+      chat.appendChild(div);
     });
 
     document.getElementById("resumoCards").innerHTML=`
@@ -503,7 +532,8 @@ function exportarTXT(){
   if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
   let conteudo = mensagens.map(m=>{
     const data=new Date(m.data_hora).toLocaleString("pt-BR");
-    return `[${data}] (${m.status==="in"?"Recebida":"Enviada"}) ${m.mensagem_final||""}`;
+    const dir = isIncoming(m) ? "Recebida" : "Enviada";
+    return `[${data}] (${dir}) ${m.mensagem_final||""}`;
   }).join("\n");
   const blob=new Blob([conteudo],{type:"text/plain"});
   const url=URL.createObjectURL(blob);
@@ -515,7 +545,7 @@ function exportarPDF(){
   if(!mensagens.length){alert("Nenhuma conversa carregada");return;}
   const body = mensagens.map(m=>[
     new Date(m.data_hora).toLocaleString("pt-BR"),
-    m.status==="in"?"Recebida":"Enviada",
+    isIncoming(m) ? "Recebida" : "Enviada",
     m.mensagem_final||""
   ]);
   const docDefinition = {
