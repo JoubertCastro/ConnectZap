@@ -6,158 +6,99 @@
 <title>Conversas WhatsApp — Supervisor</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-:root{
-  --chat-bg:#f3f4f6;
-  --bubble-in-bg:#ffffff;
-  --bubble-in-border:#e2e8f0;
-  --bubble-out-g1:#dcf8c6;
-  --bubble-out-g2:#b8f0a4;
-  --bubble-radius:18px;
-  --density-gap:4px; /* 4 = confortável, 1 = compacto */
-  --msg-font:14px;
+/* ========= Bolhas de mensagem (ajustadas) ========= */
+.msg{
+  display:inline-block;                         /* encolhe ao conteúdo */
+  max-width:min(70%, 560px);
+  padding:10px 14px 18px;
+  margin:6px 0;
+  position:relative;
+  border-radius:18px;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  box-shadow:0 1px 2px rgba(0,0,0,.10);
+  transition:background .18s ease;
 }
-
-/* ====== Layout ====== */
-body{ background:var(--chat-bg); }
-@media (max-width: 768px) { aside { width: 42%; } }
-
-/* ====== Bolhas ====== */
-.msg {
-  max-width: 70%;
-  position: relative;
-  margin: calc(var(--density-gap) * 1px) 0;
-  padding: 10px 14px 22px 14px;
-  font-size: var(--msg-font);
-  line-height: 1.35;
-  border-radius: var(--bubble-radius);
-  word-wrap: break-word;
-  white-space: pre-wrap;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.10);
+@media (max-width: 768px){
+  .msg{ max-width:86%; }
 }
 .msg.enviada{
   align-self:flex-end;
+  background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
   color:#111827;
-  background: linear-gradient(120deg, var(--bubble-out-g1), var(--bubble-out-g2));
 }
 .msg.recebida{
   align-self:flex-start;
-  background: var(--bubble-in-bg);
-  border: 1px solid var(--bubble-in-border);
+  background:var(--bubble-in-bg, #fff);
+  border:1px solid var(--bubble-in-border, #e2e8f0);
 }
-
-/* Caudas das bolhas (estilo WhatsApp) */
-.msg.enviada::after, .msg.recebida::after{
-  content:"";
-  position:absolute;
-  bottom:0;
-  width:14px; height:14px;
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-}
-.msg.enviada::after{
-  right:-7px;
-  background: var(--bubble-out-g2);
-  filter: brightness(0.98);
-}
-.msg.recebida::after{
-  left:-7px;
-  background: var(--bubble-in-bg);
-  border-left:1px solid var(--bubble-in-border);
-  border-bottom:1px solid var(--bubble-in-border);
-}
-
-/* Hora e ações */
 .msg .hora{
   position:absolute; right:8px; bottom:4px;
   font-size:11px; color:#4b5563;
 }
+
+/* Caudas dos balões */
+.msg.enviada::after, .msg.recebida::after{
+  content:"";
+  position:absolute; bottom:0; width:14px; height:14px;
+  clip-path:polygon(0 0, 100% 0, 0 100%);
+}
+.msg.enviada::after{
+  right:-7px;
+  background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
+}
+.msg.recebida::after{
+  left:-7px;
+  background:var(--bubble-in-bg, #fff);
+  border-left:1px solid var(--bubble-in-border, #e2e8f0);
+  border-bottom:1px solid var(--bubble-in-border, #e2e8f0);
+}
+
+/* Ações dentro do balão (ex: responder) */
 .msg .actions{
   position:absolute; top:6px; right:6px;
-  display:flex; gap:6px; opacity:0; transition:opacity .18s ease;
+  display:flex; gap:6px;
+  opacity:0; pointer-events:none;
+  transition:opacity .18s ease;
 }
-.msg:hover .actions{ opacity:1; }
-.msg .icon-btn{
-  font-size:14px; color:#64748b; cursor:pointer;
-}
-.msg .icon-btn:hover{ color:#2563eb; }
+.msg:hover .actions,
+.msg:focus-within .actions{ opacity:1; pointer-events:auto; }
+.icon-btn{ font-size:14px; color:#64748b; cursor:pointer; }
+.icon-btn:hover{ color:#2563eb; }
 
-/* Imagens dentro do balão */
-.msg img.thumb{
-  display:block; max-width:220px; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer;
-}
+/* Mídia */
+.msg img.thumb{ max-width:280px; height:auto; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer; }
 
-/* Áudio estilizado */
-.audio-wrap{
-  display:flex; align-items:center; gap:.5rem; padding:.35rem .6rem;
-  background:#f8fafc; border:1px solid #e5e7eb; border-radius:10px;
-}
-.audio-wrap button{
-  width:32px; height:32px; border-radius:999px; background:#10b981; color:#fff;
-  display:flex; align-items:center; justify-content:center; font-weight:700;
-}
-.audio-wrap .time{ font-size:12px; color:#475569; }
-
-/* Dia separador */
-.dia{ text-align:center; margin:12px 0; font-size:12px; color:#64748b; }
-
-/* Lista/Sidebar */
+/* Extras existentes */
+.badge{ position:absolute; top:8px; right:8px; background:#22c55e; color:#fff; font-size:10px; font-weight:700; border-radius:9999px; padding:2px 6px; min-width:18px; text-align:center; }
+.dia{ text-align:center; margin:12px 0; font-size:12px; color:#888; }
 .contato-selected{ background:#f0f9ff !important; }
-.badge{
-  position:absolute; top:8px; right:8px;
-  background:#22c55e; color:#fff; font-size:10px; font-weight:700;
-  border-radius:9999px; padding:2px 6px; min-width:18px; text-align:center;
-}
-mark { background:#ffef6b; color:#000; padding:0 2px; border-radius:2px; }
+mark{ background:#ffef6b; color:#000; padding:0 2px; border-radius:2px; }
 #digitando{ font-size:12px; color:#666; margin-bottom:4px; }
 
-/* Chips e filtros colapsáveis */
-.chip-btn{
-  padding:.4rem .7rem; font-size:.8rem; border-radius:.6rem;
-  border:1px solid #e2e8f0; background:#fff; color:#334155; font-weight:600;
-}
-.chip-btn.active{ background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+/* Filtros minimizáveis */
 details.filter-block{ border:1px solid #e2e8f0; border-radius:.75rem; background:#fff; }
-details.filter-block > summary{
+details.filter-block>summary{
   list-style:none; cursor:pointer; padding:.6rem .8rem;
   display:flex; align-items:center; justify-content:space-between;
   font-weight:700; color:#334155;
 }
-details.filter-block > summary::-webkit-details-marker{ display:none; }
-details.filter-block[open] > summary{ border-bottom:1px dashed #e2e8f0; }
+details.filter-block>summary::-webkit-details-marker{ display:none; }
+details.filter-block[open]>summary{ border-bottom:1px dashed #e2e8f0; }
 .summary-label{ display:flex; align-items:center; gap:.5rem; }
-.summary-chevron{ transition: transform .2s ease; }
-details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
+.summary-chevron{ transition:transform .2s ease; }
+details.filter-block[open] .summary-chevron{ transform:rotate(180deg); }
 
-/* Personalização do chat (preview do fundo) */
-.chat-bg{
-  background-size:cover; background-position:center;
-}
-
-/* Botão flutuante e painel de Aparência */
-.fab{
-  position:fixed; right:18px; bottom:18px; z-index:50;
-  width:46px; height:46px; border-radius:999px;
-  background:#111827; color:#fff; display:flex; align-items:center; justify-content:center;
-  box-shadow:0 8px 18px rgba(0,0,0,.18); cursor:pointer;
-}
-.drawer{
-  position:fixed; right:0; top:0; height:100%; width:340px; max-width:100%;
-  background:#fff; border-left:1px solid #e5e7eb; box-shadow:-8px 0 20px rgba(0,0,0,.08);
-  transform: translateX(100%); transition: transform .22s ease; z-index:60;
-}
-.drawer.open{ transform: translateX(0); }
-.drawer h3{ font-weight:800; }
-.preview-tile{
-  height:44px; border-radius:.6rem; border:1px solid #e5e7eb;
-}
-
-/* Estados (compacto) */
-.compacto .msg{ max-width:75%; padding:8px 12px 18px 12px; }
+.chip-btn{ padding:.4rem .7rem; font-size:.8rem; border-radius:.6rem; border:1px solid #e2e8f0; background:#fff; color:#334155; font-weight:600; }
+.chip-btn.active{ background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
+@media (max-width: 768px){ aside{ width:42%; } }
 </style>
 </head>
+<body class="h-screen flex bg-gray-100">
 
-<body class="h-screen flex">
 <!-- =========== SIDEBAR =========== -->
 <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
+  <!-- Filtros -->
   <div class="p-3 border-b">
     <details id="fltBasico" class="filter-block" open>
       <summary>
@@ -236,8 +177,7 @@ details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
     </div>
   </div>
 
-  <!-- Plano de fundo personalizável -->
-  <div id="chat" class="chat-bg flex-1 p-4 overflow-y-auto flex flex-col space-y-1">
+  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
     <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
   </div>
   <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
@@ -265,66 +205,8 @@ details.filter-block[open] .summary-chevron{ transform: rotate(180deg); }
   <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
 </div>
 
-<!-- Botão de Aparência -->
-<button id="btnFab" class="fab" title="Aparência">🎨</button>
-<!-- Drawer de Aparência -->
-<div id="drawer" class="drawer">
-  <div class="p-4 border-b flex items-center justify-between">
-    <h3 class="text-lg">Aparência do Chat</h3>
-    <button id="btnCloseDrawer" class="text-gray-500 hover:text-gray-800">✖</button>
-  </div>
-  <div class="p-4 space-y-4">
-    <div>
-      <div class="text-xs text-gray-600 font-semibold mb-1">Plano de fundo do chat</div>
-      <div class="flex items-center gap-2">
-        <div class="flex-1 preview-tile" id="bgPreview"></div>
-        <input type="file" id="bgInput" accept="image/*" class="text-xs">
-      </div>
-      <button id="bgReset" class="mt-2 text-xs text-blue-600 underline">Remover fundo personalizado</button>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <div class="text-xs text-gray-600 font-semibold mb-1">Balão Enviado (Gradiente)</div>
-        <div class="flex items-center gap-2">
-          <input type="color" id="outG1" value="#dcf8c6" title="Cor 1">
-          <input type="color" id="outG2" value="#b8f0a4" title="Cor 2">
-        </div>
-      </div>
-      <div>
-        <div class="text-xs text-gray-600 font-semibold mb-1">Balão Recebido (fundo/borda)</div>
-        <div class="flex items-center gap-2">
-          <input type="color" id="inBg" value="#ffffff" title="Fundo">
-          <input type="color" id="inBorder" value="#e2e8f0" title="Borda">
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <div class="text-xs text-gray-600 font-semibold mb-1">Densidade</div>
-        <select id="densidade" class="w-full p-2 border rounded-md text-sm">
-          <option value="confortavel">Confortável</option>
-          <option value="compacto">Compacto</option>
-        </select>
-      </div>
-      <div>
-        <div class="text-xs text-gray-600 font-semibold mb-1">Tamanho da fonte (balões)</div>
-        <select id="fontSize" class="w-full p-2 border rounded-md text-sm">
-          <option value="13">13 px</option>
-          <option value="14" selected>14 px</option>
-          <option value="15">15 px</option>
-          <option value="16">16 px</option>
-        </select>
-      </div>
-    </div>
-
-    <button id="btnSaveTheme" class="w-full px-3 py-2 rounded-md bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">Salvar aparência</button>
-  </div>
-</div>
-
 <script>
-/* =================== Config =================== */
+/* ======= Config/estado ======= */
 const API_BASE = "https://conversas-api-production.up.railway.app";
 const phoneIdMap = {
   "732661079928516": "ConnectZap",
@@ -337,14 +219,20 @@ const phoneIdMap = {
   "803535039503723": "Mercado Pago Vendas"
 };
 
-/* =================== Estado =================== */
 let contatoSelecionado = null, phoneIdAtual = null;
 let respostaMsgId = null;
 let contactsInterval = null, messagesInterval = null, userTyping = false, isModalOpen = false;
-let novasMensagens = {}, ultimoStatusContatos = {}, filtrosAplicados = false;
-let lastTimestampMs = null, lastDayRendered = null, renderedKeys = new Set();
 
-/* =================== Refs =================== */
+let novasMensagens = {};
+let ultimoStatusContatos = {};
+let filtrosAplicados = false;
+
+// incremento por data no chat
+let lastTimestampMs = null;
+let lastDayRendered = null;
+let renderedKeys = new Set();
+
+// refs
 const textarea = document.getElementById("textoMensagem");
 const btnEnviar = document.getElementById("btnEnviar");
 const digitando = document.getElementById("digitando");
@@ -357,107 +245,8 @@ const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
 const btnLimparFiltros = document.getElementById("btnLimparFiltros");
 const chipBtns = [...document.querySelectorAll(".chip-btn")];
 const fltResumoEl = document.getElementById("fltResumo");
-const chat = document.getElementById("chat");
 
-/* =================== Aparência (persistência) =================== */
-const THEME_KEY = "cz:supervisor:theme";
-const drawer = document.getElementById("drawer");
-const bgPreview = document.getElementById("bgPreview");
-const bgInput = document.getElementById("bgInput");
-const bgReset = document.getElementById("bgReset");
-const outG1 = document.getElementById("outG1");
-const outG2 = document.getElementById("outG2");
-const inBg  = document.getElementById("inBg");
-const inBorder = document.getElementById("inBorder");
-const densidadeSel = document.getElementById("densidade");
-const fontSizeSel = document.getElementById("fontSize");
-
-function loadTheme(){
-  const raw = localStorage.getItem(THEME_KEY);
-  if(!raw) return;
-  try{
-    const t = JSON.parse(raw);
-    if(t.chatBg){ chat.style.backgroundImage = `url(${t.chatBg})`; bgPreview.style.backgroundImage = `url(${t.chatBg})`; }
-    document.documentElement.style.setProperty('--bubble-out-g1', t.outG1 || '#dcf8c6');
-    document.documentElement.style.setProperty('--bubble-out-g2', t.outG2 || '#b8f0a4');
-    document.documentElement.style.setProperty('--bubble-in-bg', t.inBg || '#ffffff');
-    document.documentElement.style.setProperty('--bubble-in-border', t.inBorder || '#e2e8f0');
-    document.documentElement.style.setProperty('--msg-font', (t.fontSize||14)+'px');
-    document.documentElement.style.setProperty('--density-gap', t.density==='compacto' ? '1' : '4');
-
-    outG1.value = t.outG1 || '#dcf8c6';
-    outG2.value = t.outG2 || '#b8f0a4';
-    inBg.value = t.inBg || '#ffffff';
-    inBorder.value = t.inBorder || '#e2e8f0';
-    fontSizeSel.value = String(t.fontSize||14);
-    densidadeSel.value = t.density || 'confortavel';
-
-    document.body.classList.toggle("compacto", t.density==='compacto');
-  }catch(e){}
-}
-function saveTheme(){
-  const theme = {
-    chatBg: chat.style.backgroundImage ? chat.style.backgroundImage.replace(/^url\((.*)\)$/,'$1').replaceAll('"','') : null,
-    outG1: outG1.value, outG2: outG2.value,
-    inBg: inBg.value, inBorder: inBorder.value,
-    density: densidadeSel.value,
-    fontSize: parseInt(fontSizeSel.value,10)
-  };
-  localStorage.setItem(THEME_KEY, JSON.stringify(theme));
-  loadTheme();
-}
-
-document.getElementById("btnFab").onclick = ()=> drawer.classList.add("open");
-document.getElementById("btnCloseDrawer").onclick = ()=> drawer.classList.remove("open");
-document.getElementById("btnSaveTheme").onclick = ()=> { saveTheme(); drawer.classList.remove("open"); };
-
-bgInput.addEventListener("change", (e)=>{
-  const f = e.target.files?.[0]; if(!f) return;
-  const reader = new FileReader();
-  reader.onload = (ev)=>{
-    chat.style.backgroundImage = `url(${ev.target.result})`;
-    bgPreview.style.backgroundImage = `url(${ev.target.result})`;
-  };
-  reader.readAsDataURL(f);
-});
-bgReset.onclick = ()=>{ chat.style.backgroundImage = ""; bgPreview.style.backgroundImage = ""; };
-
-/* =================== Helpers UI =================== */
-function pad(n){ return String(n).padStart(2,"0"); }
-function toYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function setQuickRange(kind){
-  const now = new Date();
-  let a = new Date(), b = new Date();
-  if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
-  if(kind==="7d"){ a.setDate(now.getDate()-6); }
-  if(kind==="30d"){ a.setDate(now.getDate()-29); }
-  if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
-  dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
-  atualizarResumo();
-}
-function highlightChip(btn){ chipBtns.forEach(b=>b.classList.remove("active")); if(btn) btn.classList.add("active"); }
-chipBtns.forEach(btn=>{
-  btn.addEventListener("click", ()=>{ const k = btn.dataset.range; if(k!=="custom") setQuickRange(k); highlightChip(btn); });
-});
-(function initPeriodoDefault(){ setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]')); })();
-
-function gerarCor(nome){ let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); } return `hsl(${hash % 360},70%,60%)`; }
-function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function toLocalDateYMD(iso){
-  const d = new Date(iso);
-  const p = new Date(d.toLocaleString("en-US",{ timeZone:"America/Sao_Paulo" }));
-  return `${p.getFullYear()}-${pad(p.getMonth()+1)}-${pad(p.getDate())}`;
-}
-function atualizarResumo(){
-  const carteira = filtroContaEl.value || "—";
-  const di = dataInicioEl.value || "—";
-  const df = dataFimEl.value || "—";
-  fltResumoEl.textContent = `(carteira: ${carteira==="*"?"todas":carteira} • ${di} → ${df})`;
-}
-[filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
-atualizarResumo();
-
-/* =================== Textarea UX =================== */
+/* ======= UX da textarea ======= */
 textarea.addEventListener("input", () => {
   textarea.style.height = "auto";
   textarea.style.height = textarea.scrollHeight + "px";
@@ -468,10 +257,72 @@ textarea.addEventListener("keydown", e => {
   if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
 });
 
-/* =================== Aplicar/Limpar Filtros =================== */
+/* ======= Períodos rápidos ======= */
+function pad(n){ return String(n).padStart(2,"0"); }
+function toYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function setQuickRange(kind){
+  const now = new Date();
+  let a = new Date(), b = new Date();
+  if(kind==="hoje"){ /* a=b hoje */ }
+  if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
+  if(kind==="7d"){ a.setDate(now.getDate()-6); }
+  if(kind==="30d"){ a.setDate(now.getDate()-29); }
+  if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
+  dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
+  atualizarResumo();
+}
+function highlightChip(btn){
+  chipBtns.forEach(b=>b.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+}
+chipBtns.forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    const k = btn.dataset.range;
+    if(k!=="custom") setQuickRange(k);
+    highlightChip(btn);
+  });
+});
+(function initPeriodoDefault(){
+  setQuickRange("hoje");
+  highlightChip(document.querySelector('[data-range="hoje"]'));
+})();
+
+/* ======= Helpers ======= */
+function gerarCor(nome){
+  let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
+  return `hsl(${hash % 360},70%,60%)`;
+}
+function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function toLocalDateYMD(isoString){
+  const d = new Date(isoString);
+  const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
+}
+/* Heurística robusta para direção da mensagem */
+function isIncoming(m){
+  const s = (m.status || "").toLowerCase();
+  if (typeof m.from_me === "boolean") return !m.from_me;
+  if (m.direction) return String(m.direction).toLowerCase().startsWith("in");
+  if (["in","received","incoming"].includes(s)) return true;
+  if (["out","sent","delivered","read","outgoing"].includes(s)) return false;
+  return s === "in";
+}
+
+/* ======= Resumo filtros ======= */
+function atualizarResumo(){
+  const carteira = filtroContaEl.value || "—";
+  const di = dataInicioEl.value || "—";
+  const df = dataFimEl.value || "—";
+  fltResumoEl.textContent = `(carteira: ${carteira === "*" ? "todas" : carteira} • ${di} → ${df})`;
+}
+[filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
+atualizarResumo();
+
+/* ======= Aplicar/Limpar filtros ======= */
 btnAplicarFiltros.addEventListener("click", ()=>{
   if(!filtroContaEl.value){ alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
-  filtrosAplicados = true; hintFiltro.classList.add("hidden");
+  filtrosAplicados = true;
+  hintFiltro.classList.add("hidden");
   startContactsPolling();
 });
 btnLimparFiltros.addEventListener("click", ()=>{
@@ -479,13 +330,14 @@ btnLimparFiltros.addEventListener("click", ()=>{
   setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
   dataInicioEl.value = ""; dataFimEl.value = "";
   document.getElementById("searchInput").value = "";
-  filtrosAplicados = false; hintFiltro.classList.remove("hidden");
+  filtrosAplicados = false;
+  hintFiltro.classList.remove("hidden");
   contatosUL.innerHTML = "";
   if(contactsInterval) clearInterval(contactsInterval);
   atualizarResumo();
 });
 
-/* =================== Contatos =================== */
+/* ======= Contatos ======= */
 async function carregarContatos(){
   if(!filtrosAplicados) return;
   try{
@@ -542,8 +394,9 @@ async function carregarContatos(){
       li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
       li.dataset.remetente=c.remetente.toLowerCase();
 
-      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0)
-        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` : "";
+      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
+        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
+        : "";
 
       li.innerHTML=`
         <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
@@ -570,20 +423,23 @@ function startContactsPolling(){
   carregarContatos();
   contactsInterval = setInterval(()=>{ if(filtrosAplicados) carregarContatos(); }, 10000);
 }
+
+/* ======= Busca local ======= */
 function filtrarContatos(q){
   q=(q||"").toLowerCase().trim();
   document.querySelectorAll("#contatos li").forEach(li=>{
-    if(!li.dataset.remetente) return;
+    if(!li.dataset.remetente){ return; }
     const hay=li.textContent.toLowerCase();
     if(hay.includes(q)){
       li.style.display="flex";
       const nameDiv=li.querySelector(".font-bold");
-      nameDiv.innerHTML=q?nameDiv.textContent.replace(new RegExp(q,"ig"),m=>`<mark>${m}</mark>`):nameDiv.textContent;
+      const plain=nameDiv.textContent;
+      nameDiv.innerHTML=q?plain.replace(new RegExp(q,"ig"),m=>`<mark>${m}</mark>`):plain;
     }else li.style.display="none";
   });
 }
 
-/* =================== Abrir conversa =================== */
+/* ======= Abrir conversa ======= */
 function abrirConversaFromElement(c,el){
   document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
   el.classList.add("contato-selected");
@@ -591,6 +447,7 @@ function abrirConversaFromElement(c,el){
 }
 async function abrirConversa(c){
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
+
   lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
   novasMensagens[c.remetente] = 0;
 
@@ -603,9 +460,11 @@ async function abrirConversa(c){
   messagesInterval=setInterval(()=>{ if(!userTyping && !isModalOpen){ carregarMensagens(true); } }, 5000);
 }
 
-/* =================== Mensagens (render melhorado) =================== */
+/* ======= Mensagens ======= */
 async function carregarMensagens(incremental = true) {
   if (!contatoSelecionado) return;
+  const chat = document.getElementById("chat");
+
   let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
   if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
 
@@ -613,11 +472,14 @@ async function carregarMensagens(incremental = true) {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Erro ao obter histórico");
     const msgs = await res.json();
+
     msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
     if (!incremental) {
       chat.innerHTML = "";
-      lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
+      lastTimestampMs = null;
+      lastDayRendered = null;
+      renderedKeys.clear();
     }
 
     const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
@@ -628,7 +490,6 @@ async function carregarMensagens(incremental = true) {
       if (renderedKeys.has(key)) return;
       if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
 
-      // Separador por dia
       const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
       if (!lastDayRendered || lastDayRendered !== dia) {
         const sep = document.createElement("div");
@@ -640,24 +501,19 @@ async function carregarMensagens(incremental = true) {
 
       const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
       const div = document.createElement("div");
-      div.className = `msg ${m.status === "in" ? "recebida" : "enviada"}`;
+      const incoming = isIncoming(m);
+      div.className = `msg ${incoming ? "recebida" : "enviada"}`;
 
-      // Conteúdos
       if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
         div.innerHTML = `
-          <div class="text-gray-600 italic">[imagem]</div>
+          <div class="text-gray-600 italic">[imagem recebida]</div>
           <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
           <span class="hora">${hora}</span>
-          <div class="actions">
-            <span class="icon-btn" title="Responder">↩</span>
-          </div>
         `;
         const btn = div.querySelector(".btn-olhinho");
-        const replyIcon = div.querySelector(".actions .icon-btn");
-        replyIcon.onclick = ()=> responderMensagem(m.msg_id, "[imagem]");
-
-        if (!m.msg_id) { btn.disabled = true; btn.innerText = "Imagem indisponível"; }
-        else {
+        if (!m.msg_id) {
+          btn.disabled = true; btn.innerText = "Imagem indisponível";
+        } else {
           btn.onclick = async () => {
             btn.disabled = true; btn.innerText = "⏳ Carregando...";
             try {
@@ -669,7 +525,6 @@ async function carregarMensagens(incremental = true) {
                 img.className = "thumb mt-2";
                 img.onclick = () => abrirModalImagem(j.data_uri);
                 div.insertBefore(img, btn); btn.remove();
-                div.querySelector(".text-gray-600.italic").remove();
               } else { throw new Error(j.erro || "Resposta inválida do backend"); }
             } catch (e) { console.error("Erro imagem:", e); btn.disabled=false; btn.innerText="👁 Ver imagem"; alert("Erro ao carregar imagem"); }
           };
@@ -677,52 +532,33 @@ async function carregarMensagens(incremental = true) {
       }
       else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
         div.innerHTML = `
-          <div class="audio-wrap mt-1">
-            <button class="pbtn" title="Play/Pause">▶</button>
-            <span class="time">00:00</span>
-          </div>
+          <div class="text-gray-600 italic">[áudio recebido]</div>
+          <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
           <span class="hora">${hora}</span>
-          <div class="actions">
-            <span class="icon-btn" title="Responder">↩</span>
-          </div>
         `;
-        const replyIcon = div.querySelector(".actions .icon-btn");
-        replyIcon.onclick = ()=> responderMensagem(m.msg_id, "[áudio]");
-
-        const pbtn = div.querySelector(".pbtn");
-        const timeLbl = div.querySelector(".time");
-        let audioTag = null;
-
-        const loadAudio = async ()=>{
-          try{
-            const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
-            const j = await r.json();
-            if(j.ok && j.data_uri){
-              audioTag = document.createElement("audio");
-              audioTag.src = j.data_uri; audioTag.preload = "auto";
-              audioTag.addEventListener("timeupdate", ()=>{
-                const mm = pad(Math.floor(audioTag.currentTime/60));
-                const ss = pad(Math.floor(audioTag.currentTime%60));
-                timeLbl.textContent = `${mm}:${ss}`;
-              });
-            }else throw new Error(j.erro || "Resposta inválida");
-          }catch(e){ console.error("Erro audio:", e); alert("Erro ao carregar áudio"); }
-        };
-
-        pbtn.onclick = async ()=>{
-          if(!audioTag) await loadAudio();
-          if(!audioTag) return;
-          if(audioTag.paused){ audioTag.play(); pbtn.textContent="⏸"; }
-          else { audioTag.pause(); pbtn.textContent="▶"; }
-        };
+        const btn = div.querySelector(".btn-audio");
+        if (!m.msg_id) { btn.disabled = true; btn.innerText="Áudio indisponível"; }
+        else {
+          btn.onclick = async () => {
+            btn.disabled = true; btn.innerText = "⏳ Carregando...";
+            try {
+              const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
+              const j = await r.json();
+              if (j.ok && j.data_uri) {
+                const audio = document.createElement("audio");
+                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2 w-full max-w-xs";
+                div.insertBefore(audio, btn); btn.remove();
+              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
+            } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
+          };
+        }
       }
       else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-        const wrap = document.createElement("div"); wrap.className = "flex items-center gap-2";
+        const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
         const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
         const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
-        wrap.appendChild(emojiEl); wrap.appendChild(label); div.appendChild(wrap);
+        wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
         const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
-
         if (m.msg_id) {
           (async ()=>{ try {
             const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
@@ -732,19 +568,20 @@ async function carregarMensagens(incremental = true) {
         } else { label.textContent = "emoji indisponível"; }
       }
       else {
-        // Texto com copiar e responder
-        div.innerHTML = `
-          <div>${escapeHtml(m.mensagem_final || "")}</div>
-          <span class="hora">${hora}</span>
-          <div class="actions">
-            <span class="icon-btn btn-copy" title="Copiar">⧉</span>
-            <span class="icon-btn btn-reply" title="Responder">↩</span>
-          </div>
-        `;
-        div.querySelector(".btn-copy").onclick = ()=>{
-          navigator.clipboard.writeText(m.mensagem_final||"").then(()=>{}).catch(()=>{});
-        };
-        div.querySelector(".btn-reply").onclick = ()=> responderMensagem(m.msg_id, m.mensagem_final || "");
+        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+      }
+
+      /* Ação de Responder (aparece ao passar o mouse) */
+      if (incoming) {
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const replyBtn = document.createElement("button");
+        replyBtn.className = "icon-btn";
+        replyBtn.title = "Responder";
+        replyBtn.textContent = "↩";
+        replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
+        actions.appendChild(replyBtn);
+        div.appendChild(actions);
       }
 
       chat.appendChild(div);
@@ -758,7 +595,7 @@ async function carregarMensagens(incremental = true) {
   }
 }
 
-/* =================== Responder / Cancelar =================== */
+/* ======= Responder / Cancelar ======= */
 function responderMensagem(msgId, conteudo){
   respostaMsgId = msgId || null;
   document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0,50);
@@ -771,9 +608,9 @@ function cancelarResposta(){
   document.getElementById("respostaTexto").innerText = "";
 }
 
-/* =================== Enviar texto =================== */
+/* ======= Enviar texto ======= */
 async function enviarMensagem(){
-  const texto=textarea.value.trim();
+  const texto=textarea.value.trim(); 
   if(!texto||!contatoSelecionado) return;
   userTyping=true; btnEnviar.disabled=true;
   try{
@@ -783,7 +620,7 @@ async function enviarMensagem(){
     });
     const json=await res.json();
     if(json.ok){
-      textarea.value="";textarea.style.height="auto";
+      textarea.value=""; textarea.style.height="auto";
       cancelarResposta();
       await carregarMensagens(true);
     } else { alert("Erro ao enviar: "+(json.erro||JSON.stringify(json))); }
@@ -791,7 +628,7 @@ async function enviarMensagem(){
   finally{ userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0; }
 }
 
-/* =================== Enviar PDF =================== */
+/* ======= Enviar PDF ======= */
 async function enviarPDF(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -820,21 +657,19 @@ async function enviarPDF(event){
   }finally{ event.target.value = ""; }
 }
 
-/* =================== Modal imagem =================== */
+/* ======= Modal imagem ======= */
 const imageModal = document.getElementById("imageModal");
 const modalImg = document.getElementById("modalImg");
 const closeModal = document.getElementById("closeModal");
 function abrirModalImagem(src){ isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
-function fecharModal(){ imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; }
-closeModal.onclick = fecharModal;
-imageModal.onclick = (e) => { if (e.target === imageModal) fecharModal(); };
-window.addEventListener("keydown",(e)=>{ if(e.key==="Escape"&&!imageModal.classList.contains("hidden")) fecharModal(); });
+closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
+imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
 
-/* =================== Page visibility =================== */
+/* ======= Visibilidade ======= */
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(filtrosAplicados) carregarContatos(); if(contatoSelecionado) carregarMensagens(true); } });
 
-/* =================== Boot =================== */
-loadTheme();
+/* ======= Inicial ======= */
+/* Não carrega contatos até aplicar filtros */
 </script>
 </body>
 </html>
