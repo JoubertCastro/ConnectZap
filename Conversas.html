@@ -232,6 +232,9 @@ let lastTimestampMs = null;
 let lastDayRendered = null;
 let renderedKeys = new Set();
 
+/* ======= Documento: constantes ======= */
+const DOC_PREVIEW_MAX = 2 * 1024 * 1024; // 2MB para preview embutido de PDF
+
 // refs
 const textarea = document.getElementById("textoMensagem");
 const btnEnviar = document.getElementById("btnEnviar");
@@ -306,6 +309,15 @@ function isIncoming(m){
   if (["in","received","incoming"].includes(s)) return true;
   if (["out","sent","delivered","read","outgoing"].includes(s)) return false;
   return s === "in";
+}
+
+/* Helper de tamanho legível */
+function bytesToHuman(n){
+  if(!n && n !== 0) return "";
+  const u=["B","KB","MB","GB","TB"];
+  let i=0, s=n;
+  while(s>=1024 && i<u.length-1){ s/=1024; i++; }
+  return `${s.toFixed(s>=10||i===0?0:1)} ${u[i]}`;
 }
 
 /* ======= Resumo filtros ======= */
@@ -553,6 +565,35 @@ async function carregarMensagens(incremental = true) {
           };
         }
       }
+      else if (m.tipo === "document" || m.mensagem_final === "[document]") {
+        // ✅ Documento recebido
+        div.innerHTML = `
+          <div class="text-gray-600 italic">[documento recebido]</div>
+          <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
+          <span class="hora">${hora}</span>
+        `;
+        const btn = div.querySelector(".btn-doc");
+        if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
+        else {
+          btn.onclick = () => carregarDocumento(div, btn, m.msg_id);
+        }
+      }
+      else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
+        // ✅ Mensagem enviada com nosso formato vira cartão com link
+        const lines = m.mensagem_final.split("\n");
+        const filename = (lines[0]||"").replace("📎 PDF:","").trim() || "Arquivo";
+        const link = (lines[1]||"").replace("🔗","").trim();
+        div.innerHTML = `
+          <div class="flex items-start gap-2">
+            <div class="text-xl leading-none">📄</div>
+            <div class="min-w-0">
+              <div class="font-semibold">${escapeHtml(filename)}</div>
+              ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
+            </div>
+          </div>
+          <span class="hora">${hora}</span>
+        `;
+      }
       else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
         const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
         const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
@@ -592,6 +633,58 @@ async function carregarMensagens(incremental = true) {
     if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
   } catch (err) {
     console.error("Erro ao carregar mensagens", err);
+  }
+}
+
+/* ======= Documento (novo) ======= */
+async function carregarDocumento(div, btn, msg_id){
+  btn.disabled = true; btn.textContent = "⏳ Carregando…";
+  try{
+    const r = await fetch(`${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}`);
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.erro || "Falha ao obter documento");
+
+    const filename = j.filename || "arquivo";
+    const mime = j.mime_type || "application/octet-stream";
+    const size = j.size_bytes ?? null;
+
+    const box = document.createElement("div");
+    box.className = "mt-2 space-y-1";
+
+    if(mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)){
+      const preview = document.createElement("embed");
+      preview.src = j.data_uri;
+      preview.type = mime;
+      preview.className = "w-[260px] h-[200px] rounded border";
+      box.appendChild(preview);
+
+      const meta = document.createElement("div");
+      meta.className = "text-xs text-slate-600";
+      const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+      meta.innerHTML = `<div class="font-semibold truncate">${escapeHtml(filename)}</div>
+                        <div>${size?bytesToHuman(size):""}</div>
+                        <a href="${link}" target="_blank" class="text-blue-600 underline">Abrir/baixar</a>`;
+      box.appendChild(meta);
+    }else{
+      const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+      const row = document.createElement("div");
+      row.className = "flex items-start gap-2";
+      row.innerHTML = `
+        <div class="text-xl leading-none">📎</div>
+        <div class="min-w-0">
+          <div class="font-semibold truncate">${escapeHtml(filename)}</div>
+          <div class="text-xs text-slate-600">${escapeHtml(mime)} ${size?("• "+bytesToHuman(size)):""}</div>
+          <a href="${link}" target="_blank" class="text-blue-600 underline break-all">Baixar documento</a>
+        </div>`;
+      box.appendChild(row);
+    }
+
+    div.insertBefore(box, btn);
+    btn.remove();
+  }catch(e){
+    console.error(e);
+    alert("Erro ao carregar documento");
+    btn.disabled = false; btn.textContent = "📎 Ver documento";
   }
 }
 
