@@ -69,6 +69,18 @@
 /* Mídia */
 .msg img.thumb{ max-width:280px; height:auto; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer; }
 
+/* ========= Cartões de sistema ========= */
+.msg.system{
+  background:#f8fafc;                 /* slate-50 */
+  border:1px dashed #cbd5e1;          /* slate-300 */
+  color:#0f172a;                      /* slate-900 */
+}
+.msg.system::after{ display:none; }   /* sem cauda */
+.sys-title{ font-weight:700; font-size:.9rem; display:flex; align-items:center; gap:.5rem; }
+.sys-body{ font-size:.9rem; color:#334155; }
+.sys-meta{ font-size:.75rem; color:#64748b; }
+.sys-pill{ display:inline-block; font-size:.7rem; font-weight:700; padding:.1rem .4rem; border-radius:9999px; background:#eef2ff; color:#3730a3; }
+
 /* Extras existentes */
 .badge{ position:absolute; top:8px; right:8px; background:#22c55e; color:#fff; font-size:10px; font-weight:700; border-radius:9999px; padding:2px 6px; min-width:18px; text-align:center; }
 .dia{ text-align:center; margin:12px 0; font-size:12px; color:#888; }
@@ -608,12 +620,64 @@ async function carregarMensagens(incremental = true) {
           } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
         } else { label.textContent = "emoji indisponível"; }
       }
+      else if (m.tipo === "system" || m.mensagem_final === "[system]") {
+        /* ✅ Evento de sistema */
+        div.classList.add("system");
+        // esqueleto
+        div.innerHTML = `
+          <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
+          <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
+          <div class="sys-meta mt-1"></div>
+          <span class="hora">${hora}</span>
+        `;
+        if (!m.msg_id) {
+          div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
+          const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
+        } else {
+          (async ()=>{
+            try{
+              const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
+              const j = await r.json();
+              const pill = div.querySelector(".sys-pill");
+              const bodyEl = div.querySelector(".sys-body");
+              const metaEl = div.querySelector(".sys-meta");
+
+              if(!j.ok){
+                if (pill) pill.textContent = "erro";
+                bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento.";
+                return;
+              }
+
+              if (pill) pill.textContent = j.type || "system";
+              // Corpo
+              if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
+                bodyEl.innerHTML = `
+                  O cliente alterou o número:<br>
+                  <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
+                  <span class="mx-1">→</span>
+                  <span class="font-semibold">${escapeHtml(j.wa_id)}</span>
+                `;
+              } else {
+                bodyEl.textContent = j.body || "Evento de sistema recebido.";
+              }
+              // Meta
+              const src = j.from || j.old_wa_id || "";
+              const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
+              metaEl.textContent = `${src ? "Origem: "+src : ""}${pid}`;
+            }catch(e){
+              console.error("Erro system:", e);
+              const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro";
+              div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento.";
+            }
+          })();
+        }
+      }
       else {
         div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
       }
 
-      /* Ação de Responder (aparece ao passar o mouse) */
-      if (incoming) {
+      /* Ação de Responder (apenas para mensagens do cliente, não para system) */
+      if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
         const actions = document.createElement("div");
         actions.className = "actions";
         const replyBtn = document.createElement("button");
