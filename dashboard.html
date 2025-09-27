@@ -549,14 +549,49 @@
         }
       }catch(e){ setAlert("Motivos — " + e.message); }
 
-      // Séries
+      // ===== Séries (ordenadas por data) =====
       try{
         const s = await loadAtendSeries(qs);
+
+        // Normaliza e agrega por dia
         const map = {};
-        (s.mensagens||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].in=r.inbound; map[k].out=r.outbound; });
-        (s.concluidos||[]).forEach(r => { const k=r.dia; map[k]=map[k]||{in:0,out:0,conc:0}; map[k].conc=r.concluidos; });
-        const dias = Object.keys(map).sort();
-        const inb  = dias.map(d=>map[d].in), outb=dias.map(d=>map[d].out), conc=dias.map(d=>map[d].conc);
+        (s.mensagens||[]).forEach(r => {
+          const k = r.dia;
+          map[k] = map[k] || { in:0, out:0, conc:0 };
+          map[k].in  = r.inbound;
+          map[k].out = r.outbound;
+        });
+        (s.concluidos||[]).forEach(r => {
+          const k = r.dia;
+          map[k] = map[k] || { in:0, out:0, conc:0 };
+          map[k].conc = r.concluidos;
+        });
+
+        // 🔧 Parser robusto para "YYYY-MM-DD" ou "DD/MM[/YYYY]"
+        function diaToTS(d){
+          if(!d) return 0;
+          if(/^\d{4}-\d{2}-\d{2}$/.test(d)){
+            const [y,m,day] = d.split("-").map(Number);
+            return Date.UTC(y, m-1, day);
+          }
+          if(/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)){
+            const [day,mon,year] = d.split("/");
+            const y = year ? Number(year) : new Date().getFullYear();
+            return Date.UTC(Number(y), Number(mon)-1, Number(day));
+          }
+          const t = Date.parse(d);
+          return isNaN(t) ? 0 : t;
+        }
+
+        // Ordena por timestamp ascendente
+        const rows = Object.keys(map)
+          .map(k => ({ dia:k, ts: diaToTS(k), ...map[k] }))
+          .sort((a,b) => a.ts - b.ts);
+
+        const dias = rows.map(r => r.dia);
+        const inb  = rows.map(r => r.in);
+        const outb = rows.map(r => r.out);
+        const conc = rows.map(r => r.conc);
 
         if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
         document.getElementById("chartSeries").classList.remove("hidden");
@@ -576,7 +611,11 @@
                 {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
               ]
             },
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
+            options:{
+              responsive:true, maintainAspectRatio:false, resizeDelay:200,
+              plugins:{legend:{position:"top"}},
+              scales:{y:{beginAtZero:true}}
+            }
           });
         }
       }catch(e){ setAlert("Séries — " + e.message); }
