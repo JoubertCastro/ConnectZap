@@ -1,832 +1,688 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Conversas WhatsApp — Supervisor</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-/* ========= Bolhas de mensagem (ajustadas) ========= */
-.msg{
-  display:inline-block;                         /* encolhe ao conteúdo */
-  max-width:min(70%, 560px);
-  padding:10px 14px 18px;
-  margin:6px 0;
-  position:relative;
-  border-radius:18px;
-  word-break:break-word;
-  overflow-wrap:anywhere;
-  box-shadow:0 1px 2px rgba(0,0,0,.10);
-  transition:background .18s ease;
-}
-@media (max-width: 768px){
-  .msg{ max-width:86%; }
-}
-.msg.enviada{
-  align-self:flex-end;
-  background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
-  color:#111827;
-}
-.msg.recebida{
-  align-self:flex-start;
-  background:var(--bubble-in-bg, #fff);
-  border:1px solid var(--bubble-in-border, #e2e8f0);
-}
-.msg .hora{
-  position:absolute; right:8px; bottom:4px;
-  font-size:11px; color:#4b5563;
-}
-
-/* Caudas dos balões */
-.msg.enviada::after, .msg.recebida::after{
-  content:"";
-  position:absolute; bottom:0; width:14px; height:14px;
-  clip-path:polygon(0 0, 100% 0, 0 100%);
-}
-.msg.enviada::after{
-  right:-7px;
-  background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
-}
-.msg.recebida::after{
-  left:-7px;
-  background:var(--bubble-in-bg, #fff);
-  border-left:1px solid var(--bubble-in-border, #e2e8f0);
-  border-bottom:1px solid var(--bubble-in-border, #e2e8f0);
-}
-
-/* Ações dentro do balão (ex: responder) */
-.msg .actions{
-  position:absolute; top:6px; right:6px;
-  display:flex; gap:6px;
-  opacity:0; pointer-events:none;
-  transition:opacity .18s ease;
-}
-.msg:hover .actions,
-.msg:focus-within .actions{ opacity:1; pointer-events:auto; }
-.icon-btn{ font-size:14px; color:#64748b; cursor:pointer; }
-.icon-btn:hover{ color:#2563eb; }
-
-/* Mídia */
-.msg img.thumb{ max-width:280px; height:auto; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer; }
-
-/* ========= Cartões de sistema ========= */
-.msg.system{
-  background:#f8fafc;                 /* slate-50 */
-  border:1px dashed #cbd5e1;          /* slate-300 */
-  color:#0f172a;                      /* slate-900 */
-}
-.msg.system::after{ display:none; }   /* sem cauda */
-.sys-title{ font-weight:700; font-size:.9rem; display:flex; align-items:center; gap:.5rem; }
-.sys-body{ font-size:.9rem; color:#334155; }
-.sys-meta{ font-size:.75rem; color:#64748b; }
-.sys-pill{ display:inline-block; font-size:.7rem; font-weight:700; padding:.1rem .4rem; border-radius:9999px; background:#eef2ff; color:#3730a3; }
-
-/* Extras existentes */
-.badge{ position:absolute; top:8px; right:8px; background:#22c55e; color:#fff; font-size:10px; font-weight:700; border-radius:9999px; padding:2px 6px; min-width:18px; text-align:center; }
-.dia{ text-align:center; margin:12px 0; font-size:12px; color:#888; }
-.contato-selected{ background:#f0f9ff !important; }
-mark{ background:#ffef6b; color:#000; padding:0 2px; border-radius:2px; }
-#digitando{ font-size:12px; color:#666; margin-bottom:4px; }
-
-/* Filtros minimizáveis */
-details.filter-block{ border:1px solid #e2e8f0; border-radius:.75rem; background:#fff; }
-details.filter-block>summary{
-  list-style:none; cursor:pointer; padding:.6rem .8rem;
-  display:flex; align-items:center; justify-content:space-between;
-  font-weight:700; color:#334155;
-}
-details.filter-block>summary::-webkit-details-marker{ display:none; }
-details.filter-block[open]>summary{ border-bottom:1px dashed #e2e8f0; }
-.summary-label{ display:flex; align-items:center; gap:.5rem; }
-.summary-chevron{ transition:transform .2s ease; }
-details.filter-block[open] .summary-chevron{ transform:rotate(180deg); }
-
-.chip-btn{ padding:.4rem .7rem; font-size:.8rem; border-radius:.6rem; border:1px solid #e2e8f0; background:#fff; color:#334155; font-weight:600; }
-.chip-btn.active{ background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
-@media (max-width: 768px){ aside{ width:42%; } }
-</style>
+  <meta charset="UTF-8" />
+  <title>Dashboard — ConnectZap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="h-screen flex bg-gray-100">
+<body class="bg-slate-50 text-slate-800">
+  <header class="bg-blue-600 text-white py-4">
+    <div class="max-w-7xl mx-auto px-4">
+      <h1 class="text-xl sm:text-2xl font-semibold">📊 Dashboard — ConnectZap</h1>
+    </div>
+  </header>
 
-<!-- =========== SIDEBAR =========== -->
-<aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
-  <!-- Filtros -->
-  <div class="p-3 border-b">
-    <details id="fltBasico" class="filter-block" open>
-      <summary>
-        <span class="summary-label">
-          <span>Filtros</span>
-          <span id="fltResumo" class="text-xs font-normal text-slate-500"></span>
-        </span>
-        <svg class="summary-chevron w-4 h-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor">
-          <path d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z"/>
-        </svg>
-      </summary>
+  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <!-- Filtros -->
+    <section class="bg-white rounded-xl shadow-sm border p-4">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm text-slate-500 mr-1">Período:</span>
 
-      <div class="p-3 space-y-3">
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500 font-medium">Carteira</label>
-          <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
-            <option value="">— selecione —</option>
-            <option value="*">Todas as contas</option>
-            <option value="732661079928516">ConnectZap</option>
-            <option value="727586317113885">Recovery PJ</option>
-            <option value="802977069563598">Recovery PF</option>
-            <option value="821562937700669">Mercado Pago Cobrança</option>
-            <option value="779797401888141">DivZero</option>
-            <option value="829210283602406">Arc4U</option>
-            <option value="713021321904495">Serasa</option>
-            <option value="803535039503723">Mercado Pago Vendas</option>
-          </select>
+          <!-- chips de período -->
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="hoje">Hoje</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="7d">Últimos 7 dias</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="30d">Últimos 30 dias</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="mes">Mês atual</button>
+          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  data-range="custom">Personalizado</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <label class="text-sm text-slate-500">Início</label>
+            <input id="start" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+          <div>
+            <label class="text-sm text-slate-500">Fim</label>
+            <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+
+          <!-- Filtros EXTRAS da aba Atendimentos -->
+          <div id="fltCarteira" class="hidden">
+            <label class="text-sm text-slate-500">Carteira</label>
+            <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div id="fltAgentes" class="hidden">
+            <label class="text-sm text-slate-500">Agentes</label>
+            <div class="relative">
+              <button id="btnAgentes" type="button"
+                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
+                <span class="truncate">Todos</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+              <!-- dropdown -->
+              <div id="panelAgentes" class="hidden absolute z-20 mt-2 w-80 bg-white border rounded-lg shadow-lg p-2">
+                <div class="flex items-center gap-2 mb-2">
+                  <input id="agSearch" type="text" placeholder="Buscar agente..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
+                  <button id="agSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
+                  <button id="agClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
+                </div>
+                <div id="agList" class="max-h-56 overflow-y-auto space-y-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- botões -->
+          <div class="flex items-end gap-2">
+            <button id="btnClearDates" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
+            <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
+          </div>
+
+          <!-- Filtro EXCLUSIVO da aba Mensagens -->
+          <div id="fltNomeDisparo" class="md:col-span-2">
+            <label class="text-sm text-slate-500">Nome do disparo</label>
+            <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Abas -->
+    <section class="bg-white rounded-xl shadow-sm border">
+      <div class="p-3">
+        <div class="inline-flex bg-slate-100 rounded-xl p-1">
+          <button class="seg-btn seg-active" data-tab="mensagens">
+            <span>✉️</span><span>Mensagens</span>
+          </button>
+          <button class="seg-btn" data-tab="atendimentos">
+            <span>🎧</span><span>Atendimentos</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Aba: Mensagens -->
+      <div id="tab-mensagens" class="p-4 space-y-6">
+        <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div class="balloon"><div class="balloon-label">Total</div><div id="k_total" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Enviados</div><div id="k_env" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Entregues</div><div id="k_ent" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Lidos</div><div id="k_lido" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Delivery rate</div><div id="k_dr" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Read rate</div><div id="k_rr" class="balloon-value">—</div></div>
         </div>
 
         <div class="space-y-2">
-          <div class="text-xs text-gray-500 font-medium">Período</div>
-          <div class="flex flex-wrap gap-2">
-            <button class="chip-btn" data-range="hoje">Hoje</button>
-            <button class="chip-btn" data-range="ontem">Ontem</button>
-            <button class="chip-btn" data-range="7d">Últimos 7 dias</button>
-            <button class="chip-btn" data-range="30d">Últimos 30 dias</button>
-            <button class="chip-btn" data-range="mes">Mês atual</button>
-            <button class="chip-btn" data-range="custom">Personalizado</button>
-          </div>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="dataInicio" type="date" class="p-2 border rounded-md text-sm" />
-            <input id="dataFim" type="date" class="p-2 border rounded-md text-sm" />
-          </div>
-          <div class="flex gap-2">
-            <button id="btnAplicarFiltros" class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Aplicar</button>
-            <button id="btnLimparFiltros" class="px-3 py-2 rounded-md border text-sm">Limpar</button>
-          </div>
+          <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
+          <div class="h-72"><canvas id="chartMensagens" class="w-full h-full"></canvas></div>
+          <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
         </div>
 
-        <div class="space-y-1">
-          <label class="text-xs text-gray-500 font-medium">Buscar contato ou número</label>
-          <input id="searchInput" type="text" placeholder="🔍 digite para filtrar..." class="w-full p-2 rounded-md border text-sm" autocomplete="off" oninput="filtrarContatos(this.value)" />
-        </div>
-
-        <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-          Selecione a <b>carteira</b> e um <b>período</b>, depois clique em <b>Aplicar</b> para carregar a lista.
+        <div class="overflow-hidden rounded-xl border">
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-slate-50 sticky top-0">
+                <tr>
+                  <th class="th">Disparo</th>
+                  <th class="th">Grupo</th>
+                  <th class="th">Data</th>
+                  <th class="th text-right">Total</th>
+                  <th class="th text-right">Entregues</th>
+                  <th class="th text-right">Lidos</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyMensagens" class="bg-white"></tbody>
+            </table>
+          </div>
+          <div id="tblEmpty" class="p-3 text-sm text-slate-500 hidden">Nenhum envio encontrado.</div>
         </div>
       </div>
-    </details>
-  </div>
 
-  <!-- Lista de contatos -->
-  <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
-
-  <div class="p-2 text-xs text-gray-500 border-t">
-    Atualiza automaticamente após aplicar os filtros.
-  </div>
-</aside>
-
-<!-- =========== MAIN CHAT =========== -->
-<main class="flex-1 flex flex-col">
-  <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
-    <div class="flex items-center space-x-3 min-w-0">
-      <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
-      <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
-    </div>
-  </div>
-
-  <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
-    <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
-  </div>
-  <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
-
-  <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
-    <div class="truncate max-w-[80%]">
-      <span class="font-semibold">Respondendo:</span>
-      <span id="respostaTexto" class="text-gray-600"></span>
-    </div>
-    <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
-  </div>
-
-  <div class="p-3 border-t flex space-x-2 bg-white items-center">
-    <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
-    <button onclick="document.getElementById('fileInput').click()" class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
-
-    <textarea id="textoMensagem" rows="1" class="flex-1 border rounded-md p-2 resize-none" placeholder="Digite uma mensagem..." disabled></textarea>
-    <button id="btnEnviar" onclick="enviarMensagem()" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50" disabled>Enviar</button>
-  </div>
-</main>
-
-<!-- Modal de imagem -->
-<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-  <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
-  <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
-</div>
-
-<script>
-/* ======= Config/estado ======= */
-const API_BASE = "https://conversas-api-production.up.railway.app";
-const phoneIdMap = {
-  "732661079928516": "ConnectZap",
-  "727586317113885": "Recovery PJ",
-  "802977069563598": "Recovery PF",
-  "821562937700669": "Mercado Pago Cobrança",
-  "779797401888141": "DivZero",
-  "829210283602406": "Arc4U",
-  "713021321904495": "Serasa",
-  "803535039503723": "Mercado Pago Vendas"
-};
-
-let contatoSelecionado = null, phoneIdAtual = null;
-let respostaMsgId = null;
-let contactsInterval = null, messagesInterval = null, userTyping = false, isModalOpen = false;
-
-let novasMensagens = {};
-let ultimoStatusContatos = {};
-let filtrosAplicados = false;
-
-// incremento por data no chat
-let lastTimestampMs = null;
-let lastDayRendered = null;
-let renderedKeys = new Set();
-
-/* ======= Documento: constantes ======= */
-const DOC_PREVIEW_MAX = 2 * 1024 * 1024; // 2MB para preview embutido de PDF
-
-// refs
-const textarea = document.getElementById("textoMensagem");
-const btnEnviar = document.getElementById("btnEnviar");
-const digitando = document.getElementById("digitando");
-const contatosUL = document.getElementById("contatos");
-const filtroContaEl = document.getElementById("filtroConta");
-const dataInicioEl = document.getElementById("dataInicio");
-const dataFimEl = document.getElementById("dataFim");
-const hintFiltro = document.getElementById("hintFiltro");
-const btnAplicarFiltros = document.getElementById("btnAplicarFiltros");
-const btnLimparFiltros = document.getElementById("btnLimparFiltros");
-const chipBtns = [...document.querySelectorAll(".chip-btn")];
-const fltResumoEl = document.getElementById("fltResumo");
-
-/* ======= UX da textarea ======= */
-textarea.addEventListener("input", () => {
-  textarea.style.height = "auto";
-  textarea.style.height = textarea.scrollHeight + "px";
-  btnEnviar.disabled = textarea.value.trim().length === 0;
-  digitando.style.display = textarea.value.trim() ? "block" : "none";
-});
-textarea.addEventListener("keydown", e => {
-  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); if(!btnEnviar.disabled) enviarMensagem(); }
-});
-
-/* ======= Períodos rápidos ======= */
-function pad(n){ return String(n).padStart(2,"0"); }
-function toYMD(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
-function setQuickRange(kind){
-  const now = new Date();
-  let a = new Date(), b = new Date();
-  if(kind==="hoje"){ /* a=b hoje */ }
-  if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
-  if(kind==="7d"){ a.setDate(now.getDate()-6); }
-  if(kind==="30d"){ a.setDate(now.getDate()-29); }
-  if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
-  dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
-  atualizarResumo();
-}
-function highlightChip(btn){
-  chipBtns.forEach(b=>b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-}
-chipBtns.forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const k = btn.dataset.range;
-    if(k!=="custom") setQuickRange(k);
-    highlightChip(btn);
-  });
-});
-(function initPeriodoDefault(){
-  setQuickRange("hoje");
-  highlightChip(document.querySelector('[data-range="hoje"]'));
-})();
-
-/* ======= Helpers ======= */
-function gerarCor(nome){
-  let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
-  return `hsl(${hash % 360},70%,60%)`;
-}
-function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function toLocalDateYMD(isoString){
-  const d = new Date(isoString);
-  const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
-}
-/* Heurística robusta para direção da mensagem */
-function isIncoming(m){
-  const s = (m.status || "").toLowerCase();
-  if (typeof m.from_me === "boolean") return !m.from_me;
-  if (m.direction) return String(m.direction).toLowerCase().startsWith("in");
-  if (["in","received","incoming"].includes(s)) return true;
-  if (["out","sent","delivered","read","outgoing"].includes(s)) return false;
-  return s === "in";
-}
-
-/* Helper de tamanho legível */
-function bytesToHuman(n){
-  if(!n && n !== 0) return "";
-  const u=["B","KB","MB","GB","TB"];
-  let i=0, s=n;
-  while(s>=1024 && i<u.length-1){ s/=1024; i++; }
-  return `${s.toFixed(s>=10||i===0?0:1)} ${u[i]}`;
-}
-
-/* ======= Resumo filtros ======= */
-function atualizarResumo(){
-  const carteira = filtroContaEl.value || "—";
-  const di = dataInicioEl.value || "—";
-  const df = dataFimEl.value || "—";
-  fltResumoEl.textContent = `(carteira: ${carteira === "*" ? "todas" : carteira} • ${di} → ${df})`;
-}
-[filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
-atualizarResumo();
-
-/* ======= Aplicar/Limpar filtros ======= */
-btnAplicarFiltros.addEventListener("click", ()=>{
-  if(!filtroContaEl.value){ alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
-  filtrosAplicados = true;
-  hintFiltro.classList.add("hidden");
-  startContactsPolling();
-});
-btnLimparFiltros.addEventListener("click", ()=>{
-  filtroContaEl.value = "";
-  setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]'));
-  dataInicioEl.value = ""; dataFimEl.value = "";
-  document.getElementById("searchInput").value = "";
-  filtrosAplicados = false;
-  hintFiltro.classList.remove("hidden");
-  contatosUL.innerHTML = "";
-  if(contactsInterval) clearInterval(contactsInterval);
-  atualizarResumo();
-});
-
-/* ======= Contatos ======= */
-async function carregarContatos(){
-  if(!filtrosAplicados) return;
-  try{
-    if(!contatosUL.children.length){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Carregando contatos…</li>`;
-    }
-    const res = await fetch(`${API_BASE}/api/conversas/contatos`);
-    if(!res.ok) throw new Error("Falha ao buscar contatos");
-    const contatos = await res.json();
-
-    const carteirafiltro = filtroContaEl.value;
-    const di = dataInicioEl.value || null;
-    const df = dataFimEl.value || null;
-    const busc = document.getElementById("searchInput").value.toLowerCase().trim();
-
-    let filtrados = contatos;
-    if(carteirafiltro && carteirafiltro !== "*"){
-      filtrados = filtrados.filter(c => c.phone_id === carteirafiltro);
-    }
-    if(di || df){
-      filtrados = filtrados.filter(c=>{
-        if(!c.data_hora) return false;
-        const ymd = toLocalDateYMD(c.data_hora);
-        if(di && ymd < di) return false;
-        if(df && ymd > df) return false;
-        return true;
-      });
-    }
-    if(busc){
-      filtrados = filtrados.filter(c=>{
-        const nome = (c.nome_exibicao||"").toLowerCase();
-        const num  = (c.remetente||"").toLowerCase();
-        return nome.includes(busc) || num.includes(busc);
-      });
-    }
-
-    contatosUL.innerHTML = "";
-    if(filtrados.length === 0){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato no período/filtros.</li>`;
-      return;
-    }
-
-    filtrados.forEach(c=>{
-      const nome = c.nome_exibicao||c.remetente;
-      const ultimaMsg = c.mensagem_final?c.mensagem_final.substring(0,70):"";
-      const hora = c.data_hora?new Date(c.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
-
-      if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
-        novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
-      }
-      ultimoStatusContatos[c.remetente] = c.data_hora;
-
-      const li = document.createElement("li");
-      li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
-      li.dataset.remetente=c.remetente.toLowerCase();
-
-      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
-        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
-        : "";
-
-      li.innerHTML=`
-        <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
-             style="background:${gerarCor(nome)};color:white;">
-          ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
+      <!-- Aba: Atendimentos -->
+      <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
+        <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="balloon"><div class="balloon-label">Em atendimento</div><div id="a_em" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">Concluídos</div><div id="a_conc" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">TMA</div><div id="a_tma" class="balloon-value">—</div></div>
+          <div class="balloon"><div class="balloon-label">1ª resposta</div><div id="a_tmr" class="balloon-value">—</div></div>
         </div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold truncate">${escapeHtml(nome)}</div>
-          <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
-        </div>
-        <div class="text-xs text-gray-400 pl-2">${hora}</div>
-        ${badge}
-      `;
-      li.onclick = ()=>abrirConversaFromElement(c,li);
-      contatosUL.appendChild(li);
-    });
-  }catch(err){
-    console.error("Erro ao carregar contatos",err);
-    contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
-  }
-}
-function startContactsPolling(){
-  if(contactsInterval) clearInterval(contactsInterval);
-  carregarContatos();
-  contactsInterval = setInterval(()=>{ if(filtrosAplicados) carregarContatos(); }, 10000);
-}
 
-/* ======= Busca local ======= */
-function filtrarContatos(q){
-  q=(q||"").toLowerCase().trim();
-  document.querySelectorAll("#contatos li").forEach(li=>{
-    if(!li.dataset.remetente){ return; }
-    const hay=li.textContent.toLowerCase();
-    if(hay.includes(q)){
-      li.style.display="flex";
-      const nameDiv=li.querySelector(".font-bold");
-      const plain=nameDiv.textContent;
-      nameDiv.innerHTML=q?plain.replace(new RegExp(q,"ig"),m=>`<mark>${m}</mark>`):plain;
-    }else li.style.display="none";
-  });
-}
-
-/* ======= Abrir conversa ======= */
-function abrirConversaFromElement(c,el){
-  document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
-  el.classList.add("contato-selected");
-  abrirConversa(c);
-}
-async function abrirConversa(c){
-  contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
-
-  lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
-  novasMensagens[c.remetente] = 0;
-
-  document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
-  document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
-  textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
-
-  if(messagesInterval) clearInterval(messagesInterval);
-  await carregarMensagens(false);
-  messagesInterval=setInterval(()=>{ if(!userTyping && !isModalOpen){ carregarMensagens(true); } }, 5000);
-}
-
-/* ======= Mensagens ======= */
-async function carregarMensagens(incremental = true) {
-  if (!contatoSelecionado) return;
-  const chat = document.getElementById("chat");
-
-  let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
-  if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Erro ao obter histórico");
-    const msgs = await res.json();
-
-    msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
-
-    if (!incremental) {
-      chat.innerHTML = "";
-      lastTimestampMs = null;
-      lastDayRendered = null;
-      renderedKeys.clear();
-    }
-
-    const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
-
-    msgs.forEach((m) => {
-      const tMs = new Date(m.data_hora).getTime();
-      const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-      if (renderedKeys.has(key)) return;
-      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
-
-      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      if (!lastDayRendered || lastDayRendered !== dia) {
-        const sep = document.createElement("div");
-        sep.className = "dia";
-        sep.innerText = `— ${dia} —`;
-        chat.appendChild(sep);
-        lastDayRendered = dia;
-      }
-
-      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-      const div = document.createElement("div");
-      const incoming = isIncoming(m);
-      div.className = `msg ${incoming ? "recebida" : "enviada"}`;
-
-      if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[imagem recebida]</div>
-          <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-olhinho");
-        if (!m.msg_id) {
-          btn.disabled = true; btn.innerText = "Imagem indisponível";
-        } else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const img = document.createElement("img");
-                img.src = j.data_uri; img.alt = "Imagem recebida";
-                img.className = "thumb mt-2";
-                img.onclick = () => abrirModalImagem(j.data_uri);
-                div.insertBefore(img, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro imagem:", e); btn.disabled=false; btn.innerText="👁 Ver imagem"; alert("Erro ao carregar imagem"); }
-          };
-        }
-      }
-      else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[áudio recebido]</div>
-          <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-audio");
-        if (!m.msg_id) { btn.disabled = true; btn.innerText="Áudio indisponível"; }
-        else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const audio = document.createElement("audio");
-                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2 w-full max-w-xs";
-                div.insertBefore(audio, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
-          };
-        }
-      }
-      else if (m.tipo === "document" || m.mensagem_final === "[document]") {
-        // ✅ Documento recebido
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[documento recebido]</div>
-          <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-doc");
-        if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
-        else {
-          btn.onclick = () => carregarDocumento(div, btn, m.msg_id);
-        }
-      }
-      else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
-        // ✅ Mensagem enviada com nosso formato vira cartão com link
-        const lines = m.mensagem_final.split("\n");
-        const filename = (lines[0]||"").replace("📎 PDF:","").trim() || "Arquivo";
-        const link = (lines[1]||"").replace("🔗","").trim();
-        div.innerHTML = `
-          <div class="flex items-start gap-2">
-            <div class="text-xl leading-none">📄</div>
-            <div class="min-w-0">
-              <div class="font-semibold">${escapeHtml(filename)}</div>
-              ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
-            </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Motivos de conclusão</div>
+            <div class="h-72"><canvas id="chartMotivos" class="w-full h-full"></canvas></div>
+            <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
           </div>
-          <span class="hora">${hora}</span>
-        `;
-      }
-      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-        const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
-        const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
-        const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
-        wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
-        const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
-        if (m.msg_id) {
-          (async ()=>{ try {
-            const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
-            const j = await r.json();
-            if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
-          } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
-        } else { label.textContent = "emoji indisponível"; }
-      }
-      else if (m.tipo === "system" || m.mensagem_final === "[system]") {
-        /* ✅ Evento de sistema */
-        div.classList.add("system");
-        // esqueleto
-        div.innerHTML = `
-          <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
-          <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
-          <div class="sys-meta mt-1"></div>
-          <span class="hora">${hora}</span>
-        `;
-        if (!m.msg_id) {
-          div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
-          const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
-        } else {
-          (async ()=>{
-            try{
-              const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              const pill = div.querySelector(".sys-pill");
-              const bodyEl = div.querySelector(".sys-body");
-              const metaEl = div.querySelector(".sys-meta");
 
-              if(!j.ok){
-                if (pill) pill.textContent = "erro";
-                bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento.";
-                return;
-              }
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
+            <div class="h-72"><canvas id="chartSeries" class="w-full h-full"></canvas></div>
+            <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-              if (pill) pill.textContent = j.type || "system";
-              // Corpo
-              if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
-                bodyEl.innerHTML = `
-                  O cliente alterou o número:<br>
-                  <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
-                  <span class="mx-1">→</span>
-                  <span class="font-semibold">${escapeHtml(j.wa_id)}</span>
-                `;
-              } else {
-                bodyEl.textContent = j.body || "Evento de sistema recebido.";
-              }
-              // Meta
-              const src = j.from || j.old_wa_id || "";
-              const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
-              metaEl.textContent = `${src ? "Origem: "+src : ""}${pid}`;
-            }catch(e){
-              console.error("Erro system:", e);
-              const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro";
-              div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento.";
-            }
-          })();
-        }
-      }
-      else {
-        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
-      }
+    <!-- Avisos -->
+    <div id="alert" class="hidden rounded-lg border border-amber-300 bg-amber-50 text-amber-800 p-3 text-sm"></div>
+  </main>
 
-      /* Ação de Responder (apenas para mensagens do cliente, não para system) */
-      if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
-        const actions = document.createElement("div");
-        actions.className = "actions";
-        const replyBtn = document.createElement("button");
-        replyBtn.className = "icon-btn";
-        replyBtn.title = "Responder";
-        replyBtn.textContent = "↩";
-        replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
-        actions.appendChild(replyBtn);
-        div.appendChild(actions);
-      }
+  <style>
+    .seg-btn{
+      display:flex; align-items:center; gap:.5rem;
+      padding:.5rem .75rem; border-radius:.75rem;
+      font-weight:600; color:#334155; transition:all .15s;
+    }
+    .seg-btn:hover{ background:#fff; }
+    .seg-active{ background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.06); color:#1d4ed8 }
+    .balloon{
+      background: linear-gradient(180deg,#ffffff, #f8fafc);
+      border: 1px solid #e2e8f0;
+      border-radius: 9999px;
+      padding: 14px 18px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.05);
+      text-align:center;
+    }
+    .balloon-label{ font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; color:#64748b; }
+    .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
+    .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
+    td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
+  </style>
 
-      chat.appendChild(div);
-      renderedKeys.add(key);
-      if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
+  <script>
+    // ===== CONFIG =====
+    const API_BASE = "https://dashboard-production-4c05.up.railway.app";
+    const phoneIdMap = {
+      "732661079928516": "ConnectZap",
+      "727586317113885": "Recovery PJ",
+      "802977069563598": "Recovery PF",
+      "821562937700669": "Mercado Pago Cobrança",
+      "779797401888141": "DivZero",
+      "829210283602406": "Arc4U",
+      "713021321904495": "Serasa",
+      "803535039503723": "Mercado Pago Vendas"
+    };
+
+    // ===== DOM =====
+    const startEl = document.getElementById("start");
+    const endEl   = document.getElementById("end");
+    const qEl     = document.getElementById("q");
+
+    const fltCarteira = document.getElementById("fltCarteira");
+    const fltAgentes  = document.getElementById("fltAgentes");
+    const fltNomeDisparo = document.getElementById("fltNomeDisparo");
+
+    const cartEl  = document.getElementById("carteira");
+    const btnAplicar = document.getElementById("btnAplicar");
+    const btnClearDates = document.getElementById("btnClearDates");
+
+    const alertEl = document.getElementById("alert");
+    const chips   = [...document.querySelectorAll("[data-range]")];
+
+    // tabs
+    const segBtns = [...document.querySelectorAll(".seg-btn")];
+    const tabMensagens = document.getElementById("tab-mensagens");
+    const tabAtend     = document.getElementById("tab-atendimentos");
+
+    // KPIs Mensagens
+    const k_total = document.getElementById("k_total");
+    const k_env   = document.getElementById("k_env");
+    const k_ent   = document.getElementById("k_ent");
+    const k_lido  = document.getElementById("k_lido");
+    const k_dr    = document.getElementById("k_dr");
+    const k_rr    = document.getElementById("k_rr");
+
+    // Tabela
+    const tbodyMensagens = document.getElementById("tbodyMensagens");
+    const tblEmpty = document.getElementById("tblEmpty");
+
+    // Charts
+    let chartMensagens, chartMotivos, chartSeries;
+    const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
+    const chartMotivosEmpty   = document.getElementById("chartMotivosEmpty");
+    const chartSeriesEmpty    = document.getElementById("chartSeriesEmpty");
+
+    // KPIs Atend
+    const a_em  = document.getElementById("a_em");
+    const a_conc= document.getElementById("a_conc");
+    const a_tma = document.getElementById("a_tma");
+    const a_tmr = document.getElementById("a_tmr");
+
+    // ===== Multi-select Agentes (dropdown) =====
+    const btnAgentes  = document.getElementById("btnAgentes");
+    const panelAgentes= document.getElementById("panelAgentes");
+    const agSearch    = document.getElementById("agSearch");
+    const agSelectAll = document.getElementById("agSelectAll");
+    const agClear     = document.getElementById("agClear");
+    const agList      = document.getElementById("agList");
+
+    let agentsAll = [];           // [{codigo_do_agente, nome}]
+    const selectedAgents = new Set();
+
+    function togglePanelAgentes(show){
+      panelAgentes.classList.toggle("hidden", !show);
+    }
+    btnAgentes.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePanelAgentes(panelAgentes.classList.contains("hidden"));
+    });
+    document.addEventListener("click", (e) => {
+      if(!panelAgentes.contains(e.target) && !btnAgentes.contains(e.target)){
+        togglePanelAgentes(false);
+      }
     });
 
-    if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  } catch (err) {
-    console.error("Erro ao carregar mensagens", err);
-  }
-}
+    function renderAgentesList(filter=""){
+      agList.innerHTML = "";
+      const term = filter.trim().toLowerCase();
+      const data = agentsAll.filter(a => (a.nome||"").toLowerCase().includes(term));
+      if(!data.length){
+        agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
+        return;
+      }
+      data.forEach(a => {
+        const id = `ag_${a.codigo_do_agente}`;
+        const row = document.createElement("label");
+        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
+        row.innerHTML = `
+          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked":""}>
+          <span class="text-sm">${a.nome || ("Agente "+a.codigo_do_agente)}</span>
+        `;
+        row.querySelector("input").addEventListener("change", (ev) => {
+          const v = String(ev.target.value);
+          if(ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
+          updateAgentesButtonLabel();
+        });
+        agList.appendChild(row);
+      });
+    }
+    function updateAgentesButtonLabel(){
+      const n = selectedAgents.size;
+      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n>1?"s":""}` : "Todos";
+    }
+    agSearch.addEventListener("input", () => renderAgentesList(agSearch.value));
+    agSelectAll.addEventListener("click", () => {
+      agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
+      renderAgentesList(agSearch.value);
+      updateAgentesButtonLabel();
+    });
+    agClear.addEventListener("click", () => {
+      selectedAgents.clear();
+      renderAgentesList(agSearch.value);
+      updateAgentesButtonLabel();
+    });
 
-/* ======= Documento (novo) ======= */
-async function carregarDocumento(div, btn, msg_id){
-  btn.disabled = true; btn.textContent = "⏳ Carregando…";
-  try{
-    const r = await fetch(`${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}`);
-    const j = await r.json();
-    if(!j.ok) throw new Error(j.erro || "Falha ao obter documento");
-
-    const filename = j.filename || "arquivo";
-    const mime = j.mime_type || "application/octet-stream";
-    const size = j.size_bytes ?? null;
-
-    const box = document.createElement("div");
-    box.className = "mt-2 space-y-1";
-
-    if(mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)){
-      const preview = document.createElement("embed");
-      preview.src = j.data_uri;
-      preview.type = mime;
-      preview.className = "w-[260px] h-[200px] rounded border";
-      box.appendChild(preview);
-
-      const meta = document.createElement("div");
-      meta.className = "text-xs text-slate-600";
-      const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
-      meta.innerHTML = `<div class="font-semibold truncate">${escapeHtml(filename)}</div>
-                        <div>${size?bytesToHuman(size):""}</div>
-                        <a href="${link}" target="_blank" class="text-blue-600 underline">Abrir/baixar</a>`;
-      box.appendChild(meta);
-    }else{
-      const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
-      const row = document.createElement("div");
-      row.className = "flex items-start gap-2";
-      row.innerHTML = `
-        <div class="text-xl leading-none">📎</div>
-        <div class="min-w-0">
-          <div class="font-semibold truncate">${escapeHtml(filename)}</div>
-          <div class="text-xs text-slate-600">${escapeHtml(mime)} ${size?("• "+bytesToHuman(size)):""}</div>
-          <a href="${link}" target="_blank" class="text-blue-600 underline break-all">Baixar documento</a>
-        </div>`;
-      box.appendChild(row);
+    // ===== Utils =====
+    function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
+    function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
+    function fmtDurSec(s){
+      if(s == null) return "—";
+      const m = Math.floor(s/60), sec = s%60;
+      if(m>=60){ const h=Math.floor(m/60), mm=m%60; return `${h}h ${mm}m`; }
+      return `${m}m ${sec}s`;
+    }
+    function selectedAgentesCSV(){
+      return [...selectedAgents].join(",");
     }
 
-    div.insertBefore(box, btn);
-    btn.remove();
-  }catch(e){
-    console.error(e);
-    alert("Erro ao carregar documento");
-    btn.disabled = false; btn.textContent = "📎 Ver documento";
-  }
-}
+    function getActiveTab(){
+      return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
+    }
 
-/* ======= Responder / Cancelar ======= */
-function responderMensagem(msgId, conteudo){
-  respostaMsgId = msgId || null;
-  document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0,50);
-  document.getElementById("respostaPreview").classList.remove("hidden");
-  textarea.focus();
-}
-function cancelarResposta(){
-  respostaMsgId = null;
-  document.getElementById("respostaPreview").classList.add("hidden");
-  document.getElementById("respostaTexto").innerText = "";
-}
+    function buildParams(tab){
+      const p = new URLSearchParams();
+      if(startEl.value) p.set("start", startEl.value);
+      if(endEl.value)   p.set("end",   endEl.value);
 
-/* ======= Enviar texto ======= */
-async function enviarMensagem(){
-  const texto=textarea.value.trim(); 
-  if(!texto||!contatoSelecionado) return;
-  userTyping=true; btnEnviar.disabled=true;
-  try{
-    const body = { texto, phone_id: phoneIdAtual, msg_id: respostaMsgId || null };
-    const res=await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`,{
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
+      if(tab === "mensagens"){
+        if(qEl.value) p.set("q", qEl.value.trim());
+      }else if(tab === "atendimentos"){
+        if(cartEl.value) p.set("phone_id", cartEl.value);
+        const ags = selectedAgentesCSV();
+        if(ags) p.set("agentes", ags);
+      }
+      p.set("tab", tab);
+      return p.toString();
+    }
+
+    function savePermalink(){
+      const tab = getActiveTab();
+      const qs = buildParams(tab);
+      const url = location.origin + location.pathname + (qs ? "?"+qs : "");
+      history.replaceState(null, "", url);
+    }
+
+    function readFromQS(){
+      const u = new URL(location.href);
+      const tabQS = u.searchParams.get("tab");
+      if(tabQS === "atendimentos"){
+        segBtns.forEach(x => x.classList.remove("seg-active"));
+        segBtns.find(b => b.dataset.tab==="atendimentos").classList.add("seg-active");
+        tabMensagens.classList.add("hidden");
+        tabAtend.classList.remove("hidden");
+        toggleFiltersForTab("atendimentos");
+      }
+
+      startEl.value = u.searchParams.get("start") || startEl.value;
+      endEl.value   = u.searchParams.get("end") || endEl.value;
+
+      // mensagens
+      qEl.value     = u.searchParams.get("q") || "";
+
+      // atendimentos
+      const phone = u.searchParams.get("phone_id") || "";
+      if(phone) cartEl.value = phone;
+      const agentesQS = u.searchParams.get("agentes");
+      if(agentesQS) pendingAgents = agentesQS.split(",").map(String);
+    }
+
+    function setQuickRange(kind){
+      const now = new Date();
+      const pad = n => String(n).padStart(2,"0");
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      let a = new Date(), b = new Date();
+      if(kind==="hoje"){ /* a=b hoje */ }
+      if(kind==="7d"){ a.setDate(now.getDate()-6); }
+      if(kind==="30d"){ a.setDate(now.getDate()-29); }
+      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
+      startEl.value = toISO(a); endEl.value = toISO(b);
+    }
+
+    function highlightChip(ch){
+      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
+      if(ch) ch.classList.add("bg-blue-600","text-white","border-blue-600");
+    }
+    chips.forEach(ch => ch.addEventListener("click", () => {
+      const k = ch.dataset.range;
+      if(k!=="custom") setQuickRange(k);
+      highlightChip(ch);
+    }));
+
+    // Toggle filtros conforme aba
+    function toggleFiltersForTab(tab){
+      const isMsg = tab === "mensagens";
+      fltNomeDisparo.classList.toggle("hidden", !isMsg);
+      fltCarteira.classList.toggle("hidden", isMsg);
+      fltAgentes.classList.toggle("hidden", isMsg);
+    }
+
+    // ===== Data loaders =====
+    async function loadAgentes(){
+      const selPhone = cartEl.value || "";
+      const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
+      const res = await fetch(url);
+      const data = await res.json(); // [{codigo_do_agente, nome}]
+      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente "+a.codigo_do_agente) }));
+      // se trocar de carteira, limpamos seleção para evitar agentes cruzados
+      selectedAgents.clear();
+      if(pendingAgents && pendingAgents.length){
+        pendingAgents.forEach(v => selectedAgents.add(String(v)));
+        pendingAgents = null;
+      }
+      agSearch.value = "";
+      renderAgentesList("");
+      updateAgentesButtonLabel();
+    }
+
+    async function loadResumoMensagens(qs){
+      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
+      if(!res.ok) throw new Error("Falha no resumo (mensagens)");
+      return res.json();
+    }
+    async function loadEnvios(qs){
+      const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
+      if(!res.ok) throw new Error("Falha nos envios");
+      return res.json();
+    }
+    async function loadAtendResumo(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
+      if(!res.ok) throw new Error("Falha no resumo (atendimentos)");
+      return res.json();
+    }
+    async function loadAtendMotivos(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
+      if(!res.ok) throw new Error("Falha nos motivos");
+      return res.json();
+    }
+    async function loadAtendSeries(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
+      if(!res.ok) throw new Error("Falha nas séries");
+      return res.json();
+    }
+
+    // ===== Render =====
+    async function renderMensagens(){
+      const qs = buildParams("mensagens");
+      savePermalink();
+
+      try{
+        setAlert("");
+        k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
+        const r = await loadResumoMensagens(qs);
+        const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
+        k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
+        k_dr.textContent = toPct(ent, env || total);
+        k_rr.textContent = toPct(lido, ent || total);
+      }catch(e){ setAlert(e.message); }
+
+      try{
+        tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
+        const data = await loadEnvios(qs);
+        tbodyMensagens.innerHTML = "";
+        tblEmpty.classList.toggle("hidden", data.length>0);
+
+        const labels = [], entregues=[], lidos=[];
+        data.forEach(e => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${e.nome_disparo||"-"}</td>
+            <td>${e.grupo_trabalho||"-"}</td>
+            <td>${e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "-"}</td>
+            <td class="text-right">${e.total||0}</td>
+            <td class="text-right">${e.entregues||0}</td>
+            <td class="text-right">${e.lidos||0}</td>`;
+          tbodyMensagens.appendChild(tr);
+          labels.push(e.nome_disparo||"(sem nome)");
+          entregues.push(e.entregues||0);
+          lidos.push(e.lidos||0);
+        });
+
+        if(chartMensagens){ chartMensagens.destroy(); chartMensagens = null; }
+        document.getElementById("chartMensagens").classList.remove("hidden");
+        chartMensagensEmpty.classList.add("hidden");
+
+        if(labels.length===0){
+          document.getElementById("chartMensagens").classList.add("hidden");
+          chartMensagensEmpty.classList.remove("hidden");
+        }else{
+          const ctx = document.getElementById("chartMensagens").getContext("2d");
+          chartMensagens = new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels,
+              datasets: [
+                {label:"Entregues", data:entregues, backgroundColor:"#3b82f6", stack:"s"},
+                {label:"Lidos",     data:lidos,     backgroundColor:"#10b981", stack:"s"}
+              ]
+            },
+            options: {
+              responsive:true,
+              maintainAspectRatio:false,
+              resizeDelay:200,
+              plugins:{ legend:{ position:"top" } },
+              scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
+            }
+          });
+        }
+      }catch(e){ setAlert(e.message); }
+    }
+
+    async function renderAtend(){
+      const qs = buildParams("atendimentos");
+      savePermalink();
+
+      try{
+        a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
+        const r = await loadAtendResumo(qs);
+        a_em.textContent   = r.em_atendimento ?? 0;
+        a_conc.textContent = r.concluidos ?? 0;
+        a_tma.textContent  = fmtDurSec(r.tma_segundos);
+        a_tmr.textContent  = fmtDurSec(r.tmr_segundos);
+      }catch(e){ setAlert("Aba Atendimentos — " + e.message); }
+
+      // Motivos
+      try{
+        const dados = await loadAtendMotivos(qs);
+        if(chartMotivos){ chartMotivos.destroy(); chartMotivos=null; }
+        document.getElementById("chartMotivos").classList.remove("hidden");
+        chartMotivosEmpty.classList.add("hidden");
+
+        if(!dados.length){
+          document.getElementById("chartMotivos").classList.add("hidden");
+          chartMotivosEmpty.classList.remove("hidden");
+        }else{
+          chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
+            type:"pie",
+            data:{ labels: dados.map(d=>d.motivo), datasets:[{ data: dados.map(d=>d.qtd) }] },
+            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200 }
+          });
+        }
+      }catch(e){ setAlert("Motivos — " + e.message); }
+
+      // ===== Séries (ordenadas por data) =====
+      try{
+        const s = await loadAtendSeries(qs);
+
+        // Normaliza e agrega por dia
+        const map = {};
+        (s.mensagens||[]).forEach(r => {
+          const k = r.dia;
+          map[k] = map[k] || { in:0, out:0, conc:0 };
+          map[k].in  = r.inbound;
+          map[k].out = r.outbound;
+        });
+        (s.concluidos||[]).forEach(r => {
+          const k = r.dia;
+          map[k] = map[k] || { in:0, out:0, conc:0 };
+          map[k].conc = r.concluidos;
+        });
+
+        // 🔧 Parser robusto para "YYYY-MM-DD" ou "DD/MM[/YYYY]"
+        function diaToTS(d){
+          if(!d) return 0;
+          if(/^\d{4}-\d{2}-\d{2}$/.test(d)){
+            const [y,m,day] = d.split("-").map(Number);
+            return Date.UTC(y, m-1, day);
+          }
+          if(/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)){
+            const [day,mon,year] = d.split("/");
+            const y = year ? Number(year) : new Date().getFullYear();
+            return Date.UTC(Number(y), Number(mon)-1, Number(day));
+          }
+          const t = Date.parse(d);
+          return isNaN(t) ? 0 : t;
+        }
+
+        // Ordena por timestamp ascendente
+        const rows = Object.keys(map)
+          .map(k => ({ dia:k, ts: diaToTS(k), ...map[k] }))
+          .sort((a,b) => a.ts - b.ts);
+
+        const dias = rows.map(r => r.dia);
+        const inb  = rows.map(r => r.in);
+        const outb = rows.map(r => r.out);
+        const conc = rows.map(r => r.conc);
+
+        if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
+        document.getElementById("chartSeries").classList.remove("hidden");
+        chartSeriesEmpty.classList.add("hidden");
+
+        if(!dias.length){
+          document.getElementById("chartSeries").classList.add("hidden");
+          chartSeriesEmpty.classList.remove("hidden");
+        }else{
+          chartSeries = new Chart(document.getElementById("chartSeries").getContext("2d"), {
+            type:"line",
+            data:{
+              labels: dias,
+              datasets: [
+                {label:"Inbound",    data:inb,  borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
+                {label:"Outbound",   data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
+                {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
+              ]
+            },
+            options:{
+              responsive:true, maintainAspectRatio:false, resizeDelay:200,
+              plugins:{legend:{position:"top"}},
+              scales:{y:{beginAtZero:true}}
+            }
+          });
+        }
+      }catch(e){ setAlert("Séries — " + e.message); }
+    }
+
+    async function render(){
+      const tab = getActiveTab();
+      if(tab==="mensagens") await renderMensagens();
+      else {
+        // quando entrar na aba Atendimentos, garantir agentes carregados conforme carteira
+        if(cartEl.value && !agentsAll.length) await loadAgentes();
+        await renderAtend();
+      }
+    }
+
+    // ===== Eventos =====
+    segBtns.forEach(btn => btn.addEventListener("click", async () => {
+      segBtns.forEach(x => x.classList.remove("seg-active"));
+      btn.classList.add("seg-active");
+      const tab = btn.dataset.tab;
+      tabMensagens.classList.toggle("hidden", tab!=="mensagens");
+      tabAtend.classList.toggle("hidden",     tab!=="atendimentos");
+      toggleFiltersForTab(tab);
+      if(tab === "atendimentos" && cartEl.value){
+        await loadAgentes();
+      }
+      render();
+    }));
+
+    // preencher carteiras
+    (function fillCarteiras(){
+      const frag = document.createDocumentFragment();
+      Object.keys(phoneIdMap).forEach(id => {
+        const opt = document.createElement("option");
+        opt.value = id; opt.textContent = phoneIdMap[id];
+        frag.appendChild(opt);
+      });
+      cartEl.appendChild(frag);
+    })();
+
+    // mudanças de carteira -> recarregar agentes
+    cartEl.addEventListener("change", async () => {
+      if(getActiveTab()==="atendimentos") await loadAgentes();
     });
-    const json=await res.json();
-    if(json.ok){
-      textarea.value=""; textarea.style.height="auto";
-      cancelarResposta();
-      await carregarMensagens(true);
-    } else { alert("Erro ao enviar: "+(json.erro||JSON.stringify(json))); }
-  }catch(err){ console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network."); }
-  finally{ userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0; }
-}
 
-/* ======= Enviar PDF ======= */
-async function enviarPDF(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  if(!contatoSelecionado || !phoneIdAtual){ alert("Selecione uma conversa antes de enviar PDF"); return; }
-  if(file.type !== "application/pdf"){ alert("Somente arquivos PDF são permitidos"); return; }
-
-  try{
-    const res = await fetch(`${API_BASE}/api/upload/pdf`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({filename: file.name})
+    // Limpar datas
+    btnClearDates.addEventListener("click", () => {
+      startEl.value = ""; endEl.value = "";
+      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
     });
-    const json = await res.json();
-    if(!json.ok){ alert("Erro ao gerar URL: "+json.erro); return; }
 
-    await fetch(json.upload_url, { method: "PUT", headers: {"Content-Type": "application/pdf"}, body: file });
+    // Aplicar
+    btnAplicar.addEventListener("click", render);
 
-    const body = { phone_id: phoneIdAtual, file_url: json.file_url, original_filename: file.name };
-    const sendRes = await fetch(`${API_BASE}/api/conversas/${contatoSelecionado}`, {
-      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
-    });
-    const sendJson = await sendRes.json();
-    if(sendJson.ok){ await carregarMensagens(true); }
-    else { alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson))); }
-  }catch(err){
-    console.error("Erro ao enviar PDF",err); alert("Erro ao enviar PDF");
-  }finally{ event.target.value = ""; }
-}
-
-/* ======= Modal imagem ======= */
-const imageModal = document.getElementById("imageModal");
-const modalImg = document.getElementById("modalImg");
-const closeModal = document.getElementById("closeModal");
-function abrirModalImagem(src){ isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
-closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
-imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
-
-/* ======= Visibilidade ======= */
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(filtrosAplicados) carregarContatos(); if(contatoSelecionado) carregarMensagens(true); } });
-
-/* ======= Inicial ======= */
-/* Não carrega contatos até aplicar filtros */
-</script>
+    // ===== Init =====
+    let pendingAgents = null;
+    function initDefaults(){
+      const now = new Date(); const pad = n=>String(n).padStart(2,"0");
+      const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
+      startEl.value = toISO(a); endEl.value = toISO(b);
+      highlightChip(document.querySelector('[data-range="7d"]'));
+    }
+    initDefaults();
+    readFromQS();
+    toggleFiltersForTab(getActiveTab());
+    render();
+  </script>
 </body>
 </html>
