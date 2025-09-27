@@ -851,74 +851,427 @@
 
       <!-- Aba: Agendamentos -->
       <div id="tab-agendamentos" class="tab-content">
-        <h2>📅 Gerenciar Agendamentos</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Grupo</th>
-              <th>Data/Hora</th>
-              <th>Status</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyAgendamentos">
-            <tr><td colspan="5" class="muted">Carregando agendamentos...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+        <div class="row" style="align-items:end">
+          <div class="col-4">
+            <h2>📅 Gerenciar Agendamentos</h2>
+          </div>
+          <div class="col-8" style="text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <input id="filtroBusca" placeholder="Buscar por nome ou grupo..." />
+            <select id="filtroModo">
+              <option value="">Modo: todos</option>
+              <option value="imediato">Imediato</option>
+              <option value="agendar">Agendado</option>
+            </select>
+            <select id="filtroStatus">
+              <option value="">Status: todos</option>
+              <option value="agendado">Agendado</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="pausado">Pausado</option>
+              <option value="concluido">Concluído</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <button class="btn secondary" id="btnAtualizarAg">⟳ Atualizar</button>
+          </div>
+        </div>
 
-  <script>
-    // Tabs
-    document.querySelectorAll(".tab-btn").forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-        document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
-        if(btn.dataset.tab==="agendamentos") carregarAgendamentos();
-      });
+        <!-- Totais -->
+        <div id="agTotals" class="row" style="margin-top:8px">
+          <div class="col-12 muted">—</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:20%">Nome</th>
+                <th style="width:14%">Grupo</th>
+                <th style="width:16%">Data/Hora</th>
+                <th style="width:12%">Modo</th>
+                <th style="width:18%">Progresso</th>
+                <th style="width:10%">Status</th>
+                <th style="width:10%">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAgendamentos">
+              <tr><td colspan="7" class="muted">Carregando agendamentos...</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Paginação simples -->
+          <div id="agPagination" style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="btn secondary" id="agPrev">◀</button>
+            <span class="muted" id="agPageInfo">Página 1/1</span>
+            <button class="btn secondary" id="agNext">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de edição -->
+      <div id="agModal" class="hide" style="
+        position:fixed;inset:0;background:rgba(0,0,0,.35);
+        display:flex;align-items:center;justify-content:center;z-index:50">
+        <div class="card" style="width:520px;max-width:95%;position:relative">
+          <h2>✏️ Editar envio</h2>
+          <div class="row">
+            <div class="col-12">
+              <label>Nome</label>
+              <input id="mNome" />
+            </div>
+            <div class="col-12">
+              <label>Grupo</label>
+              <input id="mGrupo" />
+            </div>
+            <div class="col-6">
+              <label>Modo</label>
+              <select id="mModo">
+                <option value="imediato">Imediato</option>
+                <option value="agendar">Agendar</option>
+              </select>
+            </div>
+            <div class="col-6" id="mDataWrap">
+              <label>Data/Hora (agendamento)</label>
+              <input id="mDataHora" type="datetime-local" />
+            </div>
+            <div class="col-4">
+              <label>Tamanho do Lote</label>
+              <input id="mTam" type="number" min="1" />
+            </div>
+            <div class="col-4">
+              <label>Intervalo Lote (min)</label>
+              <input id="mIntLote" type="number" min="0" />
+            </div>
+            <div class="col-4">
+              <label>Intervalo Msg (s)</label>
+              <input id="mIntMsg" type="number" min="0" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+            <button class="btn secondary" id="mCancelar">Cancelar</button>
+            <button class="btn success" id="mSalvar">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+<script>
+  // ==== Tabs (inalterado) ====
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab==="agendamentos") carregarAgendamentos(true);
+    });
+  });
+
+  // ==== Config ====
+  const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";
+  const PAGE_SIZE = 10;
+
+  // ==== State da aba Agendamentos ====
+  let agRaw = [];         // dados crus do /api/envios
+  let agFiltered = [];    // filtrados por busca/modo/status
+  let agPage = 1;
+
+  // ==== Helpers ====
+  const fmtBadge = (text, kind) =>
+    `<span class="pill" style="${kind==='ok'?'background:#ecfdf5;border-color:#bbf7d0;color:#065f46':kind==='warn'?'background:#fff7ed;border-color:#fed7aa;color:#9a3412':kind==='err'?'background:#fef2f2;border-color:#fecaca;color:#991b1b':'background:#eef2ff;border-color:#c7d2fe;color:#3730a3'}">${text}</span>`;
+
+  const pad2 = n => String(n).padStart(2,"0");
+
+  function toLocalISO(dtStr){
+    // Espera "YYYY-MM-DDTHH:MM:SS" (ou com Z) e devolve "YYYY-MM-DDTHH:MM"
+    if(!dtStr) return "";
+    const d = new Date(dtStr);
+    const y = d.getFullYear(), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
+    const hh = pad2(d.getHours()), mm = pad2(d.getMinutes());
+    return `${y}-${m}-${day}T${hh}:${mm}`;
+  }
+
+  function fmtDateTime(dtStr){
+    if(!dtStr) return "—";
+    const d = new Date(dtStr);
+    return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
+  }
+
+  function progressBar(done, total){
+    const pct = total>0 ? Math.round((done/total)*100) : 0;
+    return `
+      <div class="bar" title="${pct}%">
+        <span style="width:${pct}%"></span>
+      </div>
+      <div class="muted">${done}/${total}</div>
+    `;
+  }
+
+  function computeDone(e){
+    const t = e.totais||{};
+    return (t.enviados||0) + (t.erros||0) + (t.cancelados||0);
+  }
+
+  function statusBadge(s){
+    switch(s){
+      case "agendado": return fmtBadge("Agendado");
+      case "em_andamento": return fmtBadge("Em andamento","warn");
+      case "pausado": return fmtBadge("Pausado","warn");
+      case "concluido": return fmtBadge("Concluído","ok");
+      case "cancelado": return fmtBadge("Cancelado","err");
+      default: return fmtBadge(s || "—");
+    }
+  }
+
+  function renderTotals(list){
+    const box = document.getElementById("agTotals");
+    if(!list.length){ box.innerHTML = `<div class="col-12 muted">Nenhum agendamento.</div>`; return; }
+    const acc = { total:0, agendado:0, em_andamento:0, pausado:0, concluido:0, cancelado:0 };
+    list.forEach(e=>{ acc.total++; acc[e.status_geral] = (acc[e.status_geral]||0)+1; });
+    box.innerHTML = `
+      <div class="col-12" style="display:flex;gap:10px;flex-wrap:wrap">
+        <span class="muted">Total: <b>${acc.total}</b></span>
+        ${fmtBadge(`Agendados: ${acc.agendado}`)}
+        ${fmtBadge(`Em andamento: ${acc.em_andamento}`,"warn")}
+        ${fmtBadge(`Pausados: ${acc.pausado}`,"warn")}
+        ${fmtBadge(`Concluídos: ${acc.concluido}`,"ok")}
+        ${fmtBadge(`Cancelados: ${acc.cancelado}`,"err")}
+      </div>
+    `;
+  }
+
+  // ==== Filtros + Paginação ====
+  function applyFilters(){
+    const q = (document.getElementById("filtroBusca").value||"").toLowerCase();
+    const modo = document.getElementById("filtroModo").value;
+    const stat = document.getElementById("filtroStatus").value;
+
+    agFiltered = agRaw.filter(e=>{
+      const nameHit = (e.nome_disparo||"").toLowerCase().includes(q) || (e.grupo_trabalho||"").toLowerCase().includes(q);
+      const modoHit = !modo || e.modo_envio===modo;
+      const statHit = !stat || e.status_geral===stat;
+      return nameHit && modoHit && statHit;
     });
 
-    // Carregar agendamentos
-    async function carregarAgendamentos(){
-      const tbody=document.getElementById("tbodyAgendamentos");
-      tbody.innerHTML=`<tr><td colspan="5" class="muted">⏳ Buscando...</td></tr>`;
-      try{
-        const res=await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios");
-        const data=await res.json();
-        tbody.innerHTML="";
-        if(!data.length){
-          tbody.innerHTML=`<tr><td colspan="5" class="muted">Nenhum agendamento encontrado.</td></tr>`;
-          return;
-        }
-        data.forEach(e=>{
-          const tr=document.createElement("tr");
-          tr.innerHTML=`
-            <td>${e.nome_disparo||"-"}</td>
-            <td>${e.grupo_trabalho||"-"}</td>
-            <td>${e.data_hora_agendamento||"-"}</td>
-            <td>${e.modo_envio==="agendar"?"Agendado":"Imediato"}</td>
-            <td>
-              <button onclick="editarEnvio(${e.id})">✏️</button>
-              <button onclick="excluirEnvio(${e.id})">🗑️</button>
-              ${e.modo_envio==="agendar"?`<button onclick="pausarEnvio(${e.id})">⏸️</button>`:""}
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }catch(err){
-        tbody.innerHTML=`<tr><td colspan="5" class="muted">Erro ao carregar agendamentos</td></tr>`;
-        console.error(err);
-      }
+    agPage = 1;
+    renderTable();
+  }
+
+  function pageSlice(){
+    const start = (agPage-1)*PAGE_SIZE;
+    return agFiltered.slice(start, start+PAGE_SIZE);
+  }
+
+  function renderPagination(){
+    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
+    document.getElementById("agPageInfo").textContent = `Página ${agPage}/${totalPages}`;
+    document.getElementById("agPrev").disabled = agPage<=1;
+    document.getElementById("agNext").disabled = agPage>=totalPages;
+  }
+
+  document.getElementById("agPrev").addEventListener("click", ()=>{ if(agPage>1){ agPage--; renderTable(); } });
+  document.getElementById("agNext").addEventListener("click", ()=>{
+    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
+    if(agPage<totalPages){ agPage++; renderTable(); }
+  });
+
+  // ==== Render da Tabela ====
+  function renderTable(){
+    const tbody = document.getElementById("tbodyAgendamentos");
+    tbody.innerHTML = "";
+    renderTotals(agFiltered);
+
+    const rows = pageSlice();
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Nenhum agendamento com os filtros atuais.</td></tr>`;
+      renderPagination();
+      return;
     }
 
-    // Ações (stub)
-    function editarEnvio(id){ alert("Editar envio "+id+" (implementar modal)"); }
-    function excluirEnvio(id){ alert("Excluir envio "+id+" (DELETE /api/envios/"+id+")"); }
-    function pausarEnvio(id){ alert("Pausar envio "+id+" (PATCH backend)"); }
-  </script>
+    rows.forEach(e=>{
+      const total = e.totais?.total || 0;
+      const done = computeDone(e);
+      const prog = progressBar(done, total);
+
+      const buttons = [];
+      buttons.push(`<button title="Editar" onclick="editarEnvio(${e.id})">✏️</button>`);
+      buttons.push(`<button title="Excluir" onclick="excluirEnvio(${e.id})">🗑️</button>`);
+      if(e.status_geral==="agendado" || e.status_geral==="em_andamento"){
+        buttons.push(`<button title="Pausar" onclick="pausarEnvio(${e.id})">⏸️</button>`);
+      }
+      if(e.status_geral==="pausado"){
+        buttons.push(`<button title="Retomar" onclick="retomarEnvio(${e.id})">▶️</button>`);
+      }
+      if(e.status_geral!=="concluido" && e.status_geral!=="cancelado"){
+        buttons.push(`<button title="Cancelar" onclick="cancelarEnvio(${e.id})">🛑</button>`);
+      }
+
+      const modoBadge = e.modo_envio==="agendar" ? fmtBadge("Agendado") : fmtBadge("Imediato","ok");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${e.nome_disparo||"-"}</b></td>
+        <td>${e.grupo_trabalho||"-"}</td>
+        <td>${fmtDateTime(e.data_hora_agendamento)}</td>
+        <td>${modoBadge}</td>
+        <td>${prog}</td>
+        <td>${statusBadge(e.status_geral)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">${buttons.join("")}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    renderPagination();
+  }
+
+  // ==== Carregar da API ====
+  async function carregarAgendamentos(force=false){
+    const tbody=document.getElementById("tbodyAgendamentos");
+    if(force){ tbody.innerHTML=`<tr><td colspan="7" class="muted">⏳ Buscando...</td></tr>`; }
+    try{
+      const params = new URLSearchParams();
+      const modo = document.getElementById("filtroModo").value;
+      const stat = document.getElementById("filtroStatus").value;
+      if(modo) params.set("modo_envio", modo);
+      if(stat) params.set("status", stat);
+
+      const res = await fetch(`${API_BASE}/api/envios?${params.toString()}`);
+      const data = await res.json();
+
+      agRaw = Array.isArray(data) ? data : [];
+      applyFilters(); // isso renderiza também
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML=`<tr><td colspan="7" class="muted">Erro ao carregar agendamentos</td></tr>`;
+    }
+  }
+
+  // ==== Listeners de filtro e atualizar ====
+  document.getElementById("filtroBusca").addEventListener("input", ()=> applyFilters());
+  document.getElementById("filtroModo").addEventListener("change", ()=> carregarAgendamentos(true));
+  document.getElementById("filtroStatus").addEventListener("change", ()=> carregarAgendamentos(true));
+  document.getElementById("btnAtualizarAg").addEventListener("click", ()=> carregarAgendamentos(true));
+
+  // ==== Modal de edição ====
+  const modal = document.getElementById("agModal");
+  let editingId = null;
+
+  function openModal(envio){
+    editingId = envio.id;
+    document.getElementById("mNome").value = envio.nome_disparo || "";
+    document.getElementById("mGrupo").value = envio.grupo_trabalho || "";
+    document.getElementById("mModo").value = envio.modo_envio || "imediato";
+    document.getElementById("mDataHora").value = envio.data_hora_agendamento ? toLocalISO(envio.data_hora_agendamento) : "";
+    document.getElementById("mTam").value = envio.tamanho_lote ?? "";
+    document.getElementById("mIntLote").value = envio.intervalo_lote ?? "";
+    document.getElementById("mIntMsg").value = envio.intervalo_msg ?? "";
+    toggleModalDate();
+    modal.classList.remove("hide");
+  }
+  function closeModal(){ modal.classList.add("hide"); editingId = null; }
+  function toggleModalDate(){
+    const wrap = document.getElementById("mDataWrap");
+    wrap.classList.toggle("hide", document.getElementById("mModo").value!=="agendar");
+  }
+  document.getElementById("mModo").addEventListener("change", toggleModalDate);
+  document.getElementById("mCancelar").addEventListener("click", closeModal);
+
+  document.getElementById("mSalvar").addEventListener("click", async ()=>{
+    if(!editingId) return;
+    const body = {
+      nome_disparo: document.getElementById("mNome").value.trim(),
+      grupo_trabalho: document.getElementById("mGrupo").value.trim(),
+      modo_envio: document.getElementById("mModo").value,
+      data_hora_agendamento: document.getElementById("mModo").value==="agendar" ? document.getElementById("mDataHora").value : null,
+      tamanho_lote: Number(document.getElementById("mTam").value||0) || null,
+      intervalo_lote: Number(document.getElementById("mIntLote").value||0) || null,
+      intervalo_msg: Number(document.getElementById("mIntMsg").value||0) || null,
+    };
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${editingId}`, {
+        method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+      });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao salvar"); return; }
+      closeModal();
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao salvar edição");
+      console.error(e);
+    }
+  });
+
+  // ==== Ações expostas no escopo global ====
+  window.editarEnvio = (id)=>{
+    const e = agRaw.find(x=>x.id===id);
+    if(!e){ alert("Envio não encontrado"); return; }
+    openModal(e);
+  };
+
+  window.excluirEnvio = async (id)=>{
+    if(!confirm("Excluir este envio? Essa ação é irreversível.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}`, { method:"DELETE" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao excluir"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao excluir");
+      console.error(e);
+    }
+  };
+
+  window.pausarEnvio = async (id)=>{
+    if(!confirm("Pausar envio? Itens pendentes irão para 'pausado'.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/pause`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao pausar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao pausar");
+      console.error(e);
+    }
+  };
+
+  window.retomarEnvio = async (id)=>{
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/resume`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao retomar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao retomar");
+      console.error(e);
+    }
+  };
+
+  window.cancelarEnvio = async (id)=>{
+    if(!confirm("Cancelar envio? Pendentes/pausados serão marcados como 'cancelado'.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/cancel`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao cancelar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao cancelar");
+      console.error(e);
+    }
+  };
+
+  // Auto-refresh leve a cada 30s quando a aba estiver ativa
+  let agInterval = null;
+  function startAgAutoRefresh(){
+    stopAgAutoRefresh();
+    agInterval = setInterval(()=> {
+      const isActive = document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos';
+      if(isActive) carregarAgendamentos();
+    }, 30000);
+  }
+  function stopAgAutoRefresh(){ if(agInterval) clearInterval(agInterval); }
+  startAgAutoRefresh();
+
+  // Primeira carga se o usuário já estiver na aba
+  if(document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos'){
+    carregarAgendamentos(true);
+  }
+</script>
 </body>
 </html>
