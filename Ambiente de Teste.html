@@ -36,10 +36,17 @@
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700;border:1px solid #c7d2fe;}
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .hide{display:none}
+    .hide{display:none !important}
     details summary{cursor:pointer}
     .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
     /* Tabs */
+        .modal{
+      position:fixed; inset:0; background:rgba(0,0,0,.35);
+      display:none; align-items:center; justify-content:center; z-index:50;
+    }
+    .modal.open{ display:flex; }
+    /* opcional: evita que o conteúdo do modal estoure a tela */
+    .modal .card{ max-height:90vh; overflow:auto; }
     .tabs{display:flex;gap:8px;margin-bottom:16px}
     .tab-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--outline);background:#fff;cursor:pointer;font-weight:600}
     .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -148,7 +155,7 @@
 
             <!-- Configurações do HEADER (aparece conforme o formato) -->
             <div class="row" id="headerParams" style="margin-top:6px;">
-              <div class="col-12" id="headerTextWrap" class="hide">
+              <div id="headerTextWrap" class="col-12 hide">
                 <div class="muted">
                   Header <b>TEXT</b> com variáveis: faça o mapeamento em <b>Mapeamento de Variáveis</b> (abaixo).
                 </div>
@@ -907,11 +914,9 @@
       </div>
 
       <!-- Modal de edição -->
-      <div id="agModal" class="hide" style="
-        position:fixed;inset:0;background:rgba(0,0,0,.35);
-        display:flex;align-items:center;justify-content:center;z-index:50">
+      <div id="agModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="agModalTitle">
         <div class="card" style="width:520px;max-width:95%;position:relative">
-          <h2>✏️ Editar envio</h2>
+          <h2 id="agModalTitle">✏️ Editar envio</h2>
           <div class="row">
             <div class="col-12">
               <label>Nome</label>
@@ -951,6 +956,7 @@
           </div>
         </div>
       </div>
+
 
 <script>
   // ==== Tabs (inalterado) ====
@@ -1163,9 +1169,22 @@
     document.getElementById("mIntLote").value = envio.intervalo_lote ?? "";
     document.getElementById("mIntMsg").value = envio.intervalo_msg ?? "";
     toggleModalDate();
-    modal.classList.remove("hide");
+    modal.classList.add("open");
   }
-  function closeModal(){ modal.classList.add("hide"); editingId = null; }
+
+  function closeModal(){
+    modal.classList.remove("open");
+    editingId = null;
+  }
+  // fechar clicando fora
+  modal.addEventListener("click", (e) => { if(e.target === modal) closeModal(); });
+  // fechar com Esc
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
+
+
+
   function toggleModalDate(){
     const wrap = document.getElementById("mDataWrap");
     wrap.classList.toggle("hide", document.getElementById("mModo").value!=="agendar");
