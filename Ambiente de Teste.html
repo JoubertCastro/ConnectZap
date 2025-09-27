@@ -44,7 +44,7 @@
             <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
 
-          <!-- Filtros EXTRAS da aba Atendimentos -->
+          <!-- Filtros EXTRAS (Atendimentos + Hora a hora) -->
           <div id="fltCarteira" class="hidden">
             <label class="text-sm text-slate-500">Carteira</label>
             <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
@@ -84,6 +84,30 @@
             <label class="text-sm text-slate-500">Nome do disparo</label>
             <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
+
+          <!-- Filtro EXCLUSIVO da aba Hora a hora -->
+          <div id="fltMotivo" class="hidden md:col-span-2">
+            <label class="text-sm text-slate-500">Motivo de conclusão</label>
+            <div class="relative">
+              <button id="btnMotivos" type="button"
+                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
+                <span class="truncate">Todos</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+              <!-- dropdown -->
+              <div id="panelMotivos" class="hidden absolute z-20 mt-2 w-[28rem] bg-white border rounded-lg shadow-lg p-2">
+                <div class="flex items-center gap-2 mb-2">
+                  <input id="motSearch" type="text" placeholder="Buscar motivo..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
+                  <button id="motSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
+                  <button id="motClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
+                </div>
+                <div id="motList" class="max-h-56 overflow-y-auto space-y-1"></div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </section>
@@ -97,6 +121,10 @@
           </button>
           <button class="seg-btn" data-tab="atendimentos">
             <span>🎧</span><span>Atendimentos</span>
+          </button>
+          <!-- NOVO botão -->
+          <button class="seg-btn" data-tab="hora_hora">
+            <span>⏱️</span><span>Hora a hora</span>
           </button>
         </div>
       </div>
@@ -161,6 +189,23 @@
           </div>
         </div>
       </div>
+
+      <!-- NOVA Aba: Hora a hora -->
+      <div id="tab-hora_hora" class="p-4 space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Concluídos por hora (0–23)</div>
+            <div class="h-72"><canvas id="chartHHConc" class="w-full h-full"></canvas></div>
+            <div id="hhConcEmpty" class="text-sm text-slate-500 hidden">Sem dados de concluídos.</div>
+          </div>
+          <div class="space-y-2">
+            <div class="text-sm text-slate-500">Inbound por hora (0–23)</div>
+            <div class="h-72"><canvas id="chartHHIn" class="w-full h-full"></canvas></div>
+            <div id="hhInEmpty" class="text-sm text-slate-500 hidden">Sem dados de inbound.</div>
+          </div>
+        </div>
+      </div>
+
     </section>
 
     <!-- Avisos -->
@@ -211,6 +256,7 @@
     const fltCarteira = document.getElementById("fltCarteira");
     const fltAgentes  = document.getElementById("fltAgentes");
     const fltNomeDisparo = document.getElementById("fltNomeDisparo");
+    const fltMotivo   = document.getElementById("fltMotivo");
 
     const cartEl  = document.getElementById("carteira");
     const btnAplicar = document.getElementById("btnAplicar");
@@ -223,6 +269,7 @@
     const segBtns = [...document.querySelectorAll(".seg-btn")];
     const tabMensagens = document.getElementById("tab-mensagens");
     const tabAtend     = document.getElementById("tab-atendimentos");
+    const tabHoraHora  = document.getElementById("tab-hora_hora");
 
     // KPIs Mensagens
     const k_total = document.getElementById("k_total");
@@ -238,9 +285,12 @@
 
     // Charts
     let chartMensagens, chartMotivos, chartSeries;
+    let chartHHConc, chartHHIn;
     const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
     const chartMotivosEmpty   = document.getElementById("chartMotivosEmpty");
     const chartSeriesEmpty    = document.getElementById("chartSeriesEmpty");
+    const hhConcEmpty         = document.getElementById("hhConcEmpty");
+    const hhInEmpty           = document.getElementById("hhInEmpty");
 
     // KPIs Atend
     const a_em  = document.getElementById("a_em");
@@ -312,6 +362,71 @@
       updateAgentesButtonLabel();
     });
 
+    // ===== Multi-select Motivos (dropdown) =====
+    const btnMotivos  = document.getElementById("btnMotivos");
+    const panelMotivos= document.getElementById("panelMotivos");
+    const motSearch   = document.getElementById("motSearch");
+    const motSelectAll= document.getElementById("motSelectAll");
+    const motClear    = document.getElementById("motClear");
+    const motList     = document.getElementById("motList");
+
+    let motivosAll = []; // ["Realizou negociação", ...]
+    const selectedMotivos = new Set();
+
+    function togglePanelMotivos(show){
+      panelMotivos.classList.toggle("hidden", !show);
+    }
+    btnMotivos.addEventListener("click", (e) => {
+      e.stopPropagation();
+      togglePanelMotivos(panelMotivos.classList.contains("hidden"));
+    });
+    document.addEventListener("click", (e) => {
+      if(!panelMotivos.contains(e.target) && !btnMotivos.contains(e.target)){
+        togglePanelMotivos(false);
+      }
+    });
+
+    function renderMotivosList(filter=""){
+      motList.innerHTML = "";
+      const term = filter.trim().toLowerCase();
+      const data = motivosAll.filter(m => (m||"").toLowerCase().includes(term));
+      if(!data.length){
+        motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>';
+        return;
+      }
+      data.forEach(m => {
+        const id = `mot_${m.replace(/\s+/g,'_')}`;
+        const row = document.createElement("label");
+        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
+        row.innerHTML = `
+          <input type="checkbox" class="w-4 h-4" id="${id}">
+          <span class="text-sm">${m}</span>
+        `;
+        const chk = row.querySelector("input");
+        chk.checked = selectedMotivos.has(m);
+        chk.addEventListener("change", (ev) => {
+          if(ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
+          updateMotivosButtonLabel();
+        });
+        motList.appendChild(row);
+      });
+    }
+    function updateMotivosButtonLabel(){
+      const n = selectedMotivos.size;
+      btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n>1?"s":""}` : "Todos";
+    }
+    motSearch.addEventListener("input", () => renderMotivosList(motSearch.value));
+    motSelectAll.addEventListener("click", () => {
+      motivosAll.forEach(m => selectedMotivos.add(m));
+      renderMotivosList(motSearch.value);
+      updateMotivosButtonLabel();
+    });
+    motClear.addEventListener("click", () => {
+      selectedMotivos.clear();
+      renderMotivosList(motSearch.value);
+      updateMotivosButtonLabel();
+    });
+
     // ===== Utils =====
     function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
     function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
@@ -324,6 +439,10 @@
     function selectedAgentesCSV(){
       return [...selectedAgents].join(",");
     }
+    function selectedMotivosCSV(){
+      return [...selectedMotivos].join(",");
+    }
+    const HOUR_LABELS = Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+"h");
 
     function getActiveTab(){
       return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
@@ -336,10 +455,14 @@
 
       if(tab === "mensagens"){
         if(qEl.value) p.set("q", qEl.value.trim());
-      }else if(tab === "atendimentos"){
+      }else if(tab === "atendimentos" || tab === "hora_hora"){
         if(cartEl.value) p.set("phone_id", cartEl.value);
         const ags = selectedAgentesCSV();
         if(ags) p.set("agentes", ags);
+        if(tab === "hora_hora"){
+          const m = selectedMotivosCSV();
+          if(m) p.set("motivo", m);
+        }
       }
       p.set("tab", tab);
       return p.toString();
@@ -352,15 +475,19 @@
       history.replaceState(null, "", url);
     }
 
+    let pendingAgents = null;
+    let pendingMotivos = null;
+
     function readFromQS(){
       const u = new URL(location.href);
       const tabQS = u.searchParams.get("tab");
-      if(tabQS === "atendimentos"){
+      if(tabQS === "atendimentos" || tabQS === "hora_hora"){
         segBtns.forEach(x => x.classList.remove("seg-active"));
-        segBtns.find(b => b.dataset.tab==="atendimentos").classList.add("seg-active");
-        tabMensagens.classList.add("hidden");
-        tabAtend.classList.remove("hidden");
-        toggleFiltersForTab("atendimentos");
+        segBtns.find(b => b.dataset.tab === tabQS).classList.add("seg-active");
+        tabMensagens.classList.toggle("hidden", tabQS!=="mensagens");
+        tabAtend.classList.toggle("hidden",     tabQS!=="atendimentos");
+        tabHoraHora.classList.toggle("hidden",  tabQS!=="hora_hora");
+        toggleFiltersForTab(tabQS);
       }
 
       startEl.value = u.searchParams.get("start") || startEl.value;
@@ -369,11 +496,14 @@
       // mensagens
       qEl.value     = u.searchParams.get("q") || "";
 
-      // atendimentos
+      // atendimentos / hora_hora
       const phone = u.searchParams.get("phone_id") || "";
       if(phone) cartEl.value = phone;
       const agentesQS = u.searchParams.get("agentes");
       if(agentesQS) pendingAgents = agentesQS.split(",").map(String);
+
+      const motivosQS = u.searchParams.get("motivo");
+      if(motivosQS) pendingMotivos = motivosQS.split(","); // manter case
     }
 
     function setQuickRange(kind){
@@ -401,9 +531,11 @@
     // Toggle filtros conforme aba
     function toggleFiltersForTab(tab){
       const isMsg = tab === "mensagens";
+      const isHora = tab === "hora_hora";
       fltNomeDisparo.classList.toggle("hidden", !isMsg);
       fltCarteira.classList.toggle("hidden", isMsg);
       fltAgentes.classList.toggle("hidden", isMsg);
+      fltMotivo.classList.toggle("hidden", !isHora);
     }
 
     // ===== Data loaders =====
@@ -413,7 +545,7 @@
       const res = await fetch(url);
       const data = await res.json(); // [{codigo_do_agente, nome}]
       agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente "+a.codigo_do_agente) }));
-      // se trocar de carteira, limpamos seleção para evitar agentes cruzados
+      // reseta seleção ao trocar carteira
       selectedAgents.clear();
       if(pendingAgents && pendingAgents.length){
         pendingAgents.forEach(v => selectedAgents.add(String(v)));
@@ -422,6 +554,28 @@
       agSearch.value = "";
       renderAgentesList("");
       updateAgentesButtonLabel();
+    }
+
+    async function loadMotivosOptions(){
+      // Reaproveita o endpoint de motivos para popular o dropdown, obedecendo filtros de período/phone_id/agentes
+      const qsAt = buildParams("atendimentos"); // sem 'motivo'
+      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qsAt}`);
+      if(!res.ok) throw new Error("Falha ao carregar motivos");
+      const dados = await res.json(); // [{motivo,qtd}]
+      motivosAll = [...new Set(dados.map(d => d.motivo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+      // restaura seleção vinda da URL (se houver)
+      if(pendingMotivos && pendingMotivos.length){
+        selectedMotivos.clear();
+        // manter case original se existir na lista
+        pendingMotivos.forEach(m => {
+          const hit = motivosAll.find(x => x.toLowerCase() === m.toLowerCase());
+          if(hit) selectedMotivos.add(hit);
+        });
+        pendingMotivos = null;
+      }
+      motSearch.value = "";
+      renderMotivosList("");
+      updateMotivosButtonLabel();
     }
 
     async function loadResumoMensagens(qs){
@@ -448,6 +602,11 @@
       const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
       if(!res.ok) throw new Error("Falha nas séries");
       return res.json();
+    }
+    async function loadHoraHora(qs){
+      const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`);
+      if(!res.ok) throw new Error("Falha no hora a hora");
+      return res.json(); // {concluidos:[{hora,qtd}], inbound:[{hora,qtd}]}
     }
 
     // ===== Render =====
@@ -553,7 +712,6 @@
       try{
         const s = await loadAtendSeries(qs);
 
-        // Normaliza e agrega por dia
         const map = {};
         (s.mensagens||[]).forEach(r => {
           const k = r.dia;
@@ -567,7 +725,6 @@
           map[k].conc = r.concluidos;
         });
 
-        // 🔧 Parser robusto para "YYYY-MM-DD" ou "DD/MM[/YYYY]"
         function diaToTS(d){
           if(!d) return 0;
           if(/^\d{4}-\d{2}-\d{2}$/.test(d)){
@@ -583,7 +740,6 @@
           return isNaN(t) ? 0 : t;
         }
 
-        // Ordena por timestamp ascendente
         const rows = Object.keys(map)
           .map(k => ({ dia:k, ts: diaToTS(k), ...map[k] }))
           .sort((a,b) => a.ts - b.ts);
@@ -621,13 +777,82 @@
       }catch(e){ setAlert("Séries — " + e.message); }
     }
 
+    async function renderHoraHora(){
+      // Antes de consultar, garantir motivos populados (para o dropdown)
+      try{
+        await loadMotivosOptions();
+      }catch(e){ /* não bloqueia os gráficos */ }
+
+      const qs = buildParams("hora_hora");
+      savePermalink();
+
+      try{
+        const data = await loadHoraHora(qs);
+
+        // Constrói arrays 0..23 garantindo ordem
+        const hours = Array.from({length:24}, (_,h)=>h);
+        const concSeries = new Array(24).fill(0);
+        const inSeries   = new Array(24).fill(0);
+
+        (data.concluidos||[]).forEach(r => {
+          const h = Number(r.hora); if(h>=0 && h<=23) concSeries[h] = Number(r.qtd)||0;
+        });
+        (data.inbound||[]).forEach(r => {
+          const h = Number(r.hora); if(h>=0 && h<=23) inSeries[h] = Number(r.qtd)||0;
+        });
+
+        // Destrói anteriores
+        if(chartHHConc){ chartHHConc.destroy(); chartHHConc=null; }
+        if(chartHHIn){   chartHHIn.destroy();   chartHHIn=null;   }
+
+        // Concluídos
+        const ctxC = document.getElementById("chartHHConc").getContext("2d");
+        if(concSeries.every(v=>v===0)){
+          document.getElementById("chartHHConc").classList.add("hidden");
+          hhConcEmpty.classList.remove("hidden");
+        }else{
+          document.getElementById("chartHHConc").classList.remove("hidden");
+          hhConcEmpty.classList.add("hidden");
+          chartHHConc = new Chart(ctxC, {
+            type:"line",
+            data:{ labels: HOUR_LABELS, datasets:[
+              {label:"Concluídos", data:concSeries, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
+            ]},
+            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
+          });
+        }
+
+        // Inbound
+        const ctxI = document.getElementById("chartHHIn").getContext("2d");
+        if(inSeries.every(v=>v===0)){
+          document.getElementById("chartHHIn").classList.add("hidden");
+          hhInEmpty.classList.remove("hidden");
+        }else{
+          document.getElementById("chartHHIn").classList.remove("hidden");
+          hhInEmpty.classList.add("hidden");
+          chartHHIn = new Chart(ctxI, {
+            type:"line",
+            data:{ labels: HOUR_LABELS, datasets:[
+              {label:"Inbound", data:inSeries, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3}
+            ]},
+            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
+          });
+        }
+
+      }catch(e){
+        setAlert("Hora a hora — " + e.message);
+      }
+    }
+
     async function render(){
       const tab = getActiveTab();
       if(tab==="mensagens") await renderMensagens();
-      else {
-        // quando entrar na aba Atendimentos, garantir agentes carregados conforme carteira
+      else if(tab==="atendimentos"){
         if(cartEl.value && !agentsAll.length) await loadAgentes();
         await renderAtend();
+      }else{ // hora_hora
+        if(cartEl.value && !agentsAll.length) await loadAgentes();
+        await renderHoraHora();
       }
     }
 
@@ -638,9 +863,13 @@
       const tab = btn.dataset.tab;
       tabMensagens.classList.toggle("hidden", tab!=="mensagens");
       tabAtend.classList.toggle("hidden",     tab!=="atendimentos");
+      tabHoraHora.classList.toggle("hidden",  tab!=="hora_hora");
       toggleFiltersForTab(tab);
-      if(tab === "atendimentos" && cartEl.value){
+      if((tab === "atendimentos" || tab==="hora_hora") && cartEl.value){
         await loadAgentes();
+      }
+      if(tab === "hora_hora"){
+        await loadMotivosOptions();
       }
       render();
     }));
@@ -656,9 +885,13 @@
       cartEl.appendChild(frag);
     })();
 
-    // mudanças de carteira -> recarregar agentes
+    // mudanças de carteira -> recarregar agentes e motivos conforme aba
     cartEl.addEventListener("change", async () => {
-      if(getActiveTab()==="atendimentos") await loadAgentes();
+      const tab = getActiveTab();
+      if(tab!=="mensagens"){
+        await loadAgentes();
+        if(tab==="hora_hora") await loadMotivosOptions();
+      }
     });
 
     // Limpar datas
@@ -671,7 +904,6 @@
     btnAplicar.addEventListener("click", render);
 
     // ===== Init =====
-    let pendingAgents = null;
     function initDefaults(){
       const now = new Date(); const pad = n=>String(n).padStart(2,"0");
       const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
