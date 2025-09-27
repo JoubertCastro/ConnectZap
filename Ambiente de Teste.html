@@ -1,920 +1,924 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard — ConnectZap</title>
+  <meta charset="utf-8" />
+  <title>Envio de Mensagens WhatsApp — ConnectZap</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-slate-50 text-slate-800">
-  <header class="bg-blue-600 text-white py-4">
-    <div class="max-w-7xl mx-auto px-4">
-      <h1 class="text-xl sm:text-2xl font-semibold">📊 Dashboard — ConnectZap</h1>
-    </div>
-  </header>
-
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-    <!-- Filtros -->
-    <section class="bg-white rounded-xl shadow-sm border p-4">
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm text-slate-500 mr-1">Período:</span>
-
-          <!-- chips de período -->
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="hoje">Hoje</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="7d">Últimos 7 dias</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="30d">Últimos 30 dias</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="mes">Mês atual</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="custom">Personalizado</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm text-slate-500">Início</label>
-            <input id="start" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
-          <div>
-            <label class="text-sm text-slate-500">Fim</label>
-            <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
-
-          <!-- Filtros EXTRAS (Atendimentos + Hora a hora) -->
-          <div id="fltCarteira" class="hidden">
-            <label class="text-sm text-slate-500">Carteira</label>
-            <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <div id="fltAgentes" class="hidden">
-            <label class="text-sm text-slate-500">Agentes</label>
-            <div class="relative">
-              <button id="btnAgentes" type="button"
-                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
-                <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-                </svg>
-              </button>
-              <!-- dropdown -->
-              <div id="panelAgentes" class="hidden absolute z-20 mt-2 w-80 bg-white border rounded-lg shadow-lg p-2">
-                <div class="flex items-center gap-2 mb-2">
-                  <input id="agSearch" type="text" placeholder="Buscar agente..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="agSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="agClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
-                </div>
-                <div id="agList" class="max-h-56 overflow-y-auto space-y-1"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- botões -->
-          <div class="flex items-end gap-2">
-            <button id="btnClearDates" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
-            <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
-          </div>
-
-          <!-- Filtro EXCLUSIVO da aba Mensagens -->
-          <div id="fltNomeDisparo" class="md:col-span-2">
-            <label class="text-sm text-slate-500">Nome do disparo</label>
-            <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
-
-          <!-- Filtro EXCLUSIVO da aba Hora a hora -->
-          <div id="fltMotivo" class="hidden md:col-span-2">
-            <label class="text-sm text-slate-500">Motivo de conclusão</label>
-            <div class="relative">
-              <button id="btnMotivos" type="button"
-                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
-                <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
-                </svg>
-              </button>
-              <!-- dropdown -->
-              <div id="panelMotivos" class="hidden absolute z-20 mt-2 w-[28rem] bg-white border rounded-lg shadow-lg p-2">
-                <div class="flex items-center gap-2 mb-2">
-                  <input id="motSearch" type="text" placeholder="Buscar motivo..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="motSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="motClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
-                </div>
-                <div id="motList" class="max-h-56 overflow-y-auto space-y-1"></div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- Abas -->
-    <section class="bg-white rounded-xl shadow-sm border">
-      <div class="p-3">
-        <div class="inline-flex bg-slate-100 rounded-xl p-1">
-          <button class="seg-btn seg-active" data-tab="mensagens">
-            <span>✉️</span><span>Mensagens</span>
-          </button>
-          <button class="seg-btn" data-tab="atendimentos">
-            <span>🎧</span><span>Atendimentos</span>
-          </button>
-          <!-- NOVO botão -->
-          <button class="seg-btn" data-tab="hora_hora">
-            <span>⏱️</span><span>Hora a hora</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Aba: Mensagens -->
-      <div id="tab-mensagens" class="p-4 space-y-6">
-        <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="balloon"><div class="balloon-label">Total</div><div id="k_total" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Enviados</div><div id="k_env" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Entregues</div><div id="k_ent" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Lidos</div><div id="k_lido" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Delivery rate</div><div id="k_dr" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Read rate</div><div id="k_rr" class="balloon-value">—</div></div>
-        </div>
-
-        <div class="space-y-2">
-          <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
-          <div class="h-72"><canvas id="chartMensagens" class="w-full h-full"></canvas></div>
-          <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
-        </div>
-
-        <div class="overflow-hidden rounded-xl border">
-          <div class="overflow-x-auto">
-            <table class="min-w-full">
-              <thead class="bg-slate-50 sticky top-0">
-                <tr>
-                  <th class="th">Disparo</th>
-                  <th class="th">Grupo</th>
-                  <th class="th">Data</th>
-                  <th class="th text-right">Total</th>
-                  <th class="th text-right">Entregues</th>
-                  <th class="th text-right">Lidos</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyMensagens" class="bg-white"></tbody>
-            </table>
-          </div>
-          <div id="tblEmpty" class="p-3 text-sm text-slate-500 hidden">Nenhum envio encontrado.</div>
-        </div>
-      </div>
-
-      <!-- Aba: Atendimentos -->
-      <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
-        <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="balloon"><div class="balloon-label">Em atendimento</div><div id="a_em" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Concluídos</div><div id="a_conc" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">TMA</div><div id="a_tma" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">1ª resposta</div><div id="a_tmr" class="balloon-value">—</div></div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Motivos de conclusão</div>
-            <div class="h-72"><canvas id="chartMotivos" class="w-full h-full"></canvas></div>
-            <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
-            <div class="h-72"><canvas id="chartSeries" class="w-full h-full"></canvas></div>
-            <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- NOVA Aba: Hora a hora -->
-      <div id="tab-hora_hora" class="p-4 space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Concluídos por hora (0–23)</div>
-            <div class="h-72"><canvas id="chartHHConc" class="w-full h-full"></canvas></div>
-            <div id="hhConcEmpty" class="text-sm text-slate-500 hidden">Sem dados de concluídos.</div>
-          </div>
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Inbound por hora (0–23)</div>
-            <div class="h-72"><canvas id="chartHHIn" class="w-full h-full"></canvas></div>
-            <div id="hhInEmpty" class="text-sm text-slate-500 hidden">Sem dados de inbound.</div>
-          </div>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- Avisos -->
-    <div id="alert" class="hidden rounded-lg border border-amber-300 bg-amber-50 text-amber-800 p-3 text-sm"></div>
-  </main>
-
   <style>
-    .seg-btn{
-      display:flex; align-items:center; gap:.5rem;
-      padding:.5rem .75rem; border-radius:.75rem;
-      font-weight:600; color:#334155; transition:all .15s;
+    :root{
+      --bg:#f5f7fb;--card:#ffffff;--txt:#222;--muted:#6b7280;--primary:#2563eb;--primary-d:#1d4ed8;
+      --success:#16a34a;--warn:#d97706;--danger:#dc2626;--outline:#e5e7eb;--radius:12px;
     }
-    .seg-btn:hover{ background:#fff; }
-    .seg-active{ background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.06); color:#1d4ed8 }
-    .balloon{
-      background: linear-gradient(180deg,#ffffff, #f8fafc);
-      border: 1px solid #e2e8f0;
-      border-radius: 9999px;
-      padding: 14px 18px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.05);
-      text-align:center;
-    }
-    .balloon-label{ font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; color:#64748b; }
-    .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
-    .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
-    td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
+    *{box-sizing:border-box}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
+      margin:0;padding:24px;background:var(--bg);color:var(--txt);}
+    .container{max-width:1200px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
+      box-shadow:0 6px 24px rgba(0,0,0,.04);}
+    h1{margin:0 0 10px;font-size:22px}
+    h2{font-size:16px;margin:18px 0 8px;color:var(--muted);font-weight:600}
+    label{display:block;font-weight:600;margin:10px 0 6px}
+    input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;background:#fff;}
+    textarea{resize:vertical;min-height:72px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start}
+    .col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--outline);
+      cursor:pointer;background:var(--primary);color:#fff;font-weight:600;}
+    .btn:hover{background:var(--primary-d)}
+    .btn.secondary{background:#fff;color:var(--txt)}.btn.secondary:hover{background:#f8fafc}
+    .btn.success{background:var(--success)}.btn.warn{background:var(--warn)}.btn.danger{background:var(--danger)}
+    #previewArea{background:#f1f5f9;border:1px dashed #cbd5e1;padding:12px;border-radius:10px;white-space:pre-wrap;}
+    #output{background:#0b1220;color:#d1e6ff;padding:12px;border-radius:10px;min-height:140px;font-family:ui-monospace,monospace;
+      white-space:pre-wrap;overflow-y:auto;}
+    .muted{color:var(--muted);font-size:12px}
+    .bar{background:#e5e7eb;border-radius:999px;height:12px;overflow:hidden}
+    .bar>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#22c55e);transition:width .3s ease}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700;border:1px solid #c7d2fe;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .hide{display:none}
+    details summary{cursor:pointer}
+    .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin-bottom:16px}
+    .tab-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--outline);background:#fff;cursor:pointer;font-weight:600}
+    .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px}
+    th{background:#f1f5f9;text-transform:uppercase;font-size:12px;color:#64748b}
   </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Envio de Mensagens WhatsApp <span class="pill">ConnectZap</span></h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="novo">➕ Novo envio</button>
+        <button class="tab-btn" data-tab="agendamentos">📅 Agendamentos</button>
+      </div>
+
+      <!-- Aba: Novo envio -->
+      <div id="tab-novo" class="tab-content active">
+        <div class="container">
+          <div class="card">
+            <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-08-28</span></h1>
+            <div class="muted">
+              Restaura a pré-visualização com substituição de variáveis, mapeamento e custo; mantém os novos campos e o envio via backend.
+            </div>
+
+            <!-- Credenciais -->
+            <h2>Credenciais</h2>
+            <div class="row">
+              <div class="col-6">
+                <label for="token">Token de Acesso</label>
+                <input id="token" placeholder="Cole seu token (opcional se usar backend)" />
+              </div>
+              <div class="col-6">
+                <label for="contaSelect">Conta</label>
+                <select id="contaSelect">
+                  <option value="">-- Selecione a conta --</option>
+                  <option value="connectzap">ConnectZap</option>
+                  <option value="recoverypj">Recovery PJ</option>
+                  <option value="recoverypf">Recovery PF</option>
+                  <option value="mpcobranca">Mercado Pago Cobrança</option>
+                  <option value="divzero">DivZero</option>
+                  <option value="arc4u">Arc4U</option>
+                  <option value="serasa">Serasa</option>
+                  <option value="mpvendas">Mercado Pago Vendas</option>
+                </select>
+
+              </div>
+              <div class="col-6">
+                <label for="wabaId">WhatsApp Business ID</label>
+                <input id="wabaId" readonly />
+              </div>
+              <div class="col-6">
+                <label for="phoneId">Phone Number ID</label>
+                <input id="phoneId" readonly />
+              </div>
+              <div class="col-6">
+                <label for="graphVersion">Versão Graph API</label>
+                <select id="graphVersion">
+                  <option value="v23.0" selected>v23.0</option>
+                  <option value="v22.0">v22.0</option>
+                  <option value="v21.0">v21.0</option>
+                  <option value="v20.0">v20.0</option>
+                  <option value="v19.0">v19.0</option>
+                  <option value="v18.0">v18.0</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Buscar templates -->
+            <div class="row" style="margin-top:12px;align-items:end">
+              <div class="col-6">
+                <button class="btn" id="btnBuscar">🔍 Buscar templates aprovados</button>
+              </div>
+              <div class="col-6">
+                <label for="templateSelect">Template</label>
+                <select id="templateSelect">
+                  <option value="">-- Selecione um template --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Campos do Template -->
+            <div class="row" style="margin-top:6px;">
+              <div class="col-6">
+                <label for="templateName">Nome do Template</label>
+                <input id="templateName" readonly />
+              </div>
+              <div class="col-3">
+                <label for="templateCategory">Categoria</label>
+                <select id="templateCategory">
+                  <option value="">-- Selecione --</option>
+                  <option value="authentication">Authentication</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="utility">Utility</option>
+                  <option value="service">Service</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <label for="headerFormat">Formato de Header</label>
+                <input id="headerFormat" readonly />
+              </div>
+            </div>
+
+            <!-- Configurações do HEADER (aparece conforme o formato) -->
+            <div class="row" id="headerParams" style="margin-top:6px;">
+              <div class="col-12" id="headerTextWrap" class="hide">
+                <div class="muted">
+                  Header <b>TEXT</b> com variáveis: faça o mapeamento em <b>Mapeamento de Variáveis</b> (abaixo).
+                </div>
+              </div>
+              <div class="col-12 hide" id="mediaLinkWrap">
+                <label for="mediaLink">Link da Mídia do Header (quando HEADER = IMAGE/VIDEO/DOCUMENT)</label>
+                <input id="mediaLink" placeholder="https://... (acessível publicamente)" />
+                <div class="muted">Se informado, será enviado como header de mídia do template.</div>
+              </div>
+            </div>
+
+            <!-- Pré-visualização -->
+            <div class="row" style="margin-top:6px;">
+              <div class="col-12">
+                <h2>Pré-visualização</h2>
+                <div id="previewArea">Selecione um template para ver a prévia aqui.</div>
+              </div>
+            </div>
+
+            <!-- Contatos + Estratégia + Mapeamento -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Contatos</h2>
+                <div class="grid-2">
+                  <div>
+                    <label for="fileInput">Arquivo (.csv ou .txt)</label>
+                    <input id="fileInput" type="file" accept=".csv,.txt" />
+                  </div>
+                  <div>
+                    <label for="estrategiaSelect">Estratégia (exemplo interno)</label>
+                    <select id="estrategiaSelect">
+                      <option value="">-- Nenhuma --</option>
+                      <option value="estrategia1">estrategia1</option>
+                      <option value="estrategia2">estrategia2</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="contagemContatos" class="muted" style="margin-top:6px;">Nenhum contato ainda.</div>
+              </div>
+              <div class="col-6">
+                <h2>Mapeamento de Variáveis</h2>
+                <div id="mapArea" class="muted">Carregue contatos e selecione um template.</div>
+              </div>
+            </div>
+
+            <!-- Custos -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Custo Estimado</h2>
+                <div id="custoEstimado">💵 Custo estimado: —</div>
+                <div id="custoReal">💳 Valor em Reais (com taxa): —</div>
+              </div>
+              <div class="col-6">
+                <label for="taxaConversaoExtra">Acréscimo (%)</label>
+                <input id="taxaConversaoExtra" type="number" min="0" step="0.01" value="6" />
+              </div>
+            </div>
+
+            <!-- Agendamento e Ritmo de Envio -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Modo de Envio</h2>
+                <div class="grid-2">
+                  <div>
+                    <label for="modoEnvio">Modo</label>
+                    <select id="modoEnvio">
+                      <option value="imediato" selected>Imediato</option>
+                      <option value="agendar">Agendar</option>
+                    </select>
+                  </div>
+                  <div id="dataHoraWrap" class="hide">
+                    <label for="dataHoraEnvio">Data/Hora (agendamento)</label>
+                    <input id="dataHoraEnvio" type="datetime-local" />
+                  </div>
+                </div>
+                <div class="muted" style="margin-top:6px;">Para agendar, mantenha a aba aberta até o envio ocorrer (se usando envio local). Para backend, o agendamento é processado pelo servidor.</div>
+              </div>
+              <div class="col-6">
+                <h2>Ritmo / Lotes</h2>
+                <div class="grid-3">
+                  <div>
+                    <label for="tamanhoLote">Tamanho do Lote</label>
+                    <input id="tamanhoLote" type="number" min="1" placeholder="ex.: 50" />
+                  </div>
+                  <div>
+                    <label for="intervaloLote">Intervalo entre Lotes (min)</label>
+                    <input id="intervaloLote" type="number" min="0" value="0" />
+                  </div>
+                  <div>
+                    <label for="intervaloMsg">Intervalo entre Mensagens (s)</label>
+                    <input id="intervaloMsg" type="number" min="0" value="0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <label for="nomeDisparo">Nome do Disparo</label>
+                <input id="nomeDisparo" placeholder="Campanha Agosto - Segmento X" required />
+              </div>
+              <div class="col-6">
+                <label for="grupoTrabalho">Grupo de Trabalho</label>
+                <input id="grupoTrabalho" placeholder="Equipe Comercial" required />
+              </div>
+            </div>
+
+            <!-- Envio -->
+            <div class="row" style="margin-top:16px;align-items:center;">
+              <div class="col-8">
+                <button class="btn success" id="btnEnviar">🚀 Enviar</button>
+                <button class="btn secondary" id="btnPausar">⏸️ Pausar</button>
+                <button class="btn secondary" id="btnRetomar" disabled>▶️ Retomar</button>
+                <button class="btn danger" id="btnCancelar" disabled>🛑 Cancelar</button>
+                <button class="btn warn" id="btnNovoEnvio">🔄 Novo Envio</button>
+              </div>
+              <div class="col-4" style="text-align:right">
+                <div class="bar"><span id="progressBar"></span></div>
+                <div class="muted" id="progressTxt">0/0</div>
+              </div>
+            </div>
+
+            <!-- Logs -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-12">
+                <h2>Logs</h2>
+              </div>
+              <div class="col-12">
+                <div id="output">Pronto para enviar.</div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div>✅ Sucesso: <b id="okCount">0</b></div>
+                  <div>❌ Erros: <b id="errCount">0</b></div>
+                  <div><button class="btn secondary" id="btnBaixarLog">⬇️ Baixar log</button></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <script>
+          // ---------------------------- Estado ----------------------------
+          const estrategias = {
+            estrategia1: [
+              { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
+              { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
+              { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
+            ],
+            estrategia2: [
+              { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+              { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+            ],
+          };
+
+          let contatos = [];              // [{ to: '55...', vars: ['v1','v2', ...] }]
+          let csvHeaders = [];            // ['telefone','nome','codigo', ...]
+          let custoEmDolar = 0;           // custo estimado
+          let mapping = {                 // qual coluna alimenta cada {{n}}
+            body: [],                     // array de índices (0-based) para {{1}}, {{2}} ...
+            headerText: [],               // idem, para HEADER TEXT
+            urlButtons: {},               // { index: 0 => [colIdxFor{{1}}] }
+          };
+          let tmpl = {                    // metadados do template selecionado
+            name: "",
+            category: "",
+            components: [],
+            bodyText: "",
+            bodyVars: 0,
+            headerType: null,             // null | TEXT | IMAGE | VIDEO | DOCUMENT
+            headerText: "",
+            headerVars: 0,
+            urlButtons: [],               // lista de {index, url, hasVar}
+          };
+
+          let flags = { paused: false, cancelled: false };
+
+          // ---------------------------- Utils ----------------------------
+          const $ = (sel) => document.querySelector(sel);
+          const byId = (id) => document.getElementById(id);
+
+          function log(line){
+            const out = byId('output');
+            out.textContent += (out.textContent ? "\n" : "") + line;
+            out.scrollTop = out.scrollHeight;
+          }
+
+          function setProgress(done, total){
+            const pct = total > 0 ? (done / total) * 100 : 0;
+            byId('progressBar').style.width = pct.toFixed(1) + '%';
+            byId('progressTxt').textContent = `${done}/${total}`;
+          }
+
+          function countPlaceholders(text){
+            if(!text) return 0;
+            const matches = text.match(/\{\{\d+\}\}/g);
+            return matches ? new Set(matches).size : 0;
+          }
+
+          function substitutePlaceholders(text, values){
+            // values: array where index 0 is {{1}}, index 1 is {{2}}, ...
+            if(!text) return '';
+            return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
+              const idx = parseInt(n,10) - 1;
+              return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
+            });
+          }
+
+          function parseCSV(text){
+            // CSV simples com , ou ; e aspas
+            const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
+            const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
+            const rows = [];
+            for(const line of lines){
+              const row = [];
+              let cur = '', inQ = false;
+              for(let i=0;i<line.length;i++){
+                const ch = line[i];
+                if(ch === '"'){
+                  if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+                  else { inQ = !inQ; }
+                }else if(ch === delim && !inQ){
+                  row.push(cur); cur='';
+                }else{
+                  cur += ch;
+                }
+              }
+              row.push(cur);
+              rows.push(row.map(c => c.trim()));
+            }
+            return rows;
+          }
+
+          function ensureNumber(v, fallback=0){
+            const n = Number(v);
+            return Number.isFinite(n) ? n : fallback;
+          }
+
+          function escapeHtml(str=''){
+            return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+          }
+
+          // ---------------------------- UI Helpers ----------------------------
+          function renderSelect(id, varIndex, current){
+            let opts = '';
+            if(csvHeaders.length>0){
+              csvHeaders.forEach((h, idx) => {
+                const sel = idx === current ? 'selected' : '';
+                opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
+              });
+            }else{
+              // fallback pelo nº de colunas detectado
+              const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
+              for(let idx=0; idx<maxCols; idx++){
+                const sel = idx === current ? 'selected' : '';
+                opts += `<option value="${idx}" ${sel}>${idx+1}</option>`;
+              }
+            }
+            return `<label for="${id}">{{${varIndex+1}}} ⟶ coluna</label><select id="${id}">${opts}</select>`;
+          }
+
+          function renderMapUI(){
+            const area = byId('mapArea');
+            const hasTemplate = !!tmpl.name;
+            const hasContacts = contatos.length > 0;
+
+            if(!hasTemplate || !hasContacts){
+              area.innerHTML = '<span class="muted">Carregue contatos e selecione um template para configurar o mapeamento.</span>';
+              updatePreview();
+              return;
+            }
+
+            const headerPart = (() => {
+              if(!tmpl.headerType) return '';
+              if(tmpl.headerType === 'TEXT' && tmpl.headerVars > 0){
+                let selects = '';
+                for(let i=0;i<tmpl.headerVars;i++){
+                  selects += renderSelect(`map-header-${i}`, i, mapping.headerText[i]);
+                }
+                return `<h3>Header TEXT — variáveis</h3>${selects}`;
+              }
+              if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
+                return '<div class="muted">Header de mídia usa a URL informada em "Link da Mídia do Header".</div>';
+              }
+              return '';
+            })();
+
+            let bodySelects = '';
+            if(tmpl.bodyVars > 0){
+              bodySelects += '<h3>Body — variáveis</h3>';
+              for(let i=0;i<tmpl.bodyVars;i++){
+                bodySelects += renderSelect(`map-body-${i}`, i, mapping.body[i]);
+              }
+            }else{
+              bodySelects += '<div class="muted">Body sem variáveis.</div>';
+            }
+
+            let buttonsPart = '';
+            if(tmpl.urlButtons.length > 0){
+              buttonsPart += '<h3>Botões URL — variáveis</h3>';
+              tmpl.urlButtons.forEach(btn => {
+                if(btn.hasVar){
+                  buttonsPart += `<div style="margin:6px 0 10px"><b>Botão #${btn.index+1}</b> — URL base: <span class="kbd">${btn.url}</span><br/>` +
+                    renderSelect(`map-urlbtn-${btn.index}-0`, 0, mapping.urlButtons[btn.index]?.[0]) + '</div>';
+                }
+              });
+            }
+
+            const sample = contatos[0] || { to:'', vars:[] };
+            const bodyPreviewVals = (mapping.body || []).map(ci => ci != null ? sample.vars[ci] : '');
+            const bodyPrev = substitutePlaceholders(tmpl.bodyText, bodyPreviewVals);
+
+            area.innerHTML = `
+              ${headerPart}
+              ${bodySelects}
+              ${buttonsPart}
+              <div style="margin-top:10px">
+                <div class="muted">Prévia com o <b>primeiro contato</b>:</div>
+                <div class="card" style="padding:10px;border:1px dashed #cbd5e1;">
+                  ${bodyPrev.replace(/\n/g,'<br/>')}
+                </div>
+              </div>
+            `;
+
+            // listeners dos selects
+            if(tmpl.headerType === 'TEXT'){
+              for(let i=0;i<tmpl.headerVars;i++){
+                byId(`map-header-${i}`)?.addEventListener('change', (e) => {
+                  mapping.headerText[i] = ensureNumber(e.target.value, 0);
+                  updatePreview();
+                });
+              }
+            }
+            for(let i=0;i<tmpl.bodyVars;i++){
+              byId(`map-body-${i}`)?.addEventListener('change', (e) => {
+                mapping.body[i] = ensureNumber(e.target.value, 0);
+                renderMapUI(); // refresh preview + UI
+                updatePreview();
+              });
+            }
+            tmpl.urlButtons.forEach(btn => {
+              if(btn.hasVar){
+                byId(`map-urlbtn-${btn.index}-0`)?.addEventListener('change', (e) => {
+                  mapping.urlButtons[btn.index] = [ensureNumber(e.target.value, 0)];
+                });
+              }
+            });
+
+            updatePreview();
+          }
+
+          // ---------------------------- Custos ----------------------------
+          async function calcularCusto(){
+            const categoria = byId('templateCategory').value;
+            const qtd = contatos.length;
+            if(!categoria || !qtd){
+              byId('custoEstimado').textContent = '💵 Custo estimado: —';
+              byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
+              return;
+            }
+            // valores aproximados — ajuste conforme sua tabela vigente
+            const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
+            custoEmDolar = qtd * price;
+            byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
+
+            try{
+              const res = await fetch('https://open.er-api.com/v6/latest/USD');
+              const data = await res.json();
+              const brl = data?.rates?.BRL ?? 5.0; // fallback
+              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+              const final = custoEmDolar * brl * taxa;
+              byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
+            }catch(e){
+              const brl = 5.0; // fallback
+              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+              const final = custoEmDolar * brl * taxa;
+              byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
+            }
+          }
+
+          // ---------------------------- Pré-visualização (restaurada) ----------------------------
+          function updatePreview(){
+            if(!tmpl.name){ byId('previewArea').textContent = '—'; return; }
+
+            // 1) Se o template tem exemplos no BODY, usar;
+            // 2) Caso contrário, se houver contatos + mapping, usar o primeiro contato;
+            // 3) Senão, mostrar o body cru.
+            const body = tmpl.bodyText || '';
+            let values = [];
+
+            // tenta exemplos do template
+            const compBody = (tmpl.components || []).find(c => c.type === 'BODY');
+            const exemploBody = compBody?.example?.body_text?.[0];
+            if(Array.isArray(exemploBody) && exemploBody.length){
+              values = exemploBody;
+            }else if(contatos.length && tmpl.bodyVars > 0){
+              // fallback: primeiro contato
+              const sample = contatos[0];
+              values = (mapping.body || []).map(ci => sample.vars[ci] ?? '');
+            }
+
+            const bodyPreview = values.length ? substitutePlaceholders(body, values) : body;
+
+            // Header TEXT opcional
+            let headerPreview = '';
+            if(tmpl.headerType === 'TEXT'){
+              const headerVals = [];
+              if(tmpl.headerVars > 0 && contatos.length){
+                const s = contatos[0];
+                for(let i=0;i<tmpl.headerVars;i++) headerVals.push(s.vars[mapping.headerText[i] ?? i] ?? '');
+              }
+              headerPreview = substitutePlaceholders(tmpl.headerText || '', headerVals);
+            }
+
+            const parts = [];
+            parts.push('📄 Pré-visualização:');
+            if(headerPreview){ parts.push(`*${headerPreview}*\n`); }
+            parts.push(bodyPreview);
+
+            // Botões URL com variável — exibe como anotação
+            if(tmpl.urlButtons?.length){
+              const btns = tmpl.urlButtons.map((b, i) => {
+                if(!b.hasVar) return `• Botão ${i+1}: URL fixa`;
+                const colIdx = mapping.urlButtons[i]?.[0];
+                const sampleVal = (contatos[0]?.vars || [])[colIdx ?? 0] ?? '{{1}}';
+                const final = (b.url || '').replace(/\{\{1\}\}/g, sampleVal);
+                return `• Botão ${i+1}: ${final}`;
+              }).join('\n');
+              if(btns) parts.push('\n[BOTÕES]\n' + btns);
+            }
+
+            byId('previewArea').textContent = parts.join('\n\n');
+          }
+
+          // ---------------------------- Templates ----------------------------
+          byId('btnBuscar').addEventListener('click', buscarTemplates);
+          async function buscarTemplates(){
+            const token = byId('token').value.trim();
+            const wabaId = byId('wabaId').value.trim();
+            const ver = byId('graphVersion').value;
+            if(!token || !wabaId){ alert('Informe token e WABA ID.'); return; }
+
+            const select = byId('templateSelect');
+            select.innerHTML = '<option value="">Carregando...</option>';
+
+            const urlBase = `https://graph.facebook.com/${ver}/${encodeURIComponent(wabaId)}/message_templates?limit=100&status=APPROVED`;
+            const all = [];
+            let next = urlBase;
+            try{
+              while(next){
+                const r = await fetch(next, { headers:{ Authorization:`Bearer ${token}` }});
+                const j = await r.json();
+                if(Array.isArray(j.data)) all.push(...j.data);
+                next = j?.paging?.next || null;
+              }
+            }catch(e){
+              alert('Erro ao buscar templates: ' + e.message);
+              select.innerHTML = '<option value="">-- Erro ao buscar --</option>';
+              return;
+            }
+
+            if(all.length === 0){
+              select.innerHTML = '<option value="">-- Nenhum template aprovado encontrado --</option>';
+              return;
+            }
+
+            select.innerHTML = '<option value="">-- Selecione um template --</option>';
+            all.sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
+              const opt = document.createElement('option');
+              opt.value = JSON.stringify(t);
+              opt.textContent = `${t.name} · ${t.category}`;
+              select.appendChild(opt);
+            });
+          }
+
+          byId('templateSelect').addEventListener('change', preencherTemplateInfo);
+          function preencherTemplateInfo(){
+            const val = byId('templateSelect').value;
+            if(!val) return;
+            const t = JSON.parse(val);
+
+            tmpl.name = t.name;
+            tmpl.category = t.category || '';
+            tmpl.components = t.components || [];
+            byId('templateName').value = tmpl.name;
+            byId('templateCategory').value = tmpl.category || '';
+
+            const header = tmpl.components.find(c => c.type === 'HEADER');
+            const body = tmpl.components.find(c => c.type === 'BODY');
+            const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
+
+            // Reset UI header
+            tmpl.headerType = null;
+            tmpl.headerText = '';
+            tmpl.headerVars = 0;
+            byId('headerFormat').value = '';
+            byId('headerTextWrap').classList.add('hide');
+            byId('mediaLinkWrap').classList.add('hide');
+
+            // Header
+            if(header){
+              const fmt = header.format; // TEXT | IMAGE | VIDEO | DOCUMENT
+              tmpl.headerType = fmt;
+              byId('headerFormat').value = fmt || '';
+              if(fmt === 'TEXT'){
+                tmpl.headerText = header.text || '';
+                tmpl.headerVars = countPlaceholders(tmpl.headerText);
+                byId('headerTextWrap').classList.remove('hide');
+              }else if(['IMAGE','VIDEO','DOCUMENT'].includes(fmt)){
+                byId('mediaLinkWrap').classList.remove('hide');
+              }
+            }
+
+            // Body
+            tmpl.bodyText = body?.text || '';
+            tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
+
+            // Buttons (apenas URL com {{1}})
+            tmpl.urlButtons = [];
+            if(buttons && Array.isArray(buttons.buttons)){
+              buttons.buttons.forEach((b, idx) => {
+                if(b.type === 'URL'){
+                  const hasVar = (b.url || '').includes('{{');
+                  tmpl.urlButtons.push({ index: idx, url: b.url || '', hasVar });
+                }
+              });
+            }
+
+            // Mapeamento padrão
+            mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
+            mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
+            mapping.urlButtons = {};
+
+            renderMapUI();
+            calcularCusto();
+            updatePreview();
+          }
+
+          // ---------------------------- Contatos ----------------------------
+          byId('estrategiaSelect').addEventListener('change', function(){
+            const selected = this.value;
+            if(estrategias[selected]){
+              contatos = JSON.parse(JSON.stringify(estrategias[selected]));
+              csvHeaders = [];
+              byId('contagemContatos').textContent = `✔️ Estratégia "${selected}" carregada com ${contatos.length} contato(s).`;
+              renderMapUI();
+              calcularCusto();
+            }
+          });
+
+          byId('fileInput').addEventListener('change', function(){
+            const file = this.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const rows = parseCSV(e.target.result);
+              if(rows.length === 0) return;
+
+              // Detecta cabeçalho
+              const head = rows[0].map(c => (c||'').toLowerCase());
+              const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
+
+              const dataRows = hasHeader ? rows.slice(1) : rows;
+              csvHeaders = hasHeader ? rows[0] : (dataRows[0]?.map((_,i)=>`coluna_${i+1}`) || []);
+
+              contatos = dataRows.map(r => ({
+                to: (r[0] || '').replace(/\D+/g,''),
+                vars: r.slice(1),
+              })).filter(c => c.to);
+
+              byId('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
+              renderMapUI();
+              calcularCusto();
+            };
+            reader.readAsText(file);
+          });
+
+          byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
+          byId('templateCategory').addEventListener('change', calcularCusto);
+
+          // ---------------------------- Agendamento UI ----------------------------
+          byId('modoEnvio').addEventListener('change', () => {
+            const isAgendar = byId('modoEnvio').value === 'agendar';
+            byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
+          });
+
+          // ---------------------------- Envio via BACKEND (novo) ----------------------------
+          async function onEnviarClick(){
+            if(contatos.length === 0){ 
+              alert('Nenhum contato carregado.'); 
+              return; 
+            }
+
+            const payload = {
+              token: byId("token").value.trim(),
+              phone_id: byId("phoneId").value.trim(),
+              waba_id: byId("wabaId").value.trim(),
+              nome_disparo: byId("nomeDisparo").value.trim(),
+              grupo_trabalho: byId("grupoTrabalho").value.trim(),
+              modo_envio: byId("modoEnvio").value,
+              data_hora_agendamento: byId("dataHoraEnvio").value || null,
+              intervalo_msg: Number(byId("intervaloMsg").value || 0),
+              tamanho_lote: Number(byId("tamanhoLote").value || 0),
+              intervalo_lote: Number(byId("intervaloLote").value || 0),
+              template: {
+                name: tmpl.name,
+                language: "pt_BR",
+                headerType: tmpl.headerType,
+                bodyText: tmpl.bodyText,
+                bodyVars: tmpl.bodyVars,
+                headerVars: tmpl.headerVars,
+                urlButtons: tmpl.urlButtons,
+                mapping: mapping,
+                mediaLink: byId("mediaLink").value.trim()
+              },
+              contatos: contatos.map(c => ({
+                telefone: c.to,
+                conteudo: c.vars.join(",")   // simples para o worker processar
+              }))
+            };
+
+            try {
+              const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json();
+              if(data.ok){
+                log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
+              }else{
+                log("❌ Erro ao salvar disparo: " + (data.erro || JSON.stringify(data)));
+              }
+            } catch(e) {
+              log("❌ Falha de rede ao salvar disparo: " + e.message);
+            }
+          }
+
+          document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
+
+          // Botões de pausa/retomar/cancelar — apenas UI (backend controla o envio)
+          byId('btnPausar').addEventListener('click', () => {
+            flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausa solicitada (se aplicável ao backend).');
+          });
+          byId('btnRetomar').addEventListener('click', () => {
+            flags.paused = false; byId('btnRetomar').disabled = true; log('▶️ Retomar solicitado (se aplicável ao backend).');
+          });
+          byId('btnCancelar').addEventListener('click', () => {
+            flags.cancelled = true; log('🛑 Cancelamento solicitado (se aplicável ao backend).');
+          });
+
+          // ---------------------------- Novo Envio ----------------------------
+          byId('btnNovoEnvio').addEventListener('click', () => {
+            contatos = [];
+            csvHeaders = [];
+            mapping = { body:[], headerText:[], urlButtons:{} };
+            flags = { paused:false, cancelled:false };
+            byId('output').textContent = 'Pronto para novo envio.';
+            byId('okCount').textContent = '0';
+            byId('errCount').textContent = '0';
+            byId('progressBar').style.width = '0%';
+            byId('progressTxt').textContent = '0/0';
+            byId('contagemContatos').textContent = 'Nenhum contato ainda.';
+            renderMapUI();
+            calcularCusto();
+            log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas se for buscar templates.');
+          });
+          // --- Preencher IDs ao selecionar conta ---
+          const contas = {
+            connectzap:   { phone: "732661079928516", waba: "1910445533050310" },
+            recoverypj:   { phone: "727586317113885", waba: "844006574616797" },
+            recoverypf:   { phone: "802977069563598", waba: "825347669829173" },
+            mpcobranca:   { phone: "821562937700669", waba: "1989071868573988" },
+            divzero:      { phone: "779797401888141", waba: "1714740535849713" },
+            arc4u:        { phone: "829210283602406", waba: "757728786687884" },
+            serasa:       { phone: "713021321904495", waba: "803987045361450" },
+            mpvendas:     { phone: "803535039503723", waba: "760293050103603" }
+          };
+
+          document.getElementById("contaSelect").addEventListener("change", function() {
+            const conta = contas[this.value];
+            if (conta) {
+              document.getElementById("phoneId").value = conta.phone;
+              document.getElementById("wabaId").value = conta.waba;
+            } else {
+              document.getElementById("phoneId").value = "";
+              document.getElementById("wabaId").value = "";
+            }
+          });
+          
+          // ---------------------------- Baixar Log ----------------------------
+          byId('btnBaixarLog').addEventListener('click', () => {
+            const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `log-whatsapp-${Date.now()}.txt`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=> URL.revokeObjectURL(url), 500);
+          });
+        </script>
+      </div>
+
+      <!-- Aba: Agendamentos -->
+      <div id="tab-agendamentos" class="tab-content">
+        <h2>📅 Gerenciar Agendamentos</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Grupo</th>
+              <th>Data/Hora</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyAgendamentos">
+            <tr><td colspan="5" class="muted">Carregando agendamentos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   <script>
-    // ===== CONFIG =====
-    const API_BASE = "https://dashboard-production-4c05.up.railway.app";
-    const phoneIdMap = {
-      "732661079928516": "ConnectZap",
-      "727586317113885": "Recovery PJ",
-      "802977069563598": "Recovery PF",
-      "821562937700669": "Mercado Pago Cobrança",
-      "779797401888141": "DivZero",
-      "829210283602406": "Arc4U",
-      "713021321904495": "Serasa",
-      "803535039503723": "Mercado Pago Vendas"
-    };
-
-    // ===== DOM =====
-    const startEl = document.getElementById("start");
-    const endEl   = document.getElementById("end");
-    const qEl     = document.getElementById("q");
-
-    const fltCarteira = document.getElementById("fltCarteira");
-    const fltAgentes  = document.getElementById("fltAgentes");
-    const fltNomeDisparo = document.getElementById("fltNomeDisparo");
-    const fltMotivo   = document.getElementById("fltMotivo");
-
-    const cartEl  = document.getElementById("carteira");
-    const btnAplicar = document.getElementById("btnAplicar");
-    const btnClearDates = document.getElementById("btnClearDates");
-
-    const alertEl = document.getElementById("alert");
-    const chips   = [...document.querySelectorAll("[data-range]")];
-
-    // tabs
-    const segBtns = [...document.querySelectorAll(".seg-btn")];
-    const tabMensagens = document.getElementById("tab-mensagens");
-    const tabAtend     = document.getElementById("tab-atendimentos");
-    const tabHoraHora  = document.getElementById("tab-hora_hora");
-
-    // KPIs Mensagens
-    const k_total = document.getElementById("k_total");
-    const k_env   = document.getElementById("k_env");
-    const k_ent   = document.getElementById("k_ent");
-    const k_lido  = document.getElementById("k_lido");
-    const k_dr    = document.getElementById("k_dr");
-    const k_rr    = document.getElementById("k_rr");
-
-    // Tabela
-    const tbodyMensagens = document.getElementById("tbodyMensagens");
-    const tblEmpty = document.getElementById("tblEmpty");
-
-    // Charts
-    let chartMensagens, chartMotivos, chartSeries;
-    let chartHHConc, chartHHIn;
-    const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
-    const chartMotivosEmpty   = document.getElementById("chartMotivosEmpty");
-    const chartSeriesEmpty    = document.getElementById("chartSeriesEmpty");
-    const hhConcEmpty         = document.getElementById("hhConcEmpty");
-    const hhInEmpty           = document.getElementById("hhInEmpty");
-
-    // KPIs Atend
-    const a_em  = document.getElementById("a_em");
-    const a_conc= document.getElementById("a_conc");
-    const a_tma = document.getElementById("a_tma");
-    const a_tmr = document.getElementById("a_tmr");
-
-    // ===== Multi-select Agentes (dropdown) =====
-    const btnAgentes  = document.getElementById("btnAgentes");
-    const panelAgentes= document.getElementById("panelAgentes");
-    const agSearch    = document.getElementById("agSearch");
-    const agSelectAll = document.getElementById("agSelectAll");
-    const agClear     = document.getElementById("agClear");
-    const agList      = document.getElementById("agList");
-
-    let agentsAll = [];           // [{codigo_do_agente, nome}]
-    const selectedAgents = new Set();
-
-    function togglePanelAgentes(show){
-      panelAgentes.classList.toggle("hidden", !show);
-    }
-    btnAgentes.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelAgentes(panelAgentes.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if(!panelAgentes.contains(e.target) && !btnAgentes.contains(e.target)){
-        togglePanelAgentes(false);
-      }
-    });
-
-    function renderAgentesList(filter=""){
-      agList.innerHTML = "";
-      const term = filter.trim().toLowerCase();
-      const data = agentsAll.filter(a => (a.nome||"").toLowerCase().includes(term));
-      if(!data.length){
-        agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
-        return;
-      }
-      data.forEach(a => {
-        const id = `ag_${a.codigo_do_agente}`;
-        const row = document.createElement("label");
-        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
-        row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked":""}>
-          <span class="text-sm">${a.nome || ("Agente "+a.codigo_do_agente)}</span>
-        `;
-        row.querySelector("input").addEventListener("change", (ev) => {
-          const v = String(ev.target.value);
-          if(ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
-          updateAgentesButtonLabel();
-        });
-        agList.appendChild(row);
+    // Tabs
+    document.querySelectorAll(".tab-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+        if(btn.dataset.tab==="agendamentos") carregarAgendamentos();
       });
-    }
-    function updateAgentesButtonLabel(){
-      const n = selectedAgents.size;
-      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n>1?"s":""}` : "Todos";
-    }
-    agSearch.addEventListener("input", () => renderAgentesList(agSearch.value));
-    agSelectAll.addEventListener("click", () => {
-      agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
-      renderAgentesList(agSearch.value);
-      updateAgentesButtonLabel();
-    });
-    agClear.addEventListener("click", () => {
-      selectedAgents.clear();
-      renderAgentesList(agSearch.value);
-      updateAgentesButtonLabel();
     });
 
-    // ===== Multi-select Motivos (dropdown) =====
-    const btnMotivos  = document.getElementById("btnMotivos");
-    const panelMotivos= document.getElementById("panelMotivos");
-    const motSearch   = document.getElementById("motSearch");
-    const motSelectAll= document.getElementById("motSelectAll");
-    const motClear    = document.getElementById("motClear");
-    const motList     = document.getElementById("motList");
-
-    let motivosAll = []; // ["Realizou negociação", ...]
-    const selectedMotivos = new Set();
-
-    function togglePanelMotivos(show){
-      panelMotivos.classList.toggle("hidden", !show);
-    }
-    btnMotivos.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelMotivos(panelMotivos.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if(!panelMotivos.contains(e.target) && !btnMotivos.contains(e.target)){
-        togglePanelMotivos(false);
-      }
-    });
-
-    function renderMotivosList(filter=""){
-      motList.innerHTML = "";
-      const term = filter.trim().toLowerCase();
-      const data = motivosAll.filter(m => (m||"").toLowerCase().includes(term));
-      if(!data.length){
-        motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>';
-        return;
-      }
-      data.forEach(m => {
-        const id = `mot_${m.replace(/\s+/g,'_')}`;
-        const row = document.createElement("label");
-        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
-        row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}">
-          <span class="text-sm">${m}</span>
-        `;
-        const chk = row.querySelector("input");
-        chk.checked = selectedMotivos.has(m);
-        chk.addEventListener("change", (ev) => {
-          if(ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
-          updateMotivosButtonLabel();
-        });
-        motList.appendChild(row);
-      });
-    }
-    function updateMotivosButtonLabel(){
-      const n = selectedMotivos.size;
-      btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n>1?"s":""}` : "Todos";
-    }
-    motSearch.addEventListener("input", () => renderMotivosList(motSearch.value));
-    motSelectAll.addEventListener("click", () => {
-      motivosAll.forEach(m => selectedMotivos.add(m));
-      renderMotivosList(motSearch.value);
-      updateMotivosButtonLabel();
-    });
-    motClear.addEventListener("click", () => {
-      selectedMotivos.clear();
-      renderMotivosList(motSearch.value);
-      updateMotivosButtonLabel();
-    });
-
-    // ===== Utils =====
-    function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
-    function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
-    function fmtDurSec(s){
-      if(s == null) return "—";
-      const m = Math.floor(s/60), sec = s%60;
-      if(m>=60){ const h=Math.floor(m/60), mm=m%60; return `${h}h ${mm}m`; }
-      return `${m}m ${sec}s`;
-    }
-    function selectedAgentesCSV(){
-      return [...selectedAgents].join(",");
-    }
-    function selectedMotivosCSV(){
-      return [...selectedMotivos].join(",");
-    }
-    const HOUR_LABELS = Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+"h");
-
-    function getActiveTab(){
-      return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
-    }
-
-    function buildParams(tab){
-      const p = new URLSearchParams();
-      if(startEl.value) p.set("start", startEl.value);
-      if(endEl.value)   p.set("end",   endEl.value);
-
-      if(tab === "mensagens"){
-        if(qEl.value) p.set("q", qEl.value.trim());
-      }else if(tab === "atendimentos" || tab === "hora_hora"){
-        if(cartEl.value) p.set("phone_id", cartEl.value);
-        const ags = selectedAgentesCSV();
-        if(ags) p.set("agentes", ags);
-        if(tab === "hora_hora"){
-          const m = selectedMotivosCSV();
-          if(m) p.set("motivo", m);
+    // Carregar agendamentos
+    async function carregarAgendamentos(){
+      const tbody=document.getElementById("tbodyAgendamentos");
+      tbody.innerHTML=`<tr><td colspan="5" class="muted">⏳ Buscando...</td></tr>`;
+      try{
+        const res=await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios");
+        const data=await res.json();
+        tbody.innerHTML="";
+        if(!data.length){
+          tbody.innerHTML=`<tr><td colspan="5" class="muted">Nenhum agendamento encontrado.</td></tr>`;
+          return;
         }
-      }
-      p.set("tab", tab);
-      return p.toString();
-    }
-
-    function savePermalink(){
-      const tab = getActiveTab();
-      const qs = buildParams(tab);
-      const url = location.origin + location.pathname + (qs ? "?"+qs : "");
-      history.replaceState(null, "", url);
-    }
-
-    let pendingAgents = null;
-    let pendingMotivos = null;
-
-    function readFromQS(){
-      const u = new URL(location.href);
-      const tabQS = u.searchParams.get("tab");
-      if(tabQS === "atendimentos" || tabQS === "hora_hora"){
-        segBtns.forEach(x => x.classList.remove("seg-active"));
-        segBtns.find(b => b.dataset.tab === tabQS).classList.add("seg-active");
-        tabMensagens.classList.toggle("hidden", tabQS!=="mensagens");
-        tabAtend.classList.toggle("hidden",     tabQS!=="atendimentos");
-        tabHoraHora.classList.toggle("hidden",  tabQS!=="hora_hora");
-        toggleFiltersForTab(tabQS);
-      }
-
-      startEl.value = u.searchParams.get("start") || startEl.value;
-      endEl.value   = u.searchParams.get("end") || endEl.value;
-
-      // mensagens
-      qEl.value     = u.searchParams.get("q") || "";
-
-      // atendimentos / hora_hora
-      const phone = u.searchParams.get("phone_id") || "";
-      if(phone) cartEl.value = phone;
-      const agentesQS = u.searchParams.get("agentes");
-      if(agentesQS) pendingAgents = agentesQS.split(",").map(String);
-
-      const motivosQS = u.searchParams.get("motivo");
-      if(motivosQS) pendingMotivos = motivosQS.split(","); // manter case
-    }
-
-    function setQuickRange(kind){
-      const now = new Date();
-      const pad = n => String(n).padStart(2,"0");
-      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      let a = new Date(), b = new Date();
-      if(kind==="hoje"){ /* a=b hoje */ }
-      if(kind==="7d"){ a.setDate(now.getDate()-6); }
-      if(kind==="30d"){ a.setDate(now.getDate()-29); }
-      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
-      startEl.value = toISO(a); endEl.value = toISO(b);
-    }
-
-    function highlightChip(ch){
-      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
-      if(ch) ch.classList.add("bg-blue-600","text-white","border-blue-600");
-    }
-    chips.forEach(ch => ch.addEventListener("click", () => {
-      const k = ch.dataset.range;
-      if(k!=="custom") setQuickRange(k);
-      highlightChip(ch);
-    }));
-
-    // Toggle filtros conforme aba
-    function toggleFiltersForTab(tab){
-      const isMsg = tab === "mensagens";
-      const isHora = tab === "hora_hora";
-      fltNomeDisparo.classList.toggle("hidden", !isMsg);
-      fltCarteira.classList.toggle("hidden", isMsg);
-      fltAgentes.classList.toggle("hidden", isMsg);
-      fltMotivo.classList.toggle("hidden", !isHora);
-    }
-
-    // ===== Data loaders =====
-    async function loadAgentes(){
-      const selPhone = cartEl.value || "";
-      const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
-      const res = await fetch(url);
-      const data = await res.json(); // [{codigo_do_agente, nome}]
-      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente "+a.codigo_do_agente) }));
-      // reseta seleção ao trocar carteira
-      selectedAgents.clear();
-      if(pendingAgents && pendingAgents.length){
-        pendingAgents.forEach(v => selectedAgents.add(String(v)));
-        pendingAgents = null;
-      }
-      agSearch.value = "";
-      renderAgentesList("");
-      updateAgentesButtonLabel();
-    }
-
-    async function loadMotivosOptions(){
-      // Reaproveita o endpoint de motivos para popular o dropdown, obedecendo filtros de período/phone_id/agentes
-      const qsAt = buildParams("atendimentos"); // sem 'motivo'
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qsAt}`);
-      if(!res.ok) throw new Error("Falha ao carregar motivos");
-      const dados = await res.json(); // [{motivo,qtd}]
-      motivosAll = [...new Set(dados.map(d => d.motivo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-      // restaura seleção vinda da URL (se houver)
-      if(pendingMotivos && pendingMotivos.length){
-        selectedMotivos.clear();
-        // manter case original se existir na lista
-        pendingMotivos.forEach(m => {
-          const hit = motivosAll.find(x => x.toLowerCase() === m.toLowerCase());
-          if(hit) selectedMotivos.add(hit);
-        });
-        pendingMotivos = null;
-      }
-      motSearch.value = "";
-      renderMotivosList("");
-      updateMotivosButtonLabel();
-    }
-
-    async function loadResumoMensagens(qs){
-      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
-      if(!res.ok) throw new Error("Falha no resumo (mensagens)");
-      return res.json();
-    }
-    async function loadEnvios(qs){
-      const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
-      if(!res.ok) throw new Error("Falha nos envios");
-      return res.json();
-    }
-    async function loadAtendResumo(qs){
-      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
-      if(!res.ok) throw new Error("Falha no resumo (atendimentos)");
-      return res.json();
-    }
-    async function loadAtendMotivos(qs){
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
-      if(!res.ok) throw new Error("Falha nos motivos");
-      return res.json();
-    }
-    async function loadAtendSeries(qs){
-      const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
-      if(!res.ok) throw new Error("Falha nas séries");
-      return res.json();
-    }
-    async function loadHoraHora(qs){
-      const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`);
-      if(!res.ok) throw new Error("Falha no hora a hora");
-      return res.json(); // {concluidos:[{hora,qtd}], inbound:[{hora,qtd}]}
-    }
-
-    // ===== Render =====
-    async function renderMensagens(){
-      const qs = buildParams("mensagens");
-      savePermalink();
-
-      try{
-        setAlert("");
-        k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
-        const r = await loadResumoMensagens(qs);
-        const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
-        k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
-        k_dr.textContent = toPct(ent, env || total);
-        k_rr.textContent = toPct(lido, ent || total);
-      }catch(e){ setAlert(e.message); }
-
-      try{
-        tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
-        const data = await loadEnvios(qs);
-        tbodyMensagens.innerHTML = "";
-        tblEmpty.classList.toggle("hidden", data.length>0);
-
-        const labels = [], entregues=[], lidos=[];
-        data.forEach(e => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
+        data.forEach(e=>{
+          const tr=document.createElement("tr");
+          tr.innerHTML=`
             <td>${e.nome_disparo||"-"}</td>
             <td>${e.grupo_trabalho||"-"}</td>
-            <td>${e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "-"}</td>
-            <td class="text-right">${e.total||0}</td>
-            <td class="text-right">${e.entregues||0}</td>
-            <td class="text-right">${e.lidos||0}</td>`;
-          tbodyMensagens.appendChild(tr);
-          labels.push(e.nome_disparo||"(sem nome)");
-          entregues.push(e.entregues||0);
-          lidos.push(e.lidos||0);
+            <td>${e.data_hora_agendamento||"-"}</td>
+            <td>${e.modo_envio==="agendar"?"Agendado":"Imediato"}</td>
+            <td>
+              <button onclick="editarEnvio(${e.id})">✏️</button>
+              <button onclick="excluirEnvio(${e.id})">🗑️</button>
+              ${e.modo_envio==="agendar"?`<button onclick="pausarEnvio(${e.id})">⏸️</button>`:""}
+            </td>
+          `;
+          tbody.appendChild(tr);
         });
-
-        if(chartMensagens){ chartMensagens.destroy(); chartMensagens = null; }
-        document.getElementById("chartMensagens").classList.remove("hidden");
-        chartMensagensEmpty.classList.add("hidden");
-
-        if(labels.length===0){
-          document.getElementById("chartMensagens").classList.add("hidden");
-          chartMensagensEmpty.classList.remove("hidden");
-        }else{
-          const ctx = document.getElementById("chartMensagens").getContext("2d");
-          chartMensagens = new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels,
-              datasets: [
-                {label:"Entregues", data:entregues, backgroundColor:"#3b82f6", stack:"s"},
-                {label:"Lidos",     data:lidos,     backgroundColor:"#10b981", stack:"s"}
-              ]
-            },
-            options: {
-              responsive:true,
-              maintainAspectRatio:false,
-              resizeDelay:200,
-              plugins:{ legend:{ position:"top" } },
-              scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
-            }
-          });
-        }
-      }catch(e){ setAlert(e.message); }
-    }
-
-    async function renderAtend(){
-      const qs = buildParams("atendimentos");
-      savePermalink();
-
-      try{
-        a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
-        const r = await loadAtendResumo(qs);
-        a_em.textContent   = r.em_atendimento ?? 0;
-        a_conc.textContent = r.concluidos ?? 0;
-        a_tma.textContent  = fmtDurSec(r.tma_segundos);
-        a_tmr.textContent  = fmtDurSec(r.tmr_segundos);
-      }catch(e){ setAlert("Aba Atendimentos — " + e.message); }
-
-      // Motivos
-      try{
-        const dados = await loadAtendMotivos(qs);
-        if(chartMotivos){ chartMotivos.destroy(); chartMotivos=null; }
-        document.getElementById("chartMotivos").classList.remove("hidden");
-        chartMotivosEmpty.classList.add("hidden");
-
-        if(!dados.length){
-          document.getElementById("chartMotivos").classList.add("hidden");
-          chartMotivosEmpty.classList.remove("hidden");
-        }else{
-          chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
-            type:"pie",
-            data:{ labels: dados.map(d=>d.motivo), datasets:[{ data: dados.map(d=>d.qtd) }] },
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200 }
-          });
-        }
-      }catch(e){ setAlert("Motivos — " + e.message); }
-
-      // ===== Séries (ordenadas por data) =====
-      try{
-        const s = await loadAtendSeries(qs);
-
-        const map = {};
-        (s.mensagens||[]).forEach(r => {
-          const k = r.dia;
-          map[k] = map[k] || { in:0, out:0, conc:0 };
-          map[k].in  = r.inbound;
-          map[k].out = r.outbound;
-        });
-        (s.concluidos||[]).forEach(r => {
-          const k = r.dia;
-          map[k] = map[k] || { in:0, out:0, conc:0 };
-          map[k].conc = r.concluidos;
-        });
-
-        function diaToTS(d){
-          if(!d) return 0;
-          if(/^\d{4}-\d{2}-\d{2}$/.test(d)){
-            const [y,m,day] = d.split("-").map(Number);
-            return Date.UTC(y, m-1, day);
-          }
-          if(/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)){
-            const [day,mon,year] = d.split("/");
-            const y = year ? Number(year) : new Date().getFullYear();
-            return Date.UTC(Number(y), Number(mon)-1, Number(day));
-          }
-          const t = Date.parse(d);
-          return isNaN(t) ? 0 : t;
-        }
-
-        const rows = Object.keys(map)
-          .map(k => ({ dia:k, ts: diaToTS(k), ...map[k] }))
-          .sort((a,b) => a.ts - b.ts);
-
-        const dias = rows.map(r => r.dia);
-        const inb  = rows.map(r => r.in);
-        const outb = rows.map(r => r.out);
-        const conc = rows.map(r => r.conc);
-
-        if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
-        document.getElementById("chartSeries").classList.remove("hidden");
-        chartSeriesEmpty.classList.add("hidden");
-
-        if(!dias.length){
-          document.getElementById("chartSeries").classList.add("hidden");
-          chartSeriesEmpty.classList.remove("hidden");
-        }else{
-          chartSeries = new Chart(document.getElementById("chartSeries").getContext("2d"), {
-            type:"line",
-            data:{
-              labels: dias,
-              datasets: [
-                {label:"Inbound",    data:inb,  borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
-                {label:"Outbound",   data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
-                {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
-              ]
-            },
-            options:{
-              responsive:true, maintainAspectRatio:false, resizeDelay:200,
-              plugins:{legend:{position:"top"}},
-              scales:{y:{beginAtZero:true}}
-            }
-          });
-        }
-      }catch(e){ setAlert("Séries — " + e.message); }
-    }
-
-    async function renderHoraHora(){
-      // Antes de consultar, garantir motivos populados (para o dropdown)
-      try{
-        await loadMotivosOptions();
-      }catch(e){ /* não bloqueia os gráficos */ }
-
-      const qs = buildParams("hora_hora");
-      savePermalink();
-
-      try{
-        const data = await loadHoraHora(qs);
-
-        // Constrói arrays 0..23 garantindo ordem
-        const hours = Array.from({length:24}, (_,h)=>h);
-        const concSeries = new Array(24).fill(0);
-        const inSeries   = new Array(24).fill(0);
-
-        (data.concluidos||[]).forEach(r => {
-          const h = Number(r.hora); if(h>=0 && h<=23) concSeries[h] = Number(r.qtd)||0;
-        });
-        (data.inbound||[]).forEach(r => {
-          const h = Number(r.hora); if(h>=0 && h<=23) inSeries[h] = Number(r.qtd)||0;
-        });
-
-        // Destrói anteriores
-        if(chartHHConc){ chartHHConc.destroy(); chartHHConc=null; }
-        if(chartHHIn){   chartHHIn.destroy();   chartHHIn=null;   }
-
-        // Concluídos
-        const ctxC = document.getElementById("chartHHConc").getContext("2d");
-        if(concSeries.every(v=>v===0)){
-          document.getElementById("chartHHConc").classList.add("hidden");
-          hhConcEmpty.classList.remove("hidden");
-        }else{
-          document.getElementById("chartHHConc").classList.remove("hidden");
-          hhConcEmpty.classList.add("hidden");
-          chartHHConc = new Chart(ctxC, {
-            type:"line",
-            data:{ labels: HOUR_LABELS, datasets:[
-              {label:"Concluídos", data:concSeries, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
-            ]},
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
-          });
-        }
-
-        // Inbound
-        const ctxI = document.getElementById("chartHHIn").getContext("2d");
-        if(inSeries.every(v=>v===0)){
-          document.getElementById("chartHHIn").classList.add("hidden");
-          hhInEmpty.classList.remove("hidden");
-        }else{
-          document.getElementById("chartHHIn").classList.remove("hidden");
-          hhInEmpty.classList.add("hidden");
-          chartHHIn = new Chart(ctxI, {
-            type:"line",
-            data:{ labels: HOUR_LABELS, datasets:[
-              {label:"Inbound", data:inSeries, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3}
-            ]},
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
-          });
-        }
-
-      }catch(e){
-        setAlert("Hora a hora — " + e.message);
+      }catch(err){
+        tbody.innerHTML=`<tr><td colspan="5" class="muted">Erro ao carregar agendamentos</td></tr>`;
+        console.error(err);
       }
     }
 
-    async function render(){
-      const tab = getActiveTab();
-      if(tab==="mensagens") await renderMensagens();
-      else if(tab==="atendimentos"){
-        if(cartEl.value && !agentsAll.length) await loadAgentes();
-        await renderAtend();
-      }else{ // hora_hora
-        if(cartEl.value && !agentsAll.length) await loadAgentes();
-        await renderHoraHora();
-      }
-    }
-
-    // ===== Eventos =====
-    segBtns.forEach(btn => btn.addEventListener("click", async () => {
-      segBtns.forEach(x => x.classList.remove("seg-active"));
-      btn.classList.add("seg-active");
-      const tab = btn.dataset.tab;
-      tabMensagens.classList.toggle("hidden", tab!=="mensagens");
-      tabAtend.classList.toggle("hidden",     tab!=="atendimentos");
-      tabHoraHora.classList.toggle("hidden",  tab!=="hora_hora");
-      toggleFiltersForTab(tab);
-      if((tab === "atendimentos" || tab==="hora_hora") && cartEl.value){
-        await loadAgentes();
-      }
-      if(tab === "hora_hora"){
-        await loadMotivosOptions();
-      }
-      render();
-    }));
-
-    // preencher carteiras
-    (function fillCarteiras(){
-      const frag = document.createDocumentFragment();
-      Object.keys(phoneIdMap).forEach(id => {
-        const opt = document.createElement("option");
-        opt.value = id; opt.textContent = phoneIdMap[id];
-        frag.appendChild(opt);
-      });
-      cartEl.appendChild(frag);
-    })();
-
-    // mudanças de carteira -> recarregar agentes e motivos conforme aba
-    cartEl.addEventListener("change", async () => {
-      const tab = getActiveTab();
-      if(tab!=="mensagens"){
-        await loadAgentes();
-        if(tab==="hora_hora") await loadMotivosOptions();
-      }
-    });
-
-    // Limpar datas
-    btnClearDates.addEventListener("click", () => {
-      startEl.value = ""; endEl.value = "";
-      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
-    });
-
-    // Aplicar
-    btnAplicar.addEventListener("click", render);
-
-    // ===== Init =====
-    function initDefaults(){
-      const now = new Date(); const pad = n=>String(n).padStart(2,"0");
-      const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
-      startEl.value = toISO(a); endEl.value = toISO(b);
-      highlightChip(document.querySelector('[data-range="7d"]'));
-    }
-    initDefaults();
-    readFromQS();
-    toggleFiltersForTab(getActiveTab());
-    render();
+    // Ações (stub)
+    function editarEnvio(id){ alert("Editar envio "+id+" (implementar modal)"); }
+    function excluirEnvio(id){ alert("Excluir envio "+id+" (DELETE /api/envios/"+id+")"); }
+    function pausarEnvio(id){ alert("Pausar envio "+id+" (PATCH backend)"); }
   </script>
 </body>
 </html>
