@@ -115,6 +115,7 @@ aside.right-pane{ border-left:1px solid #e5e7eb; }
             <option value="">— selecione —</option>
             <option value="*">Todas as contas</option>
             <option value="732661079928516">ConnectZap</option>
+            <option value="805610009301153">Banco PAN</option>
             <option value="727586317113885">Recovery PJ</option>
             <option value="802977069563598">Recovery PF</option>
             <option value="821562937700669">Mercado Pago Cobrança</option>
@@ -171,6 +172,7 @@ aside.right-pane{ border-left:1px solid #e5e7eb; }
           <select id="fxCarteira" class="w-full p-2 border rounded-md text-sm">
             <option value="">— todas —</option>
             <option value="ConnectZap">ConnectZap</option>
+            <option value="Banco PAN">Banco PAN</option>
             <option value="Recovery PJ">Recovery PJ</option>
             <option value="Recovery PF">Recovery PF</option>
             <option value="Mercado Pago Cobrança">Mercado Pago Cobrança</option>
@@ -263,6 +265,7 @@ aside.right-pane{ border-left:1px solid #e5e7eb; }
 const API_BASE = "https://conversas-api-production.up.railway.app";
 const phoneIdMap = {
   "732661079928516": "ConnectZap",
+  "805610009301153": "Banco PAN",
   "727586317113885": "Recovery PJ",
   "802977069563598": "Recovery PF",
   "821562937700669": "Mercado Pago Cobrança",
@@ -273,6 +276,7 @@ const phoneIdMap = {
 };
 const carteiraToPhone = {
   "ConnectZap": "732661079928516",
+  "Banco PAN": "805610009301153",
   "Recovery PJ": "727586317113885",
   "Recovery PF": "802977069563598",
   "Mercado Pago Cobrança": "821562937700669",
