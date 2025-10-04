@@ -1,1296 +1,552 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <title>Envio de Mensagens WhatsApp — ConnectZap</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root{
-      --bg:#f5f7fb;--card:#ffffff;--txt:#222;--muted:#6b7280;--primary:#2563eb;--primary-d:#1d4ed8;
-      --success:#16a34a;--warn:#d97706;--danger:#dc2626;--outline:#e5e7eb;--radius:12px;
-    }
-    *{box-sizing:border-box}
-    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
-      margin:0;padding:24px;background:var(--bg);color:var(--txt);}
-    .container{max-width:1200px;margin:0 auto}
-    .card{background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
-      box-shadow:0 6px 24px rgba(0,0,0,.04);}
-    h1{margin:0 0 10px;font-size:22px}
-    h2{font-size:16px;margin:18px 0 8px;color:var(--muted);font-weight:600}
-    label{display:block;font-weight:600;margin:10px 0 6px}
-    input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;background:#fff;}
-    textarea{resize:vertical;min-height:72px}
-    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start}
-    .col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--outline);
-      cursor:pointer;background:var(--primary);color:#fff;font-weight:600;}
-    .btn:hover{background:var(--primary-d)}
-    .btn.secondary{background:#fff;color:var(--txt)}.btn.secondary:hover{background:#f8fafc}
-    .btn.success{background:var(--success)}.btn.warn{background:var(--warn)}.btn.danger{background:var(--danger)}
-    #previewArea{background:#f1f5f9;border:1px dashed #cbd5e1;padding:12px;border-radius:10px;white-space:pre-wrap;}
-    #output{background:#0b1220;color:#d1e6ff;padding:12px;border-radius:10px;min-height:140px;font-family:ui-monospace,monospace;
-      white-space:pre-wrap;overflow-y:auto;}
-    .muted{color:var(--muted);font-size:12px}
-    .bar{background:#e5e7eb;border-radius:999px;height:12px;overflow:hidden}
-    .bar>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#22c55e);transition:width .3s ease}
-    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700;border:1px solid #c7d2fe;}
-    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-    .hide{display:none !important}
-    details summary{cursor:pointer}
-    .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
-    /* Tabs */
-        .modal{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      display:none; align-items:center; justify-content:center; z-index:50;
-    }
-    .modal.open{ display:flex; }
-    /* opcional: evita que o conteúdo do modal estoure a tela */
-    .modal .card{ max-height:90vh; overflow:auto; }
-    .tabs{display:flex;gap:8px;margin-bottom:16px}
-    .tab-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--outline);background:#fff;cursor:pointer;font-weight:600}
-    .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-    .tab-content{display:none}
-    .tab-content.active{display:block}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px}
-    th{background:#f1f5f9;text-transform:uppercase;font-size:12px;color:#64748b}
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ConnectZap — Supervisão</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{--ok:#16a34a;--warn:#d97706;--err:#dc2626}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
+  .kpi{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:14px}
+  .pill{padding:2px 8px;border-radius:9999px;background:#f3f4f6;font-size:12px}
+  .dot{width:10px;height:10px;border-radius:9999px;display:inline-block;margin-right:6px}
+  .dot.online{background:#16a34a}.dot.offline{background:#9ca3af}
+  .btn{padding:10px 14px;border-radius:10px}
+  .btn-primary{background:#2563eb;color:#fff}
+  .btn-muted{background:#f3f4f6}
+</style>
 </head>
-<body>
-  <div class="container">
-    <div class="card">
-      <h1>Envio de Mensagens WhatsApp <span class="pill">ConnectZap</span></h1>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="novo">➕ Novo envio</button>
-        <button class="tab-btn" data-tab="agendamentos">📅 Agendamentos</button>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white border-b">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">ConnectZap — Supervisão</h1>
+    <div class="text-sm text-gray-500">Administração de agentes & visão operacional</div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto p-4 space-y-6">
+  <!-- KPIs -->
+  <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="kpi">
+      <div class="text-gray-500 text-sm">Agentes online (total)</div>
+      <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
+      <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+    </div>
+    <div class="kpi">
+      <div class="text-gray-500 text-sm">Conversas em andamento</div>
+      <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
+      <div class="text-xs text-gray-500 mt-2">Soma dos tickets alocados aos agentes online</div>
+    </div>
+    <div class="kpi">
+      <div class="text-gray-500 text-sm">Contatos na fila (não atribuídos)</div>
+      <div id="kpiFilaTotal" class="text-3xl font-bold mt-1">—</div>
+      <div id="kpiFilaCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+    </div>
+    <div class="kpi">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-gray-500 text-sm">Atualização</div>
+          <div id="kpiAtualizado" class="text-sm font-semibold mt-1">—</div>
+        </div>
+        <button id="btnRefresh" class="btn btn-primary">Atualizar agora</button>
       </div>
-
-      <!-- Aba: Novo envio -->
-      <div id="tab-novo" class="tab-content active">
-        <div class="container">
-          <div class="card">
-            <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-08-28</span></h1>
-            <div class="muted">
-              Restaura a pré-visualização com substituição de variáveis, mapeamento e custo; mantém os novos campos e o envio via backend.
-            </div>
-
-            <!-- Credenciais -->
-            <h2>Credenciais</h2>
-            <div class="row">
-              <div class="col-6">
-                <label for="token">Token de Acesso</label>
-                <input id="token" placeholder="Cole seu token (opcional se usar backend)" />
-              </div>
-              <div class="col-6">
-                <label for="contaSelect">Conta</label>
-                <select id="contaSelect">
-                  <option value="">-- Selecione a conta --</option>
-                  <option value="connectzap">ConnectZap</option>
-                  <option value="recoverypj">Recovery PJ</option>
-                  <option value="recoverypf">Recovery PF</option>
-                  <option value="mpcobranca">Mercado Pago Cobrança</option>
-                  <option value="divzero">DivZero</option>
-                  <option value="arc4u">Arc4U</option>
-                  <option value="serasa">Serasa</option>
-                  <option value="mpvendas">Mercado Pago Vendas</option>
-                </select>
-
-              </div>
-              <div class="col-6">
-                <label for="wabaId">WhatsApp Business ID</label>
-                <input id="wabaId" readonly />
-              </div>
-              <div class="col-6">
-                <label for="phoneId">Phone Number ID</label>
-                <input id="phoneId" readonly />
-              </div>
-              <div class="col-6">
-                <label for="graphVersion">Versão Graph API</label>
-                <select id="graphVersion">
-                  <option value="v23.0" selected>v23.0</option>
-                  <option value="v22.0">v22.0</option>
-                  <option value="v21.0">v21.0</option>
-                  <option value="v20.0">v20.0</option>
-                  <option value="v19.0">v19.0</option>
-                  <option value="v18.0">v18.0</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Buscar templates -->
-            <div class="row" style="margin-top:12px;align-items:end">
-              <div class="col-6">
-                <button class="btn" id="btnBuscar">🔍 Buscar templates aprovados</button>
-              </div>
-              <div class="col-6">
-                <label for="templateSelect">Template</label>
-                <select id="templateSelect">
-                  <option value="">-- Selecione um template --</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Campos do Template -->
-            <div class="row" style="margin-top:6px;">
-              <div class="col-6">
-                <label for="templateName">Nome do Template</label>
-                <input id="templateName" readonly />
-              </div>
-              <div class="col-3">
-                <label for="templateCategory">Categoria</label>
-                <select id="templateCategory">
-                  <option value="">-- Selecione --</option>
-                  <option value="authentication">Authentication</option>
-                  <option value="marketing">Marketing</option>
-                  <option value="utility">Utility</option>
-                  <option value="service">Service</option>
-                </select>
-              </div>
-              <div class="col-3">
-                <label for="headerFormat">Formato de Header</label>
-                <input id="headerFormat" readonly />
-              </div>
-            </div>
-
-            <!-- Configurações do HEADER (aparece conforme o formato) -->
-            <div class="row" id="headerParams" style="margin-top:6px;">
-              <div id="headerTextWrap" class="col-12 hide">
-                <div class="muted">
-                  Header <b>TEXT</b> com variáveis: faça o mapeamento em <b>Mapeamento de Variáveis</b> (abaixo).
-                </div>
-              </div>
-              <div class="col-12 hide" id="mediaLinkWrap">
-                <label for="mediaLink">Link da Mídia do Header (quando HEADER = IMAGE/VIDEO/DOCUMENT)</label>
-                <input id="mediaLink" placeholder="https://... (acessível publicamente)" />
-                <div class="muted">Se informado, será enviado como header de mídia do template.</div>
-              </div>
-            </div>
-
-            <!-- Pré-visualização -->
-            <div class="row" style="margin-top:6px;">
-              <div class="col-12">
-                <h2>Pré-visualização</h2>
-                <div id="previewArea">Selecione um template para ver a prévia aqui.</div>
-              </div>
-            </div>
-
-            <!-- Contatos + Estratégia + Mapeamento -->
-            <div class="row" style="margin-top:12px;">
-              <div class="col-6">
-                <h2>Contatos</h2>
-                <div class="grid-2">
-                  <div>
-                    <label for="fileInput">Arquivo (.csv ou .txt)</label>
-                    <input id="fileInput" type="file" accept=".csv,.txt" />
-                  </div>
-                  <div>
-                    <label for="estrategiaSelect">Estratégia (exemplo interno)</label>
-                    <select id="estrategiaSelect">
-                      <option value="">-- Nenhuma --</option>
-                      <option value="estrategia1">estrategia1</option>
-                      <option value="estrategia2">estrategia2</option>
-                    </select>
-                  </div>
-                </div>
-                <div id="contagemContatos" class="muted" style="margin-top:6px;">Nenhum contato ainda.</div>
-              </div>
-              <div class="col-6">
-                <h2>Mapeamento de Variáveis</h2>
-                <div id="mapArea" class="muted">Carregue contatos e selecione um template.</div>
-              </div>
-            </div>
-
-            <!-- Custos -->
-            <div class="row" style="margin-top:12px;">
-              <div class="col-6">
-                <h2>Custo Estimado</h2>
-                <div id="custoEstimado">💵 Custo estimado: —</div>
-                <div id="custoReal">💳 Valor em Reais (com taxa): —</div>
-              </div>
-              <div class="col-6">
-                <label for="taxaConversaoExtra">Acréscimo (%)</label>
-                <input id="taxaConversaoExtra" type="number" min="0" step="0.01" value="6" />
-              </div>
-            </div>
-
-            <!-- Agendamento e Ritmo de Envio -->
-            <div class="row" style="margin-top:12px;">
-              <div class="col-6">
-                <h2>Modo de Envio</h2>
-                <div class="grid-2">
-                  <div>
-                    <label for="modoEnvio">Modo</label>
-                    <select id="modoEnvio">
-                      <option value="imediato" selected>Imediato</option>
-                      <option value="agendar">Agendar</option>
-                    </select>
-                  </div>
-                  <div id="dataHoraWrap" class="hide">
-                    <label for="dataHoraEnvio">Data/Hora (agendamento)</label>
-                    <input id="dataHoraEnvio" type="datetime-local" />
-                  </div>
-                </div>
-                <div class="muted" style="margin-top:6px;">Para agendar, mantenha a aba aberta até o envio ocorrer (se usando envio local). Para backend, o agendamento é processado pelo servidor.</div>
-              </div>
-              <div class="col-6">
-                <h2>Ritmo / Lotes</h2>
-                <div class="grid-3">
-                  <div>
-                    <label for="tamanhoLote">Tamanho do Lote</label>
-                    <input id="tamanhoLote" type="number" min="1" placeholder="ex.: 50" />
-                  </div>
-                  <div>
-                    <label for="intervaloLote">Intervalo entre Lotes (min)</label>
-                    <input id="intervaloLote" type="number" min="0" value="0" />
-                  </div>
-                  <div>
-                    <label for="intervaloMsg">Intervalo entre Mensagens (s)</label>
-                    <input id="intervaloMsg" type="number" min="0" value="0" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="row" style="margin-top:12px;">
-              <div class="col-6">
-                <label for="nomeDisparo">Nome do Disparo</label>
-                <input id="nomeDisparo" placeholder="Campanha Agosto - Segmento X" required />
-              </div>
-              <div class="col-6">
-                <label for="grupoTrabalho">Grupo de Trabalho</label>
-                <input id="grupoTrabalho" placeholder="Equipe Comercial" required />
-              </div>
-            </div>
-
-            <!-- Envio -->
-            <div class="row" style="margin-top:16px;align-items:center;">
-              <div class="col-8">
-                <button class="btn success" id="btnEnviar">🚀 Enviar</button>
-                <button class="btn secondary" id="btnPausar">⏸️ Pausar</button>
-                <button class="btn secondary" id="btnRetomar" disabled>▶️ Retomar</button>
-                <button class="btn danger" id="btnCancelar" disabled>🛑 Cancelar</button>
-                <button class="btn warn" id="btnNovoEnvio">🔄 Novo Envio</button>
-              </div>
-              <div class="col-4" style="text-align:right">
-                <div class="bar"><span id="progressBar"></span></div>
-                <div class="muted" id="progressTxt">0/0</div>
-              </div>
-            </div>
-
-            <!-- Logs -->
-            <div class="row" style="margin-top:12px;">
-              <div class="col-12">
-                <h2>Logs</h2>
-              </div>
-              <div class="col-12">
-                <div id="output">Pronto para enviar.</div>
-                <div class="grid-3" style="margin-top:8px;">
-                  <div>✅ Sucesso: <b id="okCount">0</b></div>
-                  <div>❌ Erros: <b id="errCount">0</b></div>
-                  <div><button class="btn secondary" id="btnBaixarLog">⬇️ Baixar log</button></div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <script>
-          // ---------------------------- Estado ----------------------------
-          const estrategias = {
-            estrategia1: [
-              { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
-              { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
-              { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
-            ],
-            estrategia2: [
-              { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
-              { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
-            ],
-          };
-
-          let contatos = [];              // [{ to: '55...', vars: ['v1','v2', ...] }]
-          let csvHeaders = [];            // ['telefone','nome','codigo', ...]
-          let custoEmDolar = 0;           // custo estimado
-          let mapping = {                 // qual coluna alimenta cada {{n}}
-            body: [],                     // array de índices (0-based) para {{1}}, {{2}} ...
-            headerText: [],               // idem, para HEADER TEXT
-            urlButtons: {},               // { index: 0 => [colIdxFor{{1}}] }
-          };
-          let tmpl = {                    // metadados do template selecionado
-            name: "",
-            category: "",
-            components: [],
-            bodyText: "",
-            bodyVars: 0,
-            headerType: null,             // null | TEXT | IMAGE | VIDEO | DOCUMENT
-            headerText: "",
-            headerVars: 0,
-            urlButtons: [],               // lista de {index, url, hasVar}
-          };
-
-          let flags = { paused: false, cancelled: false };
-
-          // ---------------------------- Utils ----------------------------
-          const $ = (sel) => document.querySelector(sel);
-          const byId = (id) => document.getElementById(id);
-
-          function log(line){
-            const out = byId('output');
-            out.textContent += (out.textContent ? "\n" : "") + line;
-            out.scrollTop = out.scrollHeight;
-          }
-
-          function setProgress(done, total){
-            const pct = total > 0 ? (done / total) * 100 : 0;
-            byId('progressBar').style.width = pct.toFixed(1) + '%';
-            byId('progressTxt').textContent = `${done}/${total}`;
-          }
-
-          function countPlaceholders(text){
-            if(!text) return 0;
-            const matches = text.match(/\{\{\d+\}\}/g);
-            return matches ? new Set(matches).size : 0;
-          }
-
-          function substitutePlaceholders(text, values){
-            // values: array where index 0 is {{1}}, index 1 is {{2}}, ...
-            if(!text) return '';
-            return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
-              const idx = parseInt(n,10) - 1;
-              return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
-            });
-          }
-
-          function parseCSV(text){
-            // CSV simples com , ou ; e aspas
-            const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
-            const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
-            const rows = [];
-            for(const line of lines){
-              const row = [];
-              let cur = '', inQ = false;
-              for(let i=0;i<line.length;i++){
-                const ch = line[i];
-                if(ch === '"'){
-                  if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
-                  else { inQ = !inQ; }
-                }else if(ch === delim && !inQ){
-                  row.push(cur); cur='';
-                }else{
-                  cur += ch;
-                }
-              }
-              row.push(cur);
-              rows.push(row.map(c => c.trim()));
-            }
-            return rows;
-          }
-
-          function ensureNumber(v, fallback=0){
-            const n = Number(v);
-            return Number.isFinite(n) ? n : fallback;
-          }
-
-          function escapeHtml(str=''){
-            return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-          }
-
-          // ---------------------------- UI Helpers ----------------------------
-          function renderSelect(id, varIndex, current){
-            let opts = '';
-            if(csvHeaders.length>0){
-              csvHeaders.forEach((h, idx) => {
-                const sel = idx === current ? 'selected' : '';
-                opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
-              });
-            }else{
-              // fallback pelo nº de colunas detectado
-              const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
-              for(let idx=0; idx<maxCols; idx++){
-                const sel = idx === current ? 'selected' : '';
-                opts += `<option value="${idx}" ${sel}>${idx+1}</option>`;
-              }
-            }
-            return `<label for="${id}">{{${varIndex+1}}} ⟶ coluna</label><select id="${id}">${opts}</select>`;
-          }
-
-          function renderMapUI(){
-            const area = byId('mapArea');
-            const hasTemplate = !!tmpl.name;
-            const hasContacts = contatos.length > 0;
-
-            if(!hasTemplate || !hasContacts){
-              area.innerHTML = '<span class="muted">Carregue contatos e selecione um template para configurar o mapeamento.</span>';
-              updatePreview();
-              return;
-            }
-
-            const headerPart = (() => {
-              if(!tmpl.headerType) return '';
-              if(tmpl.headerType === 'TEXT' && tmpl.headerVars > 0){
-                let selects = '';
-                for(let i=0;i<tmpl.headerVars;i++){
-                  selects += renderSelect(`map-header-${i}`, i, mapping.headerText[i]);
-                }
-                return `<h3>Header TEXT — variáveis</h3>${selects}`;
-              }
-              if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
-                return '<div class="muted">Header de mídia usa a URL informada em "Link da Mídia do Header".</div>';
-              }
-              return '';
-            })();
-
-            let bodySelects = '';
-            if(tmpl.bodyVars > 0){
-              bodySelects += '<h3>Body — variáveis</h3>';
-              for(let i=0;i<tmpl.bodyVars;i++){
-                bodySelects += renderSelect(`map-body-${i}`, i, mapping.body[i]);
-              }
-            }else{
-              bodySelects += '<div class="muted">Body sem variáveis.</div>';
-            }
-
-            let buttonsPart = '';
-            if(tmpl.urlButtons.length > 0){
-              buttonsPart += '<h3>Botões URL — variáveis</h3>';
-              tmpl.urlButtons.forEach(btn => {
-                if(btn.hasVar){
-                  buttonsPart += `<div style="margin:6px 0 10px"><b>Botão #${btn.index+1}</b> — URL base: <span class="kbd">${btn.url}</span><br/>` +
-                    renderSelect(`map-urlbtn-${btn.index}-0`, 0, mapping.urlButtons[btn.index]?.[0]) + '</div>';
-                }
-              });
-            }
-
-            const sample = contatos[0] || { to:'', vars:[] };
-            const bodyPreviewVals = (mapping.body || []).map(ci => ci != null ? sample.vars[ci] : '');
-            const bodyPrev = substitutePlaceholders(tmpl.bodyText, bodyPreviewVals);
-
-            area.innerHTML = `
-              ${headerPart}
-              ${bodySelects}
-              ${buttonsPart}
-              <div style="margin-top:10px">
-                <div class="muted">Prévia com o <b>primeiro contato</b>:</div>
-                <div class="card" style="padding:10px;border:1px dashed #cbd5e1;">
-                  ${bodyPrev.replace(/\n/g,'<br/>')}
-                </div>
-              </div>
-            `;
-
-            // listeners dos selects
-            if(tmpl.headerType === 'TEXT'){
-              for(let i=0;i<tmpl.headerVars;i++){
-                byId(`map-header-${i}`)?.addEventListener('change', (e) => {
-                  mapping.headerText[i] = ensureNumber(e.target.value, 0);
-                  updatePreview();
-                });
-              }
-            }
-            for(let i=0;i<tmpl.bodyVars;i++){
-              byId(`map-body-${i}`)?.addEventListener('change', (e) => {
-                mapping.body[i] = ensureNumber(e.target.value, 0);
-                renderMapUI(); // refresh preview + UI
-                updatePreview();
-              });
-            }
-            tmpl.urlButtons.forEach(btn => {
-              if(btn.hasVar){
-                byId(`map-urlbtn-${btn.index}-0`)?.addEventListener('change', (e) => {
-                  mapping.urlButtons[btn.index] = [ensureNumber(e.target.value, 0)];
-                });
-              }
-            });
-
-            updatePreview();
-          }
-
-          // ---------------------------- Custos ----------------------------
-          async function calcularCusto(){
-            const categoria = byId('templateCategory').value;
-            const qtd = contatos.length;
-            if(!categoria || !qtd){
-              byId('custoEstimado').textContent = '💵 Custo estimado: —';
-              byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
-              return;
-            }
-            // valores aproximados — ajuste conforme sua tabela vigente
-            const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
-            custoEmDolar = qtd * price;
-            byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
-
-            try{
-              const res = await fetch('https://open.er-api.com/v6/latest/USD');
-              const data = await res.json();
-              const brl = data?.rates?.BRL ?? 5.0; // fallback
-              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
-              const final = custoEmDolar * brl * taxa;
-              byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
-            }catch(e){
-              const brl = 5.0; // fallback
-              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
-              const final = custoEmDolar * brl * taxa;
-              byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
-            }
-          }
-
-          // ---------------------------- Pré-visualização (restaurada) ----------------------------
-          function updatePreview(){
-            if(!tmpl.name){ byId('previewArea').textContent = '—'; return; }
-
-            // 1) Se o template tem exemplos no BODY, usar;
-            // 2) Caso contrário, se houver contatos + mapping, usar o primeiro contato;
-            // 3) Senão, mostrar o body cru.
-            const body = tmpl.bodyText || '';
-            let values = [];
-
-            // tenta exemplos do template
-            const compBody = (tmpl.components || []).find(c => c.type === 'BODY');
-            const exemploBody = compBody?.example?.body_text?.[0];
-            if(Array.isArray(exemploBody) && exemploBody.length){
-              values = exemploBody;
-            }else if(contatos.length && tmpl.bodyVars > 0){
-              // fallback: primeiro contato
-              const sample = contatos[0];
-              values = (mapping.body || []).map(ci => sample.vars[ci] ?? '');
-            }
-
-            const bodyPreview = values.length ? substitutePlaceholders(body, values) : body;
-
-            // Header TEXT opcional
-            let headerPreview = '';
-            if(tmpl.headerType === 'TEXT'){
-              const headerVals = [];
-              if(tmpl.headerVars > 0 && contatos.length){
-                const s = contatos[0];
-                for(let i=0;i<tmpl.headerVars;i++) headerVals.push(s.vars[mapping.headerText[i] ?? i] ?? '');
-              }
-              headerPreview = substitutePlaceholders(tmpl.headerText || '', headerVals);
-            }
-
-            const parts = [];
-            parts.push('📄 Pré-visualização:');
-            if(headerPreview){ parts.push(`*${headerPreview}*\n`); }
-            parts.push(bodyPreview);
-
-            // Botões URL com variável — exibe como anotação
-            if(tmpl.urlButtons?.length){
-              const btns = tmpl.urlButtons.map((b, i) => {
-                if(!b.hasVar) return `• Botão ${i+1}: URL fixa`;
-                const colIdx = mapping.urlButtons[i]?.[0];
-                const sampleVal = (contatos[0]?.vars || [])[colIdx ?? 0] ?? '{{1}}';
-                const final = (b.url || '').replace(/\{\{1\}\}/g, sampleVal);
-                return `• Botão ${i+1}: ${final}`;
-              }).join('\n');
-              if(btns) parts.push('\n[BOTÕES]\n' + btns);
-            }
-
-            byId('previewArea').textContent = parts.join('\n\n');
-          }
-
-          // ---------------------------- Templates ----------------------------
-          byId('btnBuscar').addEventListener('click', buscarTemplates);
-          async function buscarTemplates(){
-            const token = byId('token').value.trim();
-            const wabaId = byId('wabaId').value.trim();
-            const ver = byId('graphVersion').value;
-            if(!token || !wabaId){ alert('Informe token e WABA ID.'); return; }
-
-            const select = byId('templateSelect');
-            select.innerHTML = '<option value="">Carregando...</option>';
-
-            const urlBase = `https://graph.facebook.com/${ver}/${encodeURIComponent(wabaId)}/message_templates?limit=100&status=APPROVED`;
-            const all = [];
-            let next = urlBase;
-            try{
-              while(next){
-                const r = await fetch(next, { headers:{ Authorization:`Bearer ${token}` }});
-                const j = await r.json();
-                if(Array.isArray(j.data)) all.push(...j.data);
-                next = j?.paging?.next || null;
-              }
-            }catch(e){
-              alert('Erro ao buscar templates: ' + e.message);
-              select.innerHTML = '<option value="">-- Erro ao buscar --</option>';
-              return;
-            }
-
-            if(all.length === 0){
-              select.innerHTML = '<option value="">-- Nenhum template aprovado encontrado --</option>';
-              return;
-            }
-
-            select.innerHTML = '<option value="">-- Selecione um template --</option>';
-            all.sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
-              const opt = document.createElement('option');
-              opt.value = JSON.stringify(t);
-              opt.textContent = `${t.name} · ${t.category}`;
-              select.appendChild(opt);
-            });
-          }
-
-          byId('templateSelect').addEventListener('change', preencherTemplateInfo);
-          function preencherTemplateInfo(){
-            const val = byId('templateSelect').value;
-            if(!val) return;
-            const t = JSON.parse(val);
-
-            tmpl.name = t.name;
-            tmpl.category = t.category || '';
-            tmpl.components = t.components || [];
-            byId('templateName').value = tmpl.name;
-            byId('templateCategory').value = tmpl.category || '';
-
-            const header = tmpl.components.find(c => c.type === 'HEADER');
-            const body = tmpl.components.find(c => c.type === 'BODY');
-            const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
-
-            // Reset UI header
-            tmpl.headerType = null;
-            tmpl.headerText = '';
-            tmpl.headerVars = 0;
-            byId('headerFormat').value = '';
-            byId('headerTextWrap').classList.add('hide');
-            byId('mediaLinkWrap').classList.add('hide');
-
-            // Header
-            if(header){
-              const fmt = header.format; // TEXT | IMAGE | VIDEO | DOCUMENT
-              tmpl.headerType = fmt;
-              byId('headerFormat').value = fmt || '';
-              if(fmt === 'TEXT'){
-                tmpl.headerText = header.text || '';
-                tmpl.headerVars = countPlaceholders(tmpl.headerText);
-                byId('headerTextWrap').classList.remove('hide');
-              }else if(['IMAGE','VIDEO','DOCUMENT'].includes(fmt)){
-                byId('mediaLinkWrap').classList.remove('hide');
-              }
-            }
-
-            // Body
-            tmpl.bodyText = body?.text || '';
-            tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
-
-            // Buttons (apenas URL com {{1}})
-            tmpl.urlButtons = [];
-            if(buttons && Array.isArray(buttons.buttons)){
-              buttons.buttons.forEach((b, idx) => {
-                if(b.type === 'URL'){
-                  const hasVar = (b.url || '').includes('{{');
-                  tmpl.urlButtons.push({ index: idx, url: b.url || '', hasVar });
-                }
-              });
-            }
-
-            // Mapeamento padrão
-            mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
-            mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
-            mapping.urlButtons = {};
-
-            renderMapUI();
-            calcularCusto();
-            updatePreview();
-          }
-
-          // ---------------------------- Contatos ----------------------------
-          byId('estrategiaSelect').addEventListener('change', function(){
-            const selected = this.value;
-            if(estrategias[selected]){
-              contatos = JSON.parse(JSON.stringify(estrategias[selected]));
-              csvHeaders = [];
-              byId('contagemContatos').textContent = `✔️ Estratégia "${selected}" carregada com ${contatos.length} contato(s).`;
-              renderMapUI();
-              calcularCusto();
-            }
-          });
-
-          byId('fileInput').addEventListener('change', function(){
-            const file = this.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const rows = parseCSV(e.target.result);
-              if(rows.length === 0) return;
-
-              // Detecta cabeçalho
-              const head = rows[0].map(c => (c||'').toLowerCase());
-              const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
-
-              const dataRows = hasHeader ? rows.slice(1) : rows;
-              csvHeaders = hasHeader ? rows[0] : (dataRows[0]?.map((_,i)=>`coluna_${i+1}`) || []);
-
-              contatos = dataRows.map(r => ({
-                to: (r[0] || '').replace(/\D+/g,''),
-                vars: r.slice(1),
-              })).filter(c => c.to);
-
-              byId('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
-              renderMapUI();
-              calcularCusto();
-            };
-            reader.readAsText(file);
-          });
-
-          byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
-          byId('templateCategory').addEventListener('change', calcularCusto);
-
-          // ---------------------------- Agendamento UI ----------------------------
-          byId('modoEnvio').addEventListener('change', () => {
-            const isAgendar = byId('modoEnvio').value === 'agendar';
-            byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
-          });
-
-          // ---------------------------- Envio via BACKEND (novo) ----------------------------
-          async function onEnviarClick(){
-            if(contatos.length === 0){ 
-              alert('Nenhum contato carregado.'); 
-              return; 
-            }
-
-            const payload = {
-              token: byId("token").value.trim(),
-              phone_id: byId("phoneId").value.trim(),
-              waba_id: byId("wabaId").value.trim(),
-              nome_disparo: byId("nomeDisparo").value.trim(),
-              grupo_trabalho: byId("grupoTrabalho").value.trim(),
-              modo_envio: byId("modoEnvio").value,
-              data_hora_agendamento: byId("dataHoraEnvio").value || null,
-              intervalo_msg: Number(byId("intervaloMsg").value || 0),
-              tamanho_lote: Number(byId("tamanhoLote").value || 0),
-              intervalo_lote: Number(byId("intervaloLote").value || 0),
-              template: {
-                name: tmpl.name,
-                language: "pt_BR",
-                headerType: tmpl.headerType,
-                bodyText: tmpl.bodyText,
-                bodyVars: tmpl.bodyVars,
-                headerVars: tmpl.headerVars,
-                urlButtons: tmpl.urlButtons,
-                mapping: mapping,
-                mediaLink: byId("mediaLink").value.trim()
-              },
-              contatos: contatos.map(c => ({
-                telefone: c.to,
-                conteudo: c.vars.join(",")   // simples para o worker processar
-              }))
-            };
-
-            try {
-              const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-              });
-              const data = await res.json();
-              if(data.ok){
-                log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
-              }else{
-                log("❌ Erro ao salvar disparo: " + (data.erro || JSON.stringify(data)));
-              }
-            } catch(e) {
-              log("❌ Falha de rede ao salvar disparo: " + e.message);
-            }
-          }
-
-          document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
-
-          // Botões de pausa/retomar/cancelar — apenas UI (backend controla o envio)
-          byId('btnPausar').addEventListener('click', () => {
-            flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausa solicitada (se aplicável ao backend).');
-          });
-          byId('btnRetomar').addEventListener('click', () => {
-            flags.paused = false; byId('btnRetomar').disabled = true; log('▶️ Retomar solicitado (se aplicável ao backend).');
-          });
-          byId('btnCancelar').addEventListener('click', () => {
-            flags.cancelled = true; log('🛑 Cancelamento solicitado (se aplicável ao backend).');
-          });
-
-          // ---------------------------- Novo Envio ----------------------------
-          byId('btnNovoEnvio').addEventListener('click', () => {
-            contatos = [];
-            csvHeaders = [];
-            mapping = { body:[], headerText:[], urlButtons:{} };
-            flags = { paused:false, cancelled:false };
-            byId('output').textContent = 'Pronto para novo envio.';
-            byId('okCount').textContent = '0';
-            byId('errCount').textContent = '0';
-            byId('progressBar').style.width = '0%';
-            byId('progressTxt').textContent = '0/0';
-            byId('contagemContatos').textContent = 'Nenhum contato ainda.';
-            renderMapUI();
-            calcularCusto();
-            log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas se for buscar templates.');
-          });
-          // --- Preencher IDs ao selecionar conta ---
-          const contas = {
-            connectzap:   { phone: "732661079928516", waba: "1910445533050310" },
-            recoverypj:   { phone: "727586317113885", waba: "844006574616797" },
-            recoverypf:   { phone: "802977069563598", waba: "825347669829173" },
-            mpcobranca:   { phone: "821562937700669", waba: "1989071868573988" },
-            divzero:      { phone: "779797401888141", waba: "1714740535849713" },
-            arc4u:        { phone: "829210283602406", waba: "757728786687884" },
-            serasa:       { phone: "713021321904495", waba: "803987045361450" },
-            mpvendas:     { phone: "803535039503723", waba: "760293050103603" }
-          };
-
-          document.getElementById("contaSelect").addEventListener("change", function() {
-            const conta = contas[this.value];
-            if (conta) {
-              document.getElementById("phoneId").value = conta.phone;
-              document.getElementById("wabaId").value = conta.waba;
-            } else {
-              document.getElementById("phoneId").value = "";
-              document.getElementById("wabaId").value = "";
-            }
-          });
-          
-          // ---------------------------- Baixar Log ----------------------------
-          byId('btnBaixarLog').addEventListener('click', () => {
-            const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `log-whatsapp-${Date.now()}.txt`;
-            document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(()=> URL.revokeObjectURL(url), 500);
-          });
-        </script>
+      <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
+    </div>
+  </section>
+
+  <!-- Cadastrar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Cadastrar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
       </div>
+      <div class="md:col-span-2">
+        <label class="text-sm text-gray-700">Nome completo</label>
+        <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Carteira</label>
+        <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Origem BD</label>
+        <select id="cadOrigem" class="w-full border rounded-md p-2">
+          <option value="">Selecione</option>
+          <option>Bd4</option><option>Bd5</option><option>Bd7</option><option>Bd8</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
+      <div id="cadMsg" class="text-sm hidden"></div>
+    </div>
+  </section>
 
-      <!-- Aba: Agendamentos -->
-      <div id="tab-agendamentos" class="tab-content">
-        <div class="row" style="align-items:end">
-          <div class="col-4">
-            <h2>📅 Gerenciar Agendamentos</h2>
-          </div>
-          <div class="col-8" style="text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-            <input id="filtroBusca" placeholder="Buscar por nome ou grupo..." />
-            <select id="filtroModo">
-              <option value="">Modo: todos</option>
-              <option value="imediato">Imediato</option>
-              <option value="agendar">Agendado</option>
-            </select>
-            <select id="filtroStatus">
-              <option value="">Status: todos</option>
-              <option value="agendado">Agendado</option>
-              <option value="em_andamento">Em andamento</option>
-              <option value="pausado">Pausado</option>
-              <option value="concluido">Concluído</option>
-              <option value="cancelado">Cancelado</option>
-            </select>
-            <button class="btn secondary" id="btnAtualizarAg">⟳ Atualizar</button>
-          </div>
+  <!-- Buscar/editar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Buscar & editar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
+      </div>
+      <div class="flex items-end">
+        <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
+      </div>
+      <div class="flex items-end">
+        <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
+      </div>
+    </div>
+
+    <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <span class="text-xs text-gray-500 block">Código</span>
+          <span id="edCodigo" class="font-medium">—</span>
         </div>
-
-        <!-- Totais -->
-        <div id="agTotals" class="row" style="margin-top:8px">
-          <div class="col-12 muted">—</div>
+        <div class="md:col-span-2">
+          <span class="text-xs text-gray-500 block">Nome</span>
+          <span id="edNome" class="font-medium">—</span>
         </div>
-
-        <div class="card" style="margin-top:12px">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:20%">Nome</th>
-                <th style="width:14%">Grupo</th>
-                <th style="width:16%">Data/Hora</th>
-                <th style="width:12%">Modo</th>
-                <th style="width:18%">Progresso</th>
-                <th style="width:10%">Status</th>
-                <th style="width:10%">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tbodyAgendamentos">
-              <tr><td colspan="7" class="muted">Carregando agendamentos...</td></tr>
-            </tbody>
-          </table>
-
-          <!-- Paginação simples -->
-          <div id="agPagination" style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-            <button class="btn secondary" id="agPrev">◀</button>
-            <span class="muted" id="agPageInfo">Página 1/1</span>
-            <button class="btn secondary" id="agNext">▶</button>
-          </div>
+        <div>
+          <label class="text-sm text-gray-700">Carteira</label>
+          <select id="edCarteira" class="w-full border rounded-md p-2"></select>
+        </div>
+        <div>
+          <span class="text-xs text-gray-500 block">Origem BD</span>
+          <span id="edOrigem" class="font-medium">—</span>
         </div>
       </div>
-
-      <!-- Modal de edição -->
-      <div id="agModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="agModalTitle">
-        <div class="card" style="width:520px;max-width:95%;position:relative">
-          <h2 id="agModalTitle">✏️ Editar envio</h2>
-          <div class="row">
-            <div class="col-12">
-              <label>Nome</label>
-              <input id="mNome" />
-            </div>
-            <div class="col-12">
-              <label>Grupo</label>
-              <input id="mGrupo" />
-            </div>
-            <div class="col-6">
-              <label>Modo</label>
-              <select id="mModo">
-                <option value="imediato">Imediato</option>
-                <option value="agendar">Agendar</option>
-              </select>
-            </div>
-            <div class="col-6" id="mDataWrap">
-              <label>Data/Hora (agendamento)</label>
-              <input id="mDataHora" type="datetime-local" />
-            </div>
-            <div class="col-4">
-              <label>Tamanho do Lote</label>
-              <input id="mTam" type="number" min="1" />
-            </div>
-            <div class="col-4">
-              <label>Intervalo Lote (min)</label>
-              <input id="mIntLote" type="number" min="0" />
-            </div>
-            <div class="col-4">
-              <label>Intervalo Msg (s)</label>
-              <input id="mIntMsg" type="number" min="0" />
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
-            <button class="btn secondary" id="mCancelar">Cancelar</button>
-            <button class="btn success" id="mSalvar">Salvar</button>
-          </div>
-        </div>
+      <div class="flex gap-2 mt-3">
+        <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+        <div id="editMsg" class="text-sm hidden"></div>
       </div>
+    </div>
+  </section>
 
+  <!-- Agentes online -->
+  <section class="card">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <h2 class="font-bold text-lg">Agentes online agora</h2>
+      <div class="flex items-center gap-2">
+        <span class="pill"><span class="dot online"></span> Online</span>
+        <!-- Filtro por carteira -->
+        <label for="filtroCarteira" class="text-sm text-gray-600">Carteira:</label>
+        <select id="filtroCarteira" class="border rounded-md p-2 text-sm"></select>
+      </div>
+    </div>
+
+    <div class="overflow-auto border rounded-lg">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-3 py-2">Código</th>
+            <th class="text-left px-3 py-2">Nome</th>
+            <th class="text-left px-3 py-2">Carteira</th>
+            <th class="text-left px-3 py-2">Desde</th>
+            <th class="text-left px-3 py-2">Tickets ativos</th>
+            <th class="text-left px-3 py-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyOnline"></tbody>
+      </table>
+    </div>
+    <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
+  </section>
+
+  <!-- Fila por carteira (não atribuídos) -->
+  <section class="card">
+    <div class="flex items-center justify-between">
+      <h2 class="font-bold text-lg">Fila de contatos não atribuídos por carteira</h2>
+      <button id="btnRefreshFila" class="btn btn-muted">Atualizar</button>
+    </div>
+    <div class="overflow-auto border rounded-lg mt-3">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="text-left px-3 py-2">Carteira</th>
+            <th class="text-left px-3 py-2">Em fila</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyFila"></tbody>
+      </table>
+    </div>
+    <div id="filaMsg" class="text-sm text-gray-500 mt-2"></div>
+  </section>
+
+  <!-- Logout automático por carteira -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-2">Logout automático dos operadores</h2>
+    <p class="text-sm text-gray-600 mb-3">Configure o logout ao final do turno. Se ativo, os agentes selecionados (por carteira) serão forçados a ficar offline no horário configurado.</p>
+
+    <div class="flex items-center gap-3 mb-3">
+      <label class="flex items-center gap-2">
+        <input id="toggleLogout" type="checkbox" class="w-4 h-4">
+        <span class="text-sm">Deslogar operadores ao final do turno</span>
+      </label>
+      <label class="text-sm text-gray-700 flex items-center gap-2">
+        Horário:
+        <input id="horaLogout" type="time" class="border rounded-md p-2 text-sm" value="18:00">
+      </label>
+      <button id="btnSalvarLogout" class="btn btn-primary">Salvar</button>
+      <button id="btnForcarLogoutAgora" class="btn btn-muted">Deslogar agora</button>
+      <span id="logoutMsg" class="text-sm text-gray-500"></span>
+    </div>
+
+    <div id="wrapCarteiras" class="grid grid-cols-1 md:grid-cols-3 gap-2"></div>
+  </section>
+</main>
 
 <script>
-  // ==== Tabs (inalterado) ====
-  document.querySelectorAll(".tab-btn").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
-      btn.classList.add("active");
-      document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
-      if(btn.dataset.tab==="agendamentos") carregarAgendamentos(true);
+/* === Bases de API === */
+const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/,''); // fila/agentes
+const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/,''); // tickets
+
+/* === Catálogo de carteiras (1 fonte) === */
+const CARTEIRAS = [
+  "ConnectZap","Banco PAN","Recovery PJ","Recovery PF",
+  "Mercado Pago Cobrança","DivZero","Arc4U","Serasa","Mercado Pago Vendas"
+];
+
+/* === Helpers UI === */
+function showMsg(el, text, type="ok"){ el.classList.remove("hidden"); el.textContent=text; el.style.color=(type==="ok"?"var(--ok)":type==="warn"?"var(--warn)":"var(--err)"); }
+function hideMsg(el){ el.classList.add("hidden"); el.textContent=""; el.style.color=""; }
+function setText(el, text){ el.textContent = text; }
+function fmt(dt){ try{ return new Date(dt).toLocaleString("pt-BR"); }catch{ return dt||"—"; } }
+
+/* === Estados ===== */
+let ultimoOnline = []; // [{codigo_do_agente,nome,carteira,data_hora}]
+let mapaTicketsAtivos = {}; // key `${codigo}-${carteira}` => count
+let filaPorCarteira = {};  // { carteira: count }
+
+/* === Preenche selects/checkboxes de carteiras === */
+function hydrateCarteirasUI(){
+  const selCad = document.getElementById("cadCarteira");
+  const selEd  = document.getElementById("edCarteira");
+  const selFiltro = document.getElementById("filtroCarteira");
+
+  const mk = (sel, includeTodas=false) => {
+    sel.innerHTML = "";
+    if(includeTodas){ const o=document.createElement("option"); o.value=""; o.textContent="Todas"; sel.appendChild(o); }
+    CARTEIRAS.forEach(c=>{
+      const o=document.createElement("option");
+      o.value=c; o.textContent=c;
+      sel.appendChild(o);
     });
-  });
+  };
+  mk(selCad,false);
+  mk(selEd,false);
+  mk(selFiltro,true);
 
-  // ==== Config ====
-  const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";
-  const PAGE_SIZE = 10;
-
-  // ==== State da aba Agendamentos ====
-  let agRaw = [];         // dados crus do /api/envios
-  let agFiltered = [];    // filtrados por busca/modo/status
-  let agPage = 1;
-
-  // ==== Helpers ====
-  const fmtBadge = (text, kind) =>
-    `<span class="pill" style="${kind==='ok'?'background:#ecfdf5;border-color:#bbf7d0;color:#065f46':kind==='warn'?'background:#fff7ed;border-color:#fed7aa;color:#9a3412':kind==='err'?'background:#fef2f2;border-color:#fecaca;color:#991b1b':'background:#eef2ff;border-color:#c7d2fe;color:#3730a3'}">${text}</span>`;
-
-  const pad2 = n => String(n).padStart(2,"0");
-
-  function toLocalISO(dtStr){
-    // Espera "YYYY-MM-DDTHH:MM:SS" (ou com Z) e devolve "YYYY-MM-DDTHH:MM"
-    if(!dtStr) return "";
-    const d = new Date(dtStr);
-    const y = d.getFullYear(), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
-    const hh = pad2(d.getHours()), mm = pad2(d.getMinutes());
-    return `${y}-${m}-${day}T${hh}:${mm}`;
-  }
-
-  function fmtDateTime(dtStr){
-    if(!dtStr) return "—";
-    const d = new Date(dtStr);
-    return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
-  }
-
-  function progressBar(done, total){
-    const pct = total>0 ? Math.round((done/total)*100) : 0;
-    return `
-      <div class="bar" title="${pct}%">
-        <span style="width:${pct}%"></span>
-      </div>
-      <div class="muted">${done}/${total}</div>
+  // Checkboxes logout
+  const wrap = document.getElementById("wrapCarteiras");
+  wrap.innerHTML = "";
+  CARTEIRAS.forEach(c=>{
+    const id = "chk_" + c.replace(/\s+/g,"_").toLowerCase();
+    const div = document.createElement("label");
+    div.className = "flex items-center gap-2 border rounded-md p-2";
+    div.innerHTML = `
+      <input type="checkbox" class="w-4 h-4 chkCarteira" id="${id}" data-carteira="${c}">
+      <span class="text-sm">${c}</span>
     `;
-  }
+    wrap.appendChild(div);
+  });
+}
 
-  function computeDone(e){
-    const t = e.totais||{};
-    return (t.enviados||0) + (t.erros||0) + (t.cancelados||0);
-  }
+/* === KPIs / Online === */
+async function carregarOnlineEMetricas(){
+  const kpiMsg = document.getElementById("kpiMsg");
+  setText(kpiMsg, "Atualizando…");
+  try{
+    // 1) Quem está online
+    const r = await fetch(`${API_BASE}/fila/status`);
+    const lista = await r.json();
+    ultimoOnline = Array.isArray(lista) ? lista : [];
 
-  function statusBadge(s){
-    switch(s){
-      case "agendado": return fmtBadge("Agendado");
-      case "em_andamento": return fmtBadge("Em andamento","warn");
-      case "pausado": return fmtBadge("Pausado","warn");
-      case "concluido": return fmtBadge("Concluído","ok");
-      case "cancelado": return fmtBadge("Cancelado","err");
-      default: return fmtBadge(s || "—");
-    }
-  }
+    // 2) KPI: total e por carteira
+    setText(document.getElementById("kpiOnlineTotal"), ultimoOnline.length);
+    const porCarteira = {};
+    ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
+    const wrap = document.getElementById("kpiOnlineCarteiras");
+    wrap.innerHTML = "";
+    Object.entries(porCarteira).forEach(([car,qt])=>{
+      const span = document.createElement("span");
+      span.className = "pill";
+      span.textContent = `${car}: ${qt}`;
+      wrap.appendChild(span);
+    });
 
-  function renderTotals(list){
-    const box = document.getElementById("agTotals");
-    if(!list.length){ box.innerHTML = `<div class="col-12 muted">Nenhum agendamento.</div>`; return; }
-    const acc = { total:0, agendado:0, em_andamento:0, pausado:0, concluido:0, cancelado:0 };
-    list.forEach(e=>{ acc.total++; acc[e.status_geral] = (acc[e.status_geral]||0)+1; });
-    box.innerHTML = `
-      <div class="col-12" style="display:flex;gap:10px;flex-wrap:wrap">
-        <span class="muted">Total: <b>${acc.total}</b></span>
-        ${fmtBadge(`Agendados: ${acc.agendado}`)}
-        ${fmtBadge(`Em andamento: ${acc.em_andamento}`,"warn")}
-        ${fmtBadge(`Pausados: ${acc.pausado}`,"warn")}
-        ${fmtBadge(`Concluídos: ${acc.concluido}`,"ok")}
-        ${fmtBadge(`Cancelados: ${acc.cancelado}`,"err")}
-      </div>
+    // 3) Tickets ativos: para cada online, busca /api/tickets/minhas
+    const prom = ultimoOnline.map(async a => {
+      const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(a.codigo_do_agente)}&carteira=${encodeURIComponent(a.carteira)}`;
+      try{
+        const rr = await fetch(url);
+        const rows = rr.ok ? await rr.json() : [];
+        mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = Array.isArray(rows) ? rows.length : 0;
+      }catch{ mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = 0; }
+    });
+    await Promise.all(prom);
+
+    // 4) KPI em andamento (soma)
+    const totalTickets = Object.values(mapaTicketsAtivos).reduce((s,n)=>s+(n||0),0);
+    setText(document.getElementById("kpiEmAndamento"), totalTickets);
+
+    // 5) Fila pendente (não atribuídos)
+    await carregarFilaNaoAtribuidos(); // atualiza kpiFila + tabela
+
+    // 6) Tabela de online
+    renderOnlineTable();
+
+    setText(document.getElementById("kpiAtualizado"), new Date().toLocaleTimeString("pt-BR"));
+    setText(kpiMsg, "OK");
+  }catch(e){
+    setText(kpiMsg, "Falha ao atualizar. Verifique APIs.");
+  }
+}
+
+function renderOnlineTable(){
+  const tbody = document.getElementById("tbodyOnline");
+  tbody.innerHTML = "";
+  const filtro = document.getElementById("filtroCarteira").value || "";
+
+  const filtrados = ultimoOnline.filter(a => !filtro || a.carteira === filtro);
+  filtrados.forEach(a=>{
+    const tr = document.createElement("tr");
+    const key = `${a.codigo_do_agente}-${a.carteira}`;
+    const tickets = mapaTicketsAtivos[key] ?? "—";
+    tr.innerHTML = `
+      <td class="px-3 py-2">${a.codigo_do_agente}</td>
+      <td class="px-3 py-2">${a.nome||"-"}</td>
+      <td class="px-3 py-2">${a.carteira}</td>
+      <td class="px-3 py-2">${fmt(a.data_hora)}</td>
+      <td class="px-3 py-2">${tickets}</td>
+      <td class="px-3 py-2">
+        <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g,"\\'")}')">Forçar offline</button>
+      </td>
     `;
-  }
-
-  // ==== Filtros + Paginação ====
-  function applyFilters(){
-    const q = (document.getElementById("filtroBusca").value||"").toLowerCase();
-    const modo = document.getElementById("filtroModo").value;
-    const stat = document.getElementById("filtroStatus").value;
-
-    agFiltered = agRaw.filter(e=>{
-      const nameHit = (e.nome_disparo||"").toLowerCase().includes(q) || (e.grupo_trabalho||"").toLowerCase().includes(q);
-      const modoHit = !modo || e.modo_envio===modo;
-      const statHit = !stat || e.status_geral===stat;
-      return nameHit && modoHit && statHit;
-    });
-
-    agPage = 1;
-    renderTable();
-  }
-
-  function pageSlice(){
-    const start = (agPage-1)*PAGE_SIZE;
-    return agFiltered.slice(start, start+PAGE_SIZE);
-  }
-
-  function renderPagination(){
-    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
-    document.getElementById("agPageInfo").textContent = `Página ${agPage}/${totalPages}`;
-    document.getElementById("agPrev").disabled = agPage<=1;
-    document.getElementById("agNext").disabled = agPage>=totalPages;
-  }
-
-  document.getElementById("agPrev").addEventListener("click", ()=>{ if(agPage>1){ agPage--; renderTable(); } });
-  document.getElementById("agNext").addEventListener("click", ()=>{
-    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
-    if(agPage<totalPages){ agPage++; renderTable(); }
+    tbody.appendChild(tr);
   });
 
-  // ==== Render da Tabela ====
-  function renderTable(){
-    const tbody = document.getElementById("tbodyAgendamentos");
-    tbody.innerHTML = "";
-    renderTotals(agFiltered);
+  const msg = document.getElementById("onlineMsg");
+  msg.textContent = filtrados.length ? "" : (filtro ? `Nenhum agente online na carteira "${filtro}".` : "Nenhum agente online no momento.");
+}
 
-    const rows = pageSlice();
-    if(!rows.length){
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Nenhum agendamento com os filtros atuais.</td></tr>`;
-      renderPagination();
-      return;
-    }
-
-    rows.forEach(e=>{
-      const total = e.totais?.total || 0;
-      const done = computeDone(e);
-      const prog = progressBar(done, total);
-
-      const buttons = [];
-      buttons.push(`<button title="Editar" onclick="editarEnvio(${e.id})">✏️</button>`);
-      buttons.push(`<button title="Excluir" onclick="excluirEnvio(${e.id})">🗑️</button>`);
-      if(e.status_geral==="agendado" || e.status_geral==="em_andamento"){
-        buttons.push(`<button title="Pausar" onclick="pausarEnvio(${e.id})">⏸️</button>`);
-      }
-      if(e.status_geral==="pausado"){
-        buttons.push(`<button title="Retomar" onclick="retomarEnvio(${e.id})">▶️</button>`);
-      }
-      if(e.status_geral!=="concluido" && e.status_geral!=="cancelado"){
-        buttons.push(`<button title="Cancelar" onclick="cancelarEnvio(${e.id})">🛑</button>`);
-      }
-
-      const modoBadge = e.modo_envio==="agendar" ? fmtBadge("Agendado") : fmtBadge("Imediato","ok");
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td><b>${e.nome_disparo||"-"}</b></td>
-        <td>${e.grupo_trabalho||"-"}</td>
-        <td>${fmtDateTime(e.data_hora_agendamento)}</td>
-        <td>${modoBadge}</td>
-        <td>${prog}</td>
-        <td>${statusBadge(e.status_geral)}</td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap">${buttons.join("")}</td>
-      `;
-      tbody.appendChild(tr);
+async function forcarOffline(codigo, carteira){
+  if(!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
+  try{
+    const r = await fetch(`${API_BASE}/fila/offline`,{
+      method:"DELETE", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ codigo_do_agente: codigo, carteira })
     });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.erro||"Falha ao forçar offline");
+    await carregarOnlineEMetricas();
+  }catch(e){ alert(e.message||"Erro ao forçar offline"); }
+}
 
-    renderPagination();
-  }
+/* === Fila não atribuídos === */
+async function carregarFilaNaoAtribuidos(){
+  const kpiTotal = document.getElementById("kpiFilaTotal");
+  const kpiWrap  = document.getElementById("kpiFilaCarteiras");
+  const tbody    = document.getElementById("tbodyFila");
+  const msg      = document.getElementById("filaMsg");
+  kpiWrap.innerHTML = ""; tbody.innerHTML = ""; msg.textContent = "Carregando…";
 
-  // ==== Carregar da API ====
-  async function carregarAgendamentos(force=false){
-    const tbody=document.getElementById("tbodyAgendamentos");
-    if(force){ tbody.innerHTML=`<tr><td colspan="7" class="muted">⏳ Buscando...</td></tr>`; }
-    try{
-      const params = new URLSearchParams();
-      const modo = document.getElementById("filtroModo").value;
-      const stat = document.getElementById("filtroStatus").value;
-      if(modo) params.set("modo_envio", modo);
-      if(stat) params.set("status", stat);
+  filaPorCarteira = {};
 
-      const res = await fetch(`${API_BASE}/api/envios?${params.toString()}`);
-      const data = await res.json();
-
-      agRaw = Array.isArray(data) ? data : [];
-      applyFilters(); // isso renderiza também
-    }catch(err){
-      console.error(err);
-      tbody.innerHTML=`<tr><td colspan="7" class="muted">Erro ao carregar agendamentos</td></tr>`;
+  // 1) caminho preferido: endpoint agregado
+  try{
+    const r = await fetch(`${API_BASE}/fila/pendentes_por_carteira`);
+    if(r.ok){
+      const data = await r.json(); // esperado: [{carteira:"x", total: N}, ...]
+      if(Array.isArray(data)){
+        data.forEach(row => { filaPorCarteira[row.carteira] = Number(row.total)||0; });
+      }
+    }else{
+      throw new Error("sem endpoint agregado");
     }
-  }
-
-  // ==== Listeners de filtro e atualizar ====
-  document.getElementById("filtroBusca").addEventListener("input", ()=> applyFilters());
-  document.getElementById("filtroModo").addEventListener("change", ()=> carregarAgendamentos(true));
-  document.getElementById("filtroStatus").addEventListener("change", ()=> carregarAgendamentos(true));
-  document.getElementById("btnAtualizarAg").addEventListener("click", ()=> carregarAgendamentos(true));
-
-  // ==== Modal de edição ====
-  const modal = document.getElementById("agModal");
-  let editingId = null;
-
-  function openModal(envio){
-    editingId = envio.id;
-    document.getElementById("mNome").value = envio.nome_disparo || "";
-    document.getElementById("mGrupo").value = envio.grupo_trabalho || "";
-    document.getElementById("mModo").value = envio.modo_envio || "imediato";
-    document.getElementById("mDataHora").value = envio.data_hora_agendamento ? toLocalISO(envio.data_hora_agendamento) : "";
-    document.getElementById("mTam").value = envio.tamanho_lote ?? "";
-    document.getElementById("mIntLote").value = envio.intervalo_lote ?? "";
-    document.getElementById("mIntMsg").value = envio.intervalo_msg ?? "";
-    toggleModalDate();
-    modal.classList.add("open");
-  }
-
-  function closeModal(){
-    modal.classList.remove("open");
-    editingId = null;
-  }
-  // fechar clicando fora
-  modal.addEventListener("click", (e) => { if(e.target === modal) closeModal(); });
-  // fechar com Esc
-  document.addEventListener("keydown", (e) => {
-    if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
-  });
-
-
-
-  function toggleModalDate(){
-    const wrap = document.getElementById("mDataWrap");
-    wrap.classList.toggle("hide", document.getElementById("mModo").value!=="agendar");
-  }
-  document.getElementById("mModo").addEventListener("change", toggleModalDate);
-  document.getElementById("mCancelar").addEventListener("click", closeModal);
-
-  document.getElementById("mSalvar").addEventListener("click", async ()=>{
-    if(!editingId) return;
-    const body = {
-      nome_disparo: document.getElementById("mNome").value.trim(),
-      grupo_trabalho: document.getElementById("mGrupo").value.trim(),
-      modo_envio: document.getElementById("mModo").value,
-      data_hora_agendamento: document.getElementById("mModo").value==="agendar" ? document.getElementById("mDataHora").value : null,
-      tamanho_lote: Number(document.getElementById("mTam").value||0) || null,
-      intervalo_lote: Number(document.getElementById("mIntLote").value||0) || null,
-      intervalo_msg: Number(document.getElementById("mIntMsg").value||0) || null,
-    };
+  }catch{
+    // 2) fallback: traz a fila completa e agrega no front
     try{
-      const res = await fetch(`${API_BASE}/api/envios/${editingId}`, {
-        method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+      const r2 = await fetch(`${API_BASE}/fila/pendentes`);
+      const lista = r2.ok ? await r2.json() : [];
+      (Array.isArray(lista)?lista:[]).forEach(item=>{
+        const car = item.carteira || "—";
+        filaPorCarteira[car] = (filaPorCarteira[car]||0) + 1;
       });
-      const j = await res.json();
-      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao salvar"); return; }
-      closeModal();
-      await carregarAgendamentos(true);
-    }catch(e){
-      alert("Erro ao salvar edição");
-      console.error(e);
-    }
+    }catch{}
+  }
+
+  // completa carteiras que não vieram (zera)
+  CARTEIRAS.forEach(c=>{ if(!(c in filaPorCarteira)) filaPorCarteira[c]=0; });
+
+  // KPI total + chips
+  const total = Object.values(filaPorCarteira).reduce((s,n)=>s+(n||0),0);
+  setText(kpiTotal, total);
+  Object.entries(filaPorCarteira).forEach(([car,qt])=>{
+    const span = document.createElement("span");
+    span.className = "pill";
+    span.textContent = `${car}: ${qt}`;
+    kpiWrap.appendChild(span);
   });
 
-  // ==== Ações expostas no escopo global ====
-  window.editarEnvio = (id)=>{
-    const e = agRaw.find(x=>x.id===id);
-    if(!e){ alert("Envio não encontrado"); return; }
-    openModal(e);
-  };
+  // Tabela
+  Object.entries(filaPorCarteira).sort((a,b)=>b[1]-a[1]).forEach(([car,qt])=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="px-3 py-2">${car}</td><td class="px-3 py-2">${qt}</td>`;
+    tbody.appendChild(tr);
+  });
 
-  window.excluirEnvio = async (id)=>{
-    if(!confirm("Excluir este envio? Essa ação é irreversível.")) return;
-    try{
-      const res = await fetch(`${API_BASE}/api/envios/${id}`, { method:"DELETE" });
-      const j = await res.json();
-      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao excluir"); return; }
-      await carregarAgendamentos(true);
-    }catch(e){
-      alert("Erro ao excluir");
-      console.error(e);
-    }
-  };
+  msg.textContent = "";
+}
 
-  window.pausarEnvio = async (id)=>{
-    if(!confirm("Pausar envio? Itens pendentes irão para 'pausado'.")) return;
-    try{
-      const res = await fetch(`${API_BASE}/api/envios/${id}/pause`, { method:"PATCH" });
-      const j = await res.json();
-      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao pausar"); return; }
-      await carregarAgendamentos(true);
-    }catch(e){
-      alert("Erro ao pausar");
-      console.error(e);
-    }
-  };
+/* === Cadastro de agente === */
+document.getElementById("btnCadastrar").onclick = async () =>{
+  const msg = document.getElementById("cadMsg"); hideMsg(msg);
+  const codigo = Number(document.getElementById("cadCodigo").value);
+  const nome = (document.getElementById("cadNome").value||"").trim();
+  const carteira = document.getElementById("cadCarteira").value;
+  const origem = document.getElementById("cadOrigem").value;
+  if(!codigo||!Number.isInteger(codigo)) return showMsg(msg,"Código precisa ser inteiro.","warn");
+  if(!nome || nome.split(" ").length<2) return showMsg(msg,"Informe o nome completo.","warn");
+  if(!carteira) return showMsg(msg,"Selecione a carteira.","warn");
+  if(!origem) return showMsg(msg,"Selecione a origem BD.","warn");
 
-  window.retomarEnvio = async (id)=>{
-    try{
-      const res = await fetch(`${API_BASE}/api/envios/${id}/resume`, { method:"PATCH" });
-      const j = await res.json();
-      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao retomar"); return; }
-      await carregarAgendamentos(true);
-    }catch(e){
-      alert("Erro ao retomar");
-      console.error(e);
-    }
-  };
+  try{
+    const r = await fetch(`${API_BASE}/agentes`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+    });
+    const j = await r.json();
+    if(!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
+    showMsg(msg, "Agente cadastrado com sucesso.", "ok");
+    document.getElementById("cadCodigo").value="";
+    document.getElementById("cadNome").value="";
+    document.getElementById("cadCarteira").value="";
+    document.getElementById("cadOrigem").value="";
+    carregarOnlineEMetricas();
+  }catch(e){ showMsg(msg,"Erro de rede ao cadastrar.","err"); }
+};
 
-  window.cancelarEnvio = async (id)=>{
-    if(!confirm("Cancelar envio? Pendentes/pausados serão marcados como 'cancelado'.")) return;
-    try{
-      const res = await fetch(`${API_BASE}/api/envios/${id}/cancel`, { method:"PATCH" });
-      const j = await res.json();
-      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao cancelar"); return; }
-      await carregarAgendamentos(true);
-    }catch(e){
-      alert("Erro ao cancelar");
-      console.error(e);
-    }
-  };
+/* === Buscar/editar agente === */
+document.getElementById("btnBuscar").onclick = async () => {
+  const cod = Number(document.getElementById("buscaCodigo").value);
+  const msg = document.getElementById("editMsg"); hideMsg(msg);
+  if(!cod||!Number.isInteger(cod)) return showMsg(msg,"Informe um código inteiro válido.","warn");
+  try{
+    const r = await fetch(`${API_BASE}/agentes/${cod}`);
+    const j = await r.json();
+    if(!j.ok) { showMsg(msg, j.erro || "Não encontrado.", "warn"); document.getElementById("editBox").classList.add("hidden"); return; }
+    const ag = j.agente;
+    document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
+    document.getElementById("edNome").textContent = ag.nome;
+    document.getElementById("edCarteira").value = ag.carteira;
+    document.getElementById("edOrigem").textContent = ag.origem_bd;
+    document.getElementById("editBox").classList.remove("hidden");
+  }catch(e){ showMsg(msg, "Erro ao buscar agente.", "err"); }
+};
+document.getElementById("btnLimparBusca").onclick = () => {
+  document.getElementById("buscaCodigo").value="";
+  document.getElementById("editBox").classList.add("hidden");
+  hideMsg(document.getElementById("editMsg"));
+};
+document.getElementById("btnSalvarEdicao").onclick = async () => {
+  const msg = document.getElementById("editMsg"); hideMsg(msg);
+  const codigo = Number(document.getElementById("edCodigo").textContent);
+  const nova = document.getElementById("edCarteira").value;
+  if(!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
+  try{
+    const r = await fetch(`${API_BASE}/agentes/${codigo}`,{
+      method:"PUT", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ carteira: nova })
+    });
+    const j = await r.json();
+    if(!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
+    showMsg(msg, "Carteira atualizada.", "ok");
+    carregarOnlineEMetricas();
+  }catch(e){ showMsg(msg, "Erro de rede ao salvar.", "err"); }
+};
 
-  // Auto-refresh leve a cada 30s quando a aba estiver ativa
-  let agInterval = null;
-  function startAgAutoRefresh(){
-    stopAgAutoRefresh();
-    agInterval = setInterval(()=> {
-      const isActive = document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos';
-      if(isActive) carregarAgendamentos();
-    }, 30000);
+/* === Logout automático: carregar, salvar, acionar agora === */
+async function carregarLogoutConfig(){
+  const msg = document.getElementById("logoutMsg");
+  msg.textContent = "Carregando configuração…";
+  try{
+    const r = await fetch(`${API_BASE}/supervisao/logout-config`);
+    if(!r.ok) throw new Error("sem config");
+    const cfg = await r.json(); // esperado: {enabled:boolean, time:"HH:MM", carteiras:string[]}
+    document.getElementById("toggleLogout").checked = !!cfg.enabled;
+    if(cfg.time) document.getElementById("horaLogout").value = cfg.time;
+    // marca carteiras
+    document.querySelectorAll(".chkCarteira").forEach(chk=>{
+      const car = chk.dataset.carteira;
+      chk.checked = Array.isArray(cfg.carteiras) && cfg.carteiras.includes(car);
+    });
+    msg.textContent = "";
+  }catch{
+    msg.textContent = "Sem configuração salva (usando padrão).";
+    // default já está no UI
   }
-  function stopAgAutoRefresh(){ if(agInterval) clearInterval(agInterval); }
-  startAgAutoRefresh();
+}
 
-  // Primeira carga se o usuário já estiver na aba
-  if(document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos'){
-    carregarAgendamentos(true);
+document.getElementById("btnSalvarLogout").onclick = async ()=>{
+  const msg = document.getElementById("logoutMsg");
+  msg.textContent = "Salvando…";
+  const enabled = document.getElementById("toggleLogout").checked;
+  const time = document.getElementById("horaLogout").value || "18:00";
+  const carteiras = Array.from(document.querySelectorAll(".chkCarteira"))
+    .filter(chk=>chk.checked).map(chk=>chk.dataset.carteira);
+
+  try{
+    const r = await fetch(`${API_BASE}/supervisao/logout-config`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ enabled, time, carteiras })
+    });
+    const j = await r.json().catch(()=>({ok:false}));
+    if(!r.ok || j.ok===false) { msg.textContent = "Erro ao salvar configuração."; msg.style.color="var(--err)"; return; }
+    msg.textContent = "Configuração salva."; msg.style.color="var(--ok)";
+  }catch(e){
+    msg.textContent = "Falha de rede ao salvar."; msg.style.color="var(--err)";
   }
+};
+
+document.getElementById("btnForcarLogoutAgora").onclick = async ()=>{
+  const msg = document.getElementById("logoutMsg");
+  msg.textContent = "Deslogando operadores selecionados…"; msg.style.color="";
+  const carteiras = Array.from(document.querySelectorAll(".chkCarteira"))
+    .filter(chk=>chk.checked).map(chk=>chk.dataset.carteira);
+  if(carteiras.length===0){ msg.textContent="Selecione ao menos uma carteira."; msg.style.color="var(--warn)"; return; }
+  try{
+    const r = await fetch(`${API_BASE}/fila/forcar_logout`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ carteiras })
+    });
+    const j = await r.json().catch(()=>({ok:false}));
+    if(!r.ok || j.ok===false){ msg.textContent="Erro ao deslogar."; msg.style.color="var(--err)"; return; }
+    msg.textContent = "Operadores deslogados."; msg.style.color="var(--ok)";
+    await carregarOnlineEMetricas();
+  }catch{
+    msg.textContent = "Falha de rede ao deslogar."; msg.style.color="var(--err)";
+  }
+};
+
+/* === Eventos === */
+document.getElementById("btnRefresh").onclick = carregarOnlineEMetricas;
+document.getElementById("btnRefreshFila").onclick = carregarFilaNaoAtribuidos;
+document.getElementById("filtroCarteira").addEventListener("change", renderOnlineTable);
+
+/* === Boot === */
+hydrateCarteirasUI();
+carregarLogoutConfig();
+carregarOnlineEMetricas();
+/* Auto refresh a cada 10s */
+setInterval(carregarOnlineEMetricas, 10000);
 </script>
 </body>
 </html>
