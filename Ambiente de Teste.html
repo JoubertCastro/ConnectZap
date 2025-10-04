@@ -15,9 +15,31 @@
   .btn{padding:10px 14px;border-radius:10px}
   .btn-primary{background:#2563eb;color:#fff}
   .btn-muted{background:#f3f4f6}
+
+  /* details/summary: comportamento visual */
   details > summary {cursor:pointer; list-style:none}
   details > summary::-webkit-details-marker {display:none}
   .summary-row{display:flex;align-items:center;gap:.5rem}
+
+  /* ✨ Hover + destaque ao abrir nos cards de form (Cadastrar/Buscar) */
+  details.card summary{
+    border-radius:12px;
+    padding:10px 12px;
+    margin:-8px;                 /* para o highlight encostar nas bordas internas do card */
+    margin-bottom:8px;           /* recoloca um espaçamento após o summary */
+    transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
+  }
+  details.card:hover summary{
+    background:#f9fafb;          /* leve cinza no hover */
+  }
+  details.card[open] summary{
+    background:#eef2ff;          /* lavanda claro quando aberto */
+    box-shadow:0 0 0 2px #6366f1 inset;
+  }
+  details.card summary:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 2px #2563eb inset; /* acessibilidade no foco por teclado */
+  }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
