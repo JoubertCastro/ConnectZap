@@ -15,6 +15,7 @@
   .btn{padding:10px 14px;border-radius:10px}
   .btn-primary{background:#2563eb;color:#fff}
   .btn-muted{background:#f3f4f6}
+  .btn[disabled]{opacity:.6;cursor:not-allowed}
 
   /* details/summary: comportamento visual */
   details > summary {cursor:pointer; list-style:none}
@@ -25,20 +26,18 @@
   details.card summary{
     border-radius:12px;
     padding:10px 12px;
-    margin:-8px;                 /* para o highlight encostar nas bordas internas do card */
-    margin-bottom:8px;           /* recoloca um espaçamento após o summary */
+    margin:-8px;
+    margin-bottom:8px;
     transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
   }
-  details.card:hover summary{
-    background:#f9fafb;          /* leve cinza no hover */
-  }
+  details.card:hover summary{ background:#f9fafb; }
   details.card[open] summary{
-    background:#eef2ff;          /* lavanda claro quando aberto */
+    background:#eef2ff;
     box-shadow:0 0 0 2px #6366f1 inset;
   }
   details.card summary:focus-visible{
     outline:none;
-    box-shadow:0 0 0 2px #2563eb inset; /* acessibilidade no foco por teclado */
+    box-shadow:0 0 0 2px #2563eb inset;
   }
 </style>
 </head>
@@ -49,13 +48,15 @@
       <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
       <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
     </div>
-    <!-- FILTRO GERAL (aplica em tudo) -->
+
+    <!-- FILTRO GERAL + Atualização -->
     <div class="flex items-center gap-2">
       <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
       <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
         <option value="">Todas</option>
       </select>
-      <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada 10s</span>
+      <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada <strong>30 min</strong></span>
+      <button id="btnAtualizarAgora" class="btn btn-muted text-sm" title="Atualizar agora">Atualizar agora</button>
     </div>
   </div>
 </header>
@@ -88,7 +89,7 @@
     </div>
   </section>
 
-  <!-- Accordions para reduzir o tamanho da página -->
+  <!-- Accordions -->
   <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
     <!-- Cadastrar agente -->
     <details class="card">
@@ -173,7 +174,7 @@
     </details>
   </section>
 
-  <!-- Agentes online + ações -->
+  <!-- Agentes online -->
   <section class="card">
     <div class="flex items-center justify-between">
       <h2 class="font-bold text-lg">Agentes online agora</h2>
@@ -198,7 +199,7 @@
     <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
   </section>
 
-  <!-- Logout automático (opcional, recolhido) -->
+  <!-- Logout automático -->
   <details class="card">
     <summary class="summary-row">
       <span class="font-bold text-lg">Logout automático por carteira</span>
@@ -248,11 +249,12 @@ function fillSelect(sel, vals, includeEmpty=true){
 }
 
 /* === Estados ===== */
-let filtroCarteira = "";                 // filtro global
-let ultimoOnline = [];                   // [{codigo_do_agente,nome,carteira,data_hora}]
-let mapaTicketsAtivos = {};              // key `${codigo}-${carteira}` => count
-let pendentesCarteiraAgg = [];           // [{carteira,total}]
-let pendentesLista = [];                 // [{telefone,carteira,created_at}]
+let filtroCarteira = "";
+let ultimoOnline = [];
+let mapaTicketsAtivos = {};
+let pendentesCarteiraAgg = [];
+let pendentesLista = [];
+let isUpdating = false;
 
 /* === Montagem inicial de selects/checkboxes === */
 (function initUI(){
@@ -281,8 +283,14 @@ let pendentesLista = [];                 // [{telefone,carteira,created_at}]
 
 /* === KPI / Online / Pendentes === */
 async function carregarOnlineEmetricas(){
+  if(isUpdating) return;
+  isUpdating = true;
+
   const kpiMsg = document.getElementById("kpiMsg");
+  const btnNow = document.getElementById("btnAtualizarAgora");
   kpiMsg.textContent = "Atualizando…";
+  btnNow.disabled = true;
+
   try{
     // 1) Quem está online (com filtro global)
     const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
@@ -290,9 +298,9 @@ async function carregarOnlineEmetricas(){
     const lista = await r.json();
     ultimoOnline = Array.isArray(lista) ? lista : [];
 
-    // 2) KPI: total e por carteira (respeitando filtro global)
+    // 2) KPI: total e por carteira
     const porCarteira = {};
-    const base = filtroCarteira ? ultimoOnline : lista; // se sem filtro, usa todos para o chip
+    const base = filtroCarteira ? ultimoOnline : lista;
     base.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
 
     document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
@@ -305,7 +313,7 @@ async function carregarOnlineEmetricas(){
       wrap.appendChild(span);
     });
 
-    // 3) Tickets ativos: para cada online filtrado
+    // 3) Tickets ativos por agente online
     mapaTicketsAtivos = {};
     const prom = ultimoOnline.map(async a => {
       const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(a.codigo_do_agente)}&carteira=${encodeURIComponent(a.carteira)}`;
@@ -319,7 +327,7 @@ async function carregarOnlineEmetricas(){
     const totalTickets = Object.values(mapaTicketsAtivos).reduce((s,n)=>s+(n||0),0);
     document.getElementById("kpiEmAndamento").textContent = totalTickets;
 
-    // 4) Pendentes na fila (do backend novo)
+    // 4) Pendentes na fila
     const agg = await fetch(`${API_BASE}/fila/pendentes_por_carteira`).then(r=>r.json()).catch(()=>[]);
     pendentesCarteiraAgg = Array.isArray(agg)?agg:[];
     const totalPend = pendentesCarteiraAgg
@@ -346,6 +354,9 @@ async function carregarOnlineEmetricas(){
     kpiMsg.textContent = "OK";
   }catch(e){
     kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
+  } finally {
+    isUpdating = false;
+    btnNow.disabled = false;
   }
 }
 
@@ -353,7 +364,7 @@ function renderOnlineTable(){
   const tbody = document.getElementById("tbodyOnline");
   tbody.innerHTML = "";
 
-  const filtrados = ultimoOnline; // já vem filtrado pela chamada se filtroCarteira != ""
+  const filtrados = ultimoOnline;
   filtrados.forEach(a=>{
     const tr = document.createElement("tr");
     const key = `${a.codigo_do_agente}-${a.carteira}`;
@@ -496,12 +507,14 @@ document.getElementById("btnForcarLogout").onclick = async () => {
 /* === Eventos === */
 document.getElementById("filtroGlobalCarteira").addEventListener("change", (e)=>{
   filtroCarteira = e.target.value || "";
-  carregarOnlineEmetricas(); // atualiza tudo com o filtro novo
+  carregarOnlineEmetricas();
 });
+document.getElementById("btnAtualizarAgora").addEventListener("click", carregarOnlineEmetricas);
 
-/* === Auto refresh a cada 10s === */
+/* === Auto refresh a cada 30 min === */
+const THIRTY_MIN = 30 * 60 * 1000;
 carregarOnlineEmetricas();
-setInterval(carregarOnlineEmetricas, 10000);
+setInterval(carregarOnlineEmetricas, THIRTY_MIN);
 </script>
 </body>
 </html>
