@@ -15,173 +15,158 @@
   .btn{padding:10px 14px;border-radius:10px}
   .btn-primary{background:#2563eb;color:#fff}
   .btn-muted{background:#f3f4f6}
-  .btn[disabled]{opacity:.6;cursor:not-allowed}
-
-  /* details/summary: comportamento visual */
-  details > summary {cursor:pointer; list-style:none}
-  details > summary::-webkit-details-marker {display:none}
-  .summary-row{display:flex;align-items:center;gap:.5rem}
-
-  /* ✨ Hover + destaque ao abrir nos cards de form (Cadastrar/Buscar) */
-  details.card summary{
-    border-radius:12px;
-    padding:10px 12px;
-    margin:-8px;
-    margin-bottom:8px;
-    transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
-  }
-  details.card:hover summary{ background:#f9fafb; }
-  details.card[open] summary{
-    background:#eef2ff;
-    box-shadow:0 0 0 2px #6366f1 inset;
-  }
-  details.card summary:focus-visible{
-    outline:none;
-    box-shadow:0 0 0 2px #2563eb inset;
-  }
 </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
-<header class="bg-white border-b sticky top-0 z-10">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-    <div class="flex items-center gap-3">
-      <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
-      <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
-    </div>
-
-    <!-- FILTRO GERAL + Atualização -->
-    <div class="flex items-center gap-2">
-      <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
-      <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
-        <option value="">Todas</option>
-      </select>
-      <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada <strong>30 min</strong></span>
-      <button id="btnAtualizarAgora" class="btn btn-muted text-sm" title="Atualizar agora">Atualizar agora</button>
-    </div>
+<header class="bg-white border-b">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <h1 class="text-xl font-semibold">ConnectZap — Supervisão</h1>
+    <div class="text-sm text-gray-500">Administração de agentes & visão operacional</div>
   </div>
 </header>
 
 <main class="max-w-6xl mx-auto p-4 space-y-6">
-  <!-- KPIs compactos -->
-  <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+  <!-- KPIs -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <div class="kpi">
-      <div class="text-gray-500 text-sm">Agentes online</div>
+      <div class="text-gray-500 text-sm">Agentes online (total)</div>
       <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
       <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
     </div>
-
     <div class="kpi">
       <div class="text-gray-500 text-sm">Conversas em andamento</div>
       <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
-      <div class="text-xs text-gray-500 mt-2">Somatório dos tickets dos agentes online</div>
+      <div class="text-xs text-gray-500 mt-2">Soma dos tickets alocados aos agentes online</div>
     </div>
-
     <div class="kpi">
-      <div class="text-gray-500 text-sm">Pendentes na fila (24hrs)</div>
-      <div id="kpiPendentesFila" class="text-3xl font-bold mt-1">—</div>
-      <div id="kpiPendentesPorCarteira" class="text-xs text-gray-500 mt-2 space-x-1"></div>
-    </div>
-
-    <div class="kpi">
-      <div class="text-gray-500 text-sm">Última atualização</div>
-      <div id="kpiAtualizado" class="text-lg font-semibold mt-1">—</div>
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="text-gray-500 text-sm">Atualização</div>
+          <div id="kpiAtualizado" class="text-sm font-semibold mt-1">—</div>
+        </div>
+        <button id="btnRefresh" class="btn btn-primary">Atualizar agora</button>
+      </div>
       <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
     </div>
   </section>
 
-  <!-- Accordions -->
-  <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Cadastrar agente -->
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Cadastrar agente</span>
-        <span class="pill">formulário</span>
-      </summary>
-      <div class="mt-3">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Código (SIC)</label>
-            <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
-          </div>
-          <div class="md:col-span-2">
-            <label class="text-sm text-gray-700">Nome completo</label>
-            <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome"/>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Carteira</label>
-            <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Origem BD</label>
-            <select id="cadOrigem" class="w-full border rounded-md p-2">
-              <option value="">Selecione</option>
-              <option>Bd4</option><option>Bd5</option><option>Bd7</option><option>Bd8</option>
-            </select>
-          </div>
+  <!-- Cadastrar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Cadastrar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
+      </div>
+      <div class="md:col-span-2">
+        <label class="text-sm text-gray-700">Nome completo</label>
+        <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome"/>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Carteira</label>
+        <select id="cadCarteira" class="w-full border rounded-md p-2">
+          <option value="">Selecione</option>
+          <option>ConnectZap</option>
+          <option>Banco PAN</option>
+          <option>Recovery PJ</option>
+          <option>Recovery PF</option>
+          <option>Mercado Pago Cobrança</option>
+          <option>DivZero</option>
+          <option>Arc4U</option>
+          <option>Serasa</option>
+          <option>Mercado Pago Vendas</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-sm text-gray-700">Origem BD</label>
+        <select id="cadOrigem" class="w-full border rounded-md p-2">
+          <option value="">Selecione</option>
+          <option>Bd4</option><option>Bd5</option><option>Bd7</option><option>Bd8</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
+      <div id="cadMsg" class="text-sm hidden"></div>
+    </div>
+  </section>
+
+  <!-- Buscar/editar agente -->
+  <section class="card">
+    <h2 class="font-bold text-lg mb-3">Buscar & editar agente</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div>
+        <label class="text-sm text-gray-700">Código (SIC)</label>
+        <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
+      </div>
+      <div class="flex items-end">
+        <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
+      </div>
+      <div class="flex items-end">
+        <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
+      </div>
+    </div>
+
+    <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <span class="text-xs text-gray-500 block">Código</span>
+          <span id="edCodigo" class="font-medium">—</span>
         </div>
-        <div class="flex gap-2 mt-4">
-          <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
-          <div id="cadMsg" class="text-sm hidden"></div>
+        <div class="md:col-span-2">
+          <span class="text-xs text-gray-500 block">Nome</span>
+          <span id="edNome" class="font-medium">—</span>
+        </div>
+        <div>
+          <label class="text-sm text-gray-700">Carteira</label>
+          <select id="edCarteira" class="w-full border rounded-md p-2">
+            <option>ConnectZap</option>
+            <option>Banco PAN</option>
+            <option>Recovery PJ</option>
+            <option>Recovery PF</option>
+            <option>Mercado Pago Cobrança</option>
+            <option>DivZero</option>
+            <option>Arc4U</option>
+            <option>Serasa</option>
+            <option>Mercado Pago Vendas</option>
+          </select>
+        </div>
+        <div>
+          <span class="text-xs text-gray-500 block">Origem BD</span>
+          <span id="edOrigem" class="font-medium">—</span>
         </div>
       </div>
-    </details>
-
-    <!-- Buscar/editar agente -->
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Buscar e editar agente</span>
-        <span class="pill">edição</span>
-      </summary>
-      <div class="mt-3">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Código (SIC)</label>
-            <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
-          </div>
-          <div class="flex items-end">
-            <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
-          </div>
-          <div class="flex items-end">
-            <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
-          </div>
-        </div>
-
-        <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <span class="text-xs text-gray-500 block">Código</span>
-              <span id="edCodigo" class="font-medium">—</span>
-            </div>
-            <div class="md:col-span-2">
-              <span class="text-xs text-gray-500 block">Nome</span>
-              <span id="edNome" class="font-medium">—</span>
-            </div>
-            <div>
-              <label class="text-sm text-gray-700">Carteira</label>
-              <select id="edCarteira" class="w-full border rounded-md p-2"></select>
-            </div>
-            <div>
-              <span class="text-xs text-gray-500 block">Origem BD</span>
-              <span id="edOrigem" class="font-medium">—</span>
-            </div>
-          </div>
-          <div class="flex gap-2 mt-3">
-            <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
-            <div id="editMsg" class="text-sm hidden"></div>
-          </div>
-        </div>
+      <div class="flex gap-2 mt-3">
+        <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+        <div id="editMsg" class="text-sm hidden"></div>
       </div>
-    </details>
+    </div>
   </section>
 
   <!-- Agentes online -->
   <section class="card">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <h2 class="font-bold text-lg">Agentes online agora</h2>
-      <span class="pill"><span class="dot online"></span> Online</span>
+      <div class="flex items-center gap-2">
+        <span class="pill"><span class="dot online"></span> Online</span>
+        <!-- Filtro por carteira -->
+        <label for="filtroCarteira" class="text-sm text-gray-600">Carteira:</label>
+        <select id="filtroCarteira" class="border rounded-md p-2 text-sm">
+          <option value="">Todas</option>
+          <option>ConnectZap</option>
+          <option>Banco PAN</option>
+          <option>Recovery PJ</option>
+          <option>Recovery PF</option>
+          <option>Mercado Pago Cobrança</option>
+          <option>DivZero</option>
+          <option>Arc4U</option>
+          <option>Serasa</option>
+          <option>Mercado Pago Vendas</option>
+        </select>
+      </div>
     </div>
 
-    <div class="overflow-auto border rounded-lg mt-3">
+    <div class="overflow-auto border rounded-lg">
       <table class="min-w-full text-sm">
         <thead class="bg-gray-50">
           <tr>
@@ -198,34 +183,6 @@
     </div>
     <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
   </section>
-
-  <!-- Logout automático -->
-  <details class="card">
-    <summary class="summary-row">
-      <span class="font-bold text-lg">Logout automático por carteira</span>
-      <span class="pill">agendamento</span>
-    </summary>
-    <div class="mt-3 space-y-3">
-      <div class="flex items-center gap-3">
-        <label class="flex items-center gap-2 text-sm">
-          <input id="lgEnabled" type="checkbox" class="w-4 h-4">
-          Ativar logout automático
-        </label>
-        <label class="text-sm text-gray-700">Horário (HH:MM)
-          <input id="lgTime" type="time" value="18:00" class="border rounded-md p-2 ml-2">
-        </label>
-      </div>
-      <div>
-        <div class="text-sm text-gray-700 mb-1">Carteiras para logout:</div>
-        <div id="lgCarteiras" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
-      </div>
-      <div class="flex gap-2">
-        <button id="btnSalvarLogout" class="btn btn-primary">Salvar configuração</button>
-        <button id="btnForcarLogout" class="btn btn-muted">Forçar logout agora</button>
-        <span id="lgMsg" class="text-sm text-gray-600"></span>
-      </div>
-    </div>
-  </details>
 </main>
 
 <script>
@@ -233,77 +190,29 @@
 const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/,''); // fila/agentes
 const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/,''); // tickets
 
-/* === Carteiras (1 fonte) === */
-const CARTEIRAS = [
-  "ConnectZap","Banco PAN","Recovery PJ","Recovery PF",
-  "Mercado Pago Cobrança","DivZero","Arc4U","Serasa","Mercado Pago Vendas"
-];
-
 /* === Helpers UI === */
 function showMsg(el, text, type="ok"){ el.classList.remove("hidden"); el.textContent=text; el.style.color=(type==="ok"?"var(--ok)":type==="warn"?"var(--warn)":"var(--err)"); }
 function hideMsg(el){ el.classList.add("hidden"); el.textContent=""; }
 function fmt(dt){ try{ return new Date(dt).toLocaleString("pt-BR"); }catch{ return dt||"—"; } }
-function fillSelect(sel, vals, includeEmpty=true){
-  sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
-  vals.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
-}
 
 /* === Estados ===== */
-let filtroCarteira = "";
-let ultimoOnline = [];
-let mapaTicketsAtivos = {};
-let pendentesCarteiraAgg = [];
-let pendentesLista = [];
-let isUpdating = false;
+let ultimoOnline = []; // [{codigo_do_agente,nome,carteira,data_hora}]
+let mapaTicketsAtivos = {}; // key `${codigo}-${carteira}` => count
 
-/* === Montagem inicial de selects/checkboxes === */
-(function initUI(){
-  fillSelect(document.getElementById("filtroGlobalCarteira"), CARTEIRAS);
-  const cadCarteira = document.getElementById("cadCarteira");
-  cadCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c=>`<option>${c}</option>`).join("");
-  const edCarteira = document.getElementById("edCarteira");
-  fillSelect(edCarteira, CARTEIRAS, false);
-
-  // checkboxes de logout
-  const wrap = document.getElementById("lgCarteiras");
-  wrap.innerHTML = CARTEIRAS.map(c=>`
-    <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
-      <input type="checkbox" class="lg-check" value="${c}"> ${c}
-    </label>
-  `).join("");
-
-  // carregar config de logout (se existir)
-  fetch(`${API_BASE}/supervisao/logout-config`).then(r=>r.json()).then(cfg=>{
-    document.getElementById("lgEnabled").checked = !!cfg.enabled;
-    document.getElementById("lgTime").value = (cfg.time||"18:00").slice(0,5);
-    const set = new Set(cfg.carteiras||[]);
-    document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
-  }).catch(()=>{});
-})();
-
-/* === KPI / Online / Pendentes === */
-async function carregarOnlineEmetricas(){
-  if(isUpdating) return;
-  isUpdating = true;
-
+/* === KPIs / Online === */
+async function carregarOnlineEMetricas(){
   const kpiMsg = document.getElementById("kpiMsg");
-  const btnNow = document.getElementById("btnAtualizarAgora");
   kpiMsg.textContent = "Atualizando…";
-  btnNow.disabled = true;
-
   try{
-    // 1) Quem está online (com filtro global)
-    const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
-    const r = await fetch(urlOnline);
+    // 1) Quem está online
+    const r = await fetch(`${API_BASE}/fila/status`);
     const lista = await r.json();
     ultimoOnline = Array.isArray(lista) ? lista : [];
 
     // 2) KPI: total e por carteira
-    const porCarteira = {};
-    const base = filtroCarteira ? ultimoOnline : lista;
-    base.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
-
     document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
+    const porCarteira = {};
+    ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
     const wrap = document.getElementById("kpiOnlineCarteiras");
     wrap.innerHTML = "";
     Object.entries(porCarteira).forEach(([car,qt])=>{
@@ -313,8 +222,7 @@ async function carregarOnlineEmetricas(){
       wrap.appendChild(span);
     });
 
-    // 3) Tickets ativos por agente online
-    mapaTicketsAtivos = {};
+    // 3) Tickets ativos: para cada online, busca /api/tickets/minhas
     const prom = ultimoOnline.map(async a => {
       const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(a.codigo_do_agente)}&carteira=${encodeURIComponent(a.carteira)}`;
       try{
@@ -324,47 +232,26 @@ async function carregarOnlineEmetricas(){
       }catch{ mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = 0; }
     });
     await Promise.all(prom);
+
+    // 4) KPI em andamento (soma)
     const totalTickets = Object.values(mapaTicketsAtivos).reduce((s,n)=>s+(n||0),0);
     document.getElementById("kpiEmAndamento").textContent = totalTickets;
-
-    // 4) Pendentes na fila
-    const agg = await fetch(`${API_BASE}/fila/pendentes_por_carteira`).then(r=>r.json()).catch(()=>[]);
-    pendentesCarteiraAgg = Array.isArray(agg)?agg:[];
-    const totalPend = pendentesCarteiraAgg
-      .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-      .reduce((s,x)=>s + (x.total||0), 0);
-    document.getElementById("kpiPendentesFila").textContent = totalPend;
-
-    const chips = document.getElementById("kpiPendentesPorCarteira");
-    chips.innerHTML = "";
-    pendentesCarteiraAgg
-      .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-      .forEach(({carteira,total})=>{
-        const span = document.createElement("span");
-        span.className = "pill";
-        span.textContent = `${carteira}: ${total}`;
-        chips.appendChild(span);
-      });
-
-    // 5) Render tabela de online
-    renderOnlineTable();
-
-    // 6) Atualizado
     document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
+
+    // 5) Tabela de online
+    renderOnlineTable();
     kpiMsg.textContent = "OK";
   }catch(e){
     kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
-  } finally {
-    isUpdating = false;
-    btnNow.disabled = false;
   }
 }
 
 function renderOnlineTable(){
   const tbody = document.getElementById("tbodyOnline");
   tbody.innerHTML = "";
+  const filtro = document.getElementById("filtroCarteira").value || "";
 
-  const filtrados = ultimoOnline;
+  const filtrados = ultimoOnline.filter(a => !filtro || a.carteira === filtro);
   filtrados.forEach(a=>{
     const tr = document.createElement("tr");
     const key = `${a.codigo_do_agente}-${a.carteira}`;
@@ -385,7 +272,7 @@ function renderOnlineTable(){
 
   const msg = document.getElementById("onlineMsg");
   if(!filtrados.length){
-    msg.textContent = filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.";
+    msg.textContent = filtro ? `Nenhum agente online na carteira "${filtro}".` : "Nenhum agente online no momento.";
   }else{
     msg.textContent = "";
   }
@@ -400,7 +287,7 @@ async function forcarOffline(codigo, carteira){
     });
     const j = await r.json();
     if(!j.ok) throw new Error(j.erro||"Falha ao forçar offline");
-    await carregarOnlineEmetricas();
+    await carregarOnlineEMetricas();
   }catch(e){ alert(e.message||"Erro ao forçar offline"); }
 }
 
@@ -428,7 +315,7 @@ document.getElementById("btnCadastrar").onclick = async () =>{
     document.getElementById("cadNome").value="";
     document.getElementById("cadCarteira").value="";
     document.getElementById("cadOrigem").value="";
-    carregarOnlineEmetricas();
+    carregarOnlineEMetricas();
   }catch(e){ showMsg(msg,"Erro de rede ao cadastrar.","err"); }
 };
 
@@ -467,54 +354,17 @@ document.getElementById("btnSalvarEdicao").onclick = async () => {
     const j = await r.json();
     if(!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
     showMsg(msg, "Carteira atualizada.", "ok");
-    carregarOnlineEmetricas();
+    carregarOnlineEMetricas();
   }catch(e){ showMsg(msg, "Erro de rede ao salvar.", "err"); }
 };
 
-/* === Logout automático === */
-document.getElementById("btnSalvarLogout").onclick = async () => {
-  const lgMsg = document.getElementById("lgMsg");
-  const enabled = document.getElementById("lgEnabled").checked;
-  const time = document.getElementById("lgTime").value || "18:00";
-  const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x=>x.value);
-  lgMsg.textContent = "Salvando...";
-  try{
-    const r = await fetch(`${API_BASE}/supervisao/logout-config`, {
-      method:"PUT", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ enabled, time, carteiras })
-    });
-    const j = await r.json();
-    lgMsg.textContent = j.ok ? "Configuração salva." : (j.erro || "Erro ao salvar.");
-  }catch(e){ lgMsg.textContent = "Erro de rede ao salvar."; }
-};
-document.getElementById("btnForcarLogout").onclick = async () => {
-  const lgMsg = document.getElementById("lgMsg");
-  const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x=>x.value);
-  if(!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
-  if(!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
-  lgMsg.textContent = "Executando...";
-  try{
-    const r = await fetch(`${API_BASE}/fila/forcar_logout`,{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ carteiras })
-    });
-    const j = await r.json();
-    lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
-    carregarOnlineEmetricas();
-  }catch(e){ lgMsg.textContent = "Erro de rede ao forçar logout."; }
-};
-
 /* === Eventos === */
-document.getElementById("filtroGlobalCarteira").addEventListener("change", (e)=>{
-  filtroCarteira = e.target.value || "";
-  carregarOnlineEmetricas();
-});
-document.getElementById("btnAtualizarAgora").addEventListener("click", carregarOnlineEmetricas);
+document.getElementById("btnRefresh").onclick = carregarOnlineEMetricas;
+document.getElementById("filtroCarteira").addEventListener("change", renderOnlineTable);
 
-/* === Auto refresh a cada 30 min === */
-const THIRTY_MIN = 30 * 60 * 1000;
-carregarOnlineEmetricas();
-setInterval(carregarOnlineEmetricas, THIRTY_MIN);
+/* === Auto refresh a cada 10s === */
+carregarOnlineEMetricas();
+setInterval(carregarOnlineEMetricas, 10000);
 </script>
 </body>
 </html>
