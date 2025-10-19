@@ -87,7 +87,6 @@
                 <select id="contaSelect">
                   <option value="">-- Selecione a conta --</option>
                   <option value="connectzap">ConnectZap</option>
-                  <option value="connectzap_teste">ConnectZap teste</option>
                   <option value="bancopan">Banco PAN</option>
                   <option value="recoverypj">Recovery PJ</option>
                   <option value="recoverypf">Recovery PF</option>
@@ -110,12 +109,9 @@
               <div class="col-6">
                 <label for="graphVersion">Versão Graph API</label>
                 <select id="graphVersion">
-                  <option value="v23.0" selected>v23.0</option>
+                  <option value="v24.0" selected>v24.0</option>
+                  <option value="v23.0">v23.0</option>
                   <option value="v22.0">v22.0</option>
-                  <option value="v21.0">v21.0</option>
-                  <option value="v20.0">v20.0</option>
-                  <option value="v19.0">v19.0</option>
-                  <option value="v18.0">v18.0</option>
                 </select>
               </div>
             </div>
@@ -825,8 +821,7 @@
           });
           // --- Preencher IDs ao selecionar conta ---
           const contas = {
-            connectzap:   { phone: "732661079928516", waba: "1910445533050310" },
-            connectzap_teste:   { phone: "828473960349364", waba: "1478379640276127" },
+            connectzap:   { phone: "828473960349364", waba: "1478379640276127" },
             bancopan:     { phone: "805610009301153", waba: "25205080369078050" },
             recoverypj:   { phone: "727586317113885", waba: "844006574616797" },
             recoverypf:   { phone: "864779140046932", waba: "1341565711046522" },
