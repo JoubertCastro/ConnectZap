@@ -206,7 +206,7 @@
 
       <div class="text-xs text-gray-500">
         Observação: o limite é aplicado <b>por carteira</b> no momento do “Pegar Próxima”. Se o agente já tiver
-        atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna 409 para o front do operador.
+        atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna uma mensagem para o Agente.
       </div>
 
       <div>
@@ -248,8 +248,8 @@
 
 <script>
 /* === Bases de API === */
-const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/,''); // fila/agentes
-const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/,''); // conversas/limits
+const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes
+const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
 
 /* === Carteiras === */
 const CARTEIRAS = [
@@ -309,15 +309,15 @@ async function carregarOnlineEmetricas(){
   const kpiMsg = document.getElementById("kpiMsg");
   kpiMsg.textContent = "Atualizando…";
   try{
+    // 1) Agentes online
     const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
     const r = await fetch(urlOnline);
     const lista = await r.json();
     ultimoOnline = Array.isArray(lista) ? lista : [];
 
+    // KPIs de online por carteira
     const porCarteira = {};
-    const base = filtroCarteira ? ultimoOnline : lista;
-    base.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
-
+    ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
     document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
     const wrap = document.getElementById("kpiOnlineCarteiras");
     wrap.innerHTML = "";
@@ -328,19 +328,25 @@ async function carregarOnlineEmetricas(){
       wrap.appendChild(span);
     });
 
+    // 2) NOVO: contagem agregada de tickets por agente (1 chamada)
     mapaTicketsAtivos = {};
-    const prom = ultimoOnline.map(async a => {
-      const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(a.codigo_do_agente)}&carteira=${encodeURIComponent(a.carteira)}`;
-      try{
-        const rr = await fetch(url);
-        const rows = rr.ok ? await rr.json() : [];
-        mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = Array.isArray(rows) ? rows.length : 0;
-      }catch{ mapaTicketsAtivos[`${a.codigo_do_agente}-${a.carteira}`] = 0; }
-    });
-    await Promise.all(prom);
-    const totalTickets = Object.values(mapaTicketsAtivos).reduce((s,n)=>s+(n||0),0);
+    try{
+      const urlCnt = filtroCarteira
+        ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
+        : `${CONV_API}/api/tickets/contagem_por_agente`;
+      const rCnt = await fetch(urlCnt);
+      const jCnt = await rCnt.json();
+      if(jCnt && jCnt.ok && jCnt.mapa){ mapaTicketsAtivos = jCnt.mapa; }
+    }catch{ mapaTicketsAtivos = {}; }
+
+    // total de tickets apenas dos agentes ONLINE
+    const totalTickets = ultimoOnline.reduce((s,a)=>{
+      const key = `${a.codigo_do_agente}-${a.carteira}`;
+      return s + (mapaTicketsAtivos[key] || 0);
+    }, 0);
     document.getElementById("kpiEmAndamento").textContent = totalTickets;
 
+    // 3) Pendentes por carteira
     const agg = await fetch(`${API_BASE}/fila/pendentes_por_carteira`).then(r=>r.json()).catch(()=>[]);
     pendentesCarteiraAgg = Array.isArray(agg)?agg:[];
     const totalPend = pendentesCarteiraAgg
@@ -359,7 +365,9 @@ async function carregarOnlineEmetricas(){
         chips.appendChild(span);
       });
 
+    // Render tabela
     renderOnlineTable();
+
     document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
     kpiMsg.textContent = "OK";
   }catch(e){
@@ -374,7 +382,7 @@ function renderOnlineTable(){
   filtrados.forEach(a=>{
     const tr = document.createElement("tr");
     const key = `${a.codigo_do_agente}-${a.carteira}`;
-    const tickets = mapaTicketsAtivos[key] ?? "—";
+    const tickets = (mapaTicketsAtivos[key] ?? 0);
     tr.innerHTML = `
       <td class="px-3 py-2">${a.codigo_do_agente}</td>
       <td class="px-3 py-2">${a.nome||"-"}</td>
@@ -582,7 +590,7 @@ document.getElementById("filtroGlobalCarteira").addEventListener("change", (e)=>
   carregarOnlineEmetricas();
 });
 
-/* === Auto refresh === */
+/* === Auto refresh (10s) === */
 carregarOnlineEmetricas();
 setInterval(carregarOnlineEmetricas, 10000);
 </script>
