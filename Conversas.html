@@ -576,7 +576,7 @@ async function carregarMensagens(incremental = true) {
               const j = await r.json();
               if (j.ok && j.data_uri) {
                 const audio = document.createElement("audio");
-                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2 w-full max-w-xs";
+                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2";
                 div.insertBefore(audio, btn); btn.remove();
               } else { throw new Error(j.erro || "Resposta inválida do backend"); }
             } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
