@@ -1,598 +1,668 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ConnectZap — Supervisão</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  :root{--ok:#16a34a;--warn:#d97706;--err:#dc2626}
-  .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px}
-  .kpi{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:14px}
-  .pill{padding:2px 8px;border-radius:9999px;background:#f3f4f6;font-size:12px}
-  .dot{width:10px;height:10px;border-radius:9999px;display:inline-block;margin-right:6px}
-  .dot.online{background:#16a34a}.dot.offline{background:#9ca3af}
-  .btn{padding:10px 14px;border-radius:10px}
-  .btn-primary{background:#2563eb;color:#fff}
-  .btn-muted{background:#f3f4f6}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ConnectZap — Supervisão</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --ok: #16a34a;
+      --warn: #d97706;
+      --err: #dc2626
+    }
 
-  details > summary {cursor:pointer; list-style:none}
-  details > summary::-webkit-details-marker {display:none}
-  .summary-row{display:flex;align-items:center;gap:.5rem}
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px
+    }
 
-  details.card summary{
-    border-radius:12px;
-    padding:10px 12px;
-    margin:-8px;
-    margin-bottom:8px;
-    transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
-  }
-  details.card:hover summary{ background:#f9fafb; }
-  details.card[open] summary{ background:#eef2ff; box-shadow:0 0 0 2px #6366f1 inset; }
-  details.card summary:focus-visible{ outline:none; box-shadow:0 0 0 2px #2563eb inset; }
-</style>
+    .kpi {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #f3f4f6;
+      font-size: 12px
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-right: 6px
+    }
+
+    .dot.online {
+      background: #16a34a
+    }
+
+    .dot.offline {
+      background: #9ca3af
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 10px
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff
+    }
+
+    .btn-muted {
+      background: #f3f4f6
+    }
+
+    details>summary {
+      cursor: pointer;
+      list-style: none
+    }
+
+    details>summary::-webkit-details-marker {
+      display: none
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    details.card summary {
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: -8px;
+      margin-bottom: 8px;
+      transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
+    }
+
+    details.card:hover summary {
+      background: #f9fafb;
+    }
+
+    details.card[open] summary {
+      background: #eef2ff;
+      box-shadow: 0 0 0 2px #6366f1 inset;
+    }
+
+    details.card summary:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px #2563eb inset;
+    }
+  </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen">
-<header class="bg-white border-b sticky top-0 z-10">
-  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-    <div class="flex items-center gap-3">
-      <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
-      <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
-      <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
-        <option value="">Todas</option>
-      </select>
-      <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada 10s</span>
-    </div>
-  </div>
-</header>
-
-<main class="max-w-6xl mx-auto p-4 space-y-6">
-  <!-- KPIs -->
-  <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-    <div class="kpi">
-      <div class="text-gray-500 text-sm">Agentes online</div>
-      <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
-      <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
-    </div>
-    <div class="kpi">
-      <div class="text-gray-500 text-sm">Conversas em andamento</div>
-      <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
-      <div class="text-xs text-gray-500 mt-2">Somatório dos tickets dos agentes online</div>
-    </div>
-    <div class="kpi">
-      <div class="text-gray-500 text-sm">Pendentes na fila (24hrs)</div>
-      <div id="kpiPendentesFila" class="text-3xl font-bold mt-1">—</div>
-      <div id="kpiPendentesPorCarteira" class="text-xs text-gray-500 mt-2 space-x-1"></div>
-    </div>
-    <div class="kpi">
-      <div class="text-gray-500 text-sm">Última atualização</div>
-      <div id="kpiAtualizado" class="text-lg font-semibold mt-1">—</div>
-      <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
-    </div>
-  </section>
-
-  <!-- Cadastrar/Editar -->
-  <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Cadastrar agente</span>
-        <span class="pill">formulário</span>
-      </summary>
-      <div class="mt-3">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Código (SIC)</label>
-            <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
-          </div>
-          <div class="md:col-span-2">
-            <label class="text-sm text-gray-700">Nome completo</label>
-            <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome"/>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Carteira</label>
-            <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Origem BD</label>
-            <select id="cadOrigem" class="w-full border rounded-md p-2">
-              <option value="">Selecione</option>
-              <option>Bd4</option><option>Bd5</option><option>Bd7</option><option>Bd8</option>
-            </select>
-          </div>
-        </div>
-        <div class="flex gap-2 mt-4">
-          <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
-          <div id="cadMsg" class="text-sm hidden"></div>
-        </div>
+  <header class="bg-white border-b sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
+        <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
       </div>
-    </details>
+      <div class="flex items-center gap-2">
+        <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
+        <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
+          <option value="">Todas</option>
+        </select>
+        <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada 10s</span>
+      </div>
+    </div>
+  </header>
 
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Buscar e editar agente</span>
-        <span class="pill">edição</span>
-      </summary>
-      <div class="mt-3">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Código (SIC)</label>
-            <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123"/>
-          </div>
-          <div class="flex items-end">
-            <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
-          </div>
-          <div class="flex items-end">
-            <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
-          </div>
-        </div>
+  <main class="max-w-6xl mx-auto p-4 space-y-6">
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Agentes online</div>
+        <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
+        <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Conversas em andamento</div>
+        <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
+        <div class="text-xs text-gray-500 mt-2">Somatório dos tickets dos agentes online</div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Pendentes na fila (24hrs)</div>
+        <div id="kpiPendentesFila" class="text-3xl font-bold mt-1">—</div>
+        <div id="kpiPendentesPorCarteira" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Última atualização</div>
+        <div id="kpiAtualizado" class="text-lg font-semibold mt-1">—</div>
+        <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
+      </div>
+    </section>
 
-        <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+    <!-- Cadastrar/Editar -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <details class="card">
+        <summary class="summary-row">
+          <span class="font-bold text-lg">Cadastrar agente</span>
+          <span class="pill">formulário</span>
+        </summary>
+        <div class="mt-3">
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-              <span class="text-xs text-gray-500 block">Código</span>
-              <span id="edCodigo" class="font-medium">—</span>
+              <label class="text-sm text-gray-700">Código (SIC)</label>
+              <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123" />
             </div>
             <div class="md:col-span-2">
-              <span class="text-xs text-gray-500 block">Nome</span>
-              <span id="edNome" class="font-medium">—</span>
+              <label class="text-sm text-gray-700">Nome completo</label>
+              <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome" />
             </div>
             <div>
               <label class="text-sm text-gray-700">Carteira</label>
-              <select id="edCarteira" class="w-full border rounded-md p-2"></select>
+              <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
             </div>
             <div>
-              <span class="text-xs text-gray-500 block">Origem BD</span>
-              <span id="edOrigem" class="font-medium">—</span>
+              <label class="text-sm text-gray-700">Origem BD</label>
+              <select id="cadOrigem" class="w-full border rounded-md p-2">
+                <option value="">Selecione</option>
+                <option>Bd4</option>
+                <option>Bd5</option>
+                <option>Bd7</option>
+                <option>Bd8</option>
+              </select>
             </div>
           </div>
-          <div class="flex gap-2 mt-3">
-            <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
-            <div id="editMsg" class="text-sm hidden"></div>
+          <div class="flex gap-2 mt-4">
+            <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
+            <div id="cadMsg" class="text-sm hidden"></div>
           </div>
+        </div>
+      </details>
+
+      <details class="card">
+        <summary class="summary-row">
+          <span class="font-bold text-lg">Buscar e editar agente</span>
+          <span class="pill">edição</span>
+        </summary>
+        <div class="mt-3">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm text-gray-700">Código (SIC)</label>
+              <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2"
+                placeholder="Ex: 123" />
+            </div>
+            <div class="flex items-end">
+              <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
+            </div>
+            <div class="flex items-end">
+              <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
+            </div>
+          </div>
+
+          <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div>
+                <span class="text-xs text-gray-500 block">Código</span>
+                <span id="edCodigo" class="font-medium">—</span>
+              </div>
+              <div class="md:col-span-2">
+                <span class="text-xs text-gray-500 block">Nome</span>
+                <span id="edNome" class="font-medium">—</span>
+              </div>
+              <div>
+                <label class="text-sm text-gray-700">Carteira</label>
+                <select id="edCarteira" class="w-full border rounded-md p-2"></select>
+              </div>
+              <div>
+                <span class="text-xs text-gray-500 block">Origem BD</span>
+                <span id="edOrigem" class="font-medium">—</span>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+              <div id="editMsg" class="text-sm hidden"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Agentes online -->
+    <section class="card">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-lg">Agentes online agora</h2>
+        <span class="pill"><span class="dot online"></span> Online</span>
+      </div>
+
+      <div class="overflow-auto border rounded-lg mt-3">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="text-left px-3 py-2">Código</th>
+              <th class="text-left px-3 py-2">Nome</th>
+              <th class="text-left px-3 py-2">Carteira</th>
+              <th class="text-left px-3 py-2">Desde</th>
+              <th class="text-left px-3 py-2">Tickets ativos</th>
+              <th class="text-left px-3 py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyOnline"></tbody>
+        </table>
+      </div>
+      <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
+    </section>
+
+    <!-- NOVO: Limite de tickets por carteira -->
+    <details class="card">
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Configurar limite de tickets em andamento</span>
+        <span class="pill">por carteira</span>
+      </summary>
+      <div class="mt-3 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">Carteira</label>
+            <select id="tlCarteira" class="w-full border rounded-md p-2"></select>
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Máximo por operador (0 = sem limite)</label>
+            <input id="tlLimit" type="number" min="0" max="50" value="0" class="w-full border rounded-md p-2">
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btnSalvarTicketsLimit" class="btn btn-primary w-full">Salvar limite</button>
+            <button id="btnResetTicketsLimit" class="btn btn-muted w-full">Zerar</button>
+          </div>
+        </div>
+
+        <div class="text-xs text-gray-500">
+          Observação: o limite é aplicado <b>por carteira</b> no momento do “Pegar Próxima”. Se o agente já tiver
+          atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna uma mensagem para o Agente.
+        </div>
+
+        <div>
+          <div class="text-sm text-gray-700 mb-2">Carteiras configuradas:</div>
+          <div id="tlChips" class="flex flex-wrap gap-2"></div>
+          <div id="tlMsg" class="text-sm text-gray-600 mt-2"></div>
         </div>
       </div>
     </details>
-  </section>
 
-  <!-- Agentes online -->
-  <section class="card">
-    <div class="flex items-center justify-between">
-      <h2 class="font-bold text-lg">Agentes online agora</h2>
-      <span class="pill"><span class="dot online"></span> Online</span>
-    </div>
-
-    <div class="overflow-auto border rounded-lg mt-3">
-      <table class="min-w-full text-sm">
-        <thead class="bg-gray-50">
-          <tr>
-            <th class="text-left px-3 py-2">Código</th>
-            <th class="text-left px-3 py-2">Nome</th>
-            <th class="text-left px-3 py-2">Carteira</th>
-            <th class="text-left px-3 py-2">Desde</th>
-            <th class="text-left px-3 py-2">Tickets ativos</th>
-            <th class="text-left px-3 py-2">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tbodyOnline"></tbody>
-      </table>
-    </div>
-    <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
-  </section>
-
-  <!-- NOVO: Limite de tickets por carteira -->
-  <details class="card">
-    <summary class="summary-row">
-      <span class="font-bold text-lg">Configurar limite de tickets em andamento</span>
-      <span class="pill">por carteira</span>
-    </summary>
-    <div class="mt-3 space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div>
-          <label class="text-sm text-gray-700">Carteira</label>
-          <select id="tlCarteira" class="w-full border rounded-md p-2"></select>
+    <!-- Logout automático -->
+    <details class="card">
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Logout automático por carteira</span>
+        <span class="pill">agendamento</span>
+      </summary>
+      <div class="mt-3 space-y-3">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input id="lgEnabled" type="checkbox" class="w-4 h-4">
+            Ativar logout automático
+          </label>
+          <label class="text-sm text-gray-700">Horário (HH:MM)
+            <input id="lgTime" type="time" value="18:00" class="border rounded-md p-2 ml-2">
+          </label>
         </div>
         <div>
-          <label class="text-sm text-gray-700">Máximo por operador (0 = sem limite)</label>
-          <input id="tlLimit" type="number" min="0" max="50" value="0" class="w-full border rounded-md p-2">
+          <div class="text-sm text-gray-700 mb-1">Carteiras para logout:</div>
+          <div id="lgCarteiras" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
         </div>
-        <div class="flex items-end gap-2">
-          <button id="btnSalvarTicketsLimit" class="btn btn-primary w-full">Salvar limite</button>
-          <button id="btnResetTicketsLimit" class="btn btn-muted w-full">Zerar</button>
+        <div class="flex gap-2">
+          <button id="btnSalvarLogout" class="btn btn-primary">Salvar configuração</button>
+          <button id="btnForcarLogout" class="btn btn-muted">Forçar logout agora</button>
+          <span id="lgMsg" class="text-sm text-gray-600"></span>
         </div>
       </div>
+    </details>
+  </main>
 
-      <div class="text-xs text-gray-500">
-        Observação: o limite é aplicado <b>por carteira</b> no momento do “Pegar Próxima”. Se o agente já tiver
-        atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna uma mensagem para o Agente.
-      </div>
+  <script>
+    /* === Bases de API === */
+    const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes
+    const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
 
-      <div>
-        <div class="text-sm text-gray-700 mb-2">Carteiras configuradas:</div>
-        <div id="tlChips" class="flex flex-wrap gap-2"></div>
-        <div id="tlMsg" class="text-sm text-gray-600 mt-2"></div>
-      </div>
-    </div>
-  </details>
+    /* === Carteiras === */
+    const CARTEIRAS = [
+      "ConnectZap", "Banco PAN", "Recovery PJ", "Recovery PF",
+      "Mercado Pago Cobrança", "DivZero", "Arc4U", "Serasa", "Mercado Pago Vendas"
+    ];
 
-  <!-- Logout automático -->
-  <details class="card">
-    <summary class="summary-row">
-      <span class="font-bold text-lg">Logout automático por carteira</span>
-      <span class="pill">agendamento</span>
-    </summary>
-    <div class="mt-3 space-y-3">
-      <div class="flex items-center gap-3">
-        <label class="flex items-center gap-2 text-sm">
-          <input id="lgEnabled" type="checkbox" class="w-4 h-4">
-          Ativar logout automático
-        </label>
-        <label class="text-sm text-gray-700">Horário (HH:MM)
-          <input id="lgTime" type="time" value="18:00" class="border rounded-md p-2 ml-2">
-        </label>
-      </div>
-      <div>
-        <div class="text-sm text-gray-700 mb-1">Carteiras para logout:</div>
-        <div id="lgCarteiras" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
-      </div>
-      <div class="flex gap-2">
-        <button id="btnSalvarLogout" class="btn btn-primary">Salvar configuração</button>
-        <button id="btnForcarLogout" class="btn btn-muted">Forçar logout agora</button>
-        <span id="lgMsg" class="text-sm text-gray-600"></span>
-      </div>
-    </div>
-  </details>
-</main>
+    /* === Helpers === */
+    function showMsg(el, text, type = "ok") { el.classList.remove("hidden"); el.textContent = text; el.style.color = (type === "ok" ? "var(--ok)" : type === "warn" ? "var(--warn)" : "var(--err)"); }
+    function hideMsg(el) { el.classList.add("hidden"); el.textContent = ""; el.style.color = ""; }
+    function fmt(dt) { try { return new Date(dt).toLocaleString("pt-BR"); } catch { return dt || "—"; } }
+    function fillSelect(sel, vals, includeEmpty = true) {
+      sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
+      vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+    }
+    function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
 
-<script>
-/* === Bases de API === */
-const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes
-const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
+    /* === Estados === */
+    let filtroCarteira = "";
+    let ultimoOnline = [];
+    let mapaTicketsAtivos = {};
+    let pendentesCarteiraAgg = [];
+    let lastSig = { online: "", contagem: "", pendentes: "" };
 
-/* === Carteiras === */
-const CARTEIRAS = [
-  "ConnectZap","Banco PAN","Recovery PJ","Recovery PF",
-  "Mercado Pago Cobrança","DivZero","Arc4U","Serasa","Mercado Pago Vendas"
-];
+    /* === Init UI === */
+    (function initUI() {
+      fillSelect(document.getElementById("filtroGlobalCarteira"), CARTEIRAS);
+      const cadCarteira = document.getElementById("cadCarteira");
+      cadCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
+      const edCarteira = document.getElementById("edCarteira");
+      fillSelect(edCarteira, CARTEIRAS, false);
 
-/* === Helpers === */
-function showMsg(el, text, type="ok"){ el.classList.remove("hidden"); el.textContent=text; el.style.color=(type==="ok"?"var(--ok)":type==="warn"?"var(--warn)":"var(--err)"); }
-function hideMsg(el){ el.classList.add("hidden"); el.textContent=""; el.style.color=""; }
-function fmt(dt){ try{ return new Date(dt).toLocaleString("pt-BR"); }catch{ return dt||"—"; } }
-function fillSelect(sel, vals, includeEmpty=true){
-  sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
-  vals.forEach(v=>{ const o=document.createElement("option"); o.value=v; o.textContent=v; sel.appendChild(o); });
-}
-
-/* === Estados === */
-let filtroCarteira = "";
-let ultimoOnline = [];
-let mapaTicketsAtivos = {};
-let pendentesCarteiraAgg = [];
-
-/* === Init UI === */
-(function initUI(){
-  fillSelect(document.getElementById("filtroGlobalCarteira"), CARTEIRAS);
-  const cadCarteira = document.getElementById("cadCarteira");
-  cadCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c=>`<option>${c}</option>`).join("");
-  const edCarteira = document.getElementById("edCarteira");
-  fillSelect(edCarteira, CARTEIRAS, false);
-
-  // logout checkboxes
-  const wrap = document.getElementById("lgCarteiras");
-  wrap.innerHTML = CARTEIRAS.map(c=>`
+      // logout checkboxes
+      const wrap = document.getElementById("lgCarteiras");
+      wrap.innerHTML = CARTEIRAS.map(c => `
     <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
       <input type="checkbox" class="lg-check" value="${c}"> ${c}
     </label>
   `).join("");
 
-  // bloco limites
-  const tlCarteira = document.getElementById("tlCarteira");
-  tlCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c=>`<option>${c}</option>`).join("");
+      // bloco limites
+      const tlCarteira = document.getElementById("tlCarteira");
+      tlCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
 
-  // carregar config de logout (se houver)
-  fetch(`${API_BASE}/supervisao/logout-config`).then(r=>r.json()).then(cfg=>{
-    document.getElementById("lgEnabled").checked = !!cfg.enabled;
-    document.getElementById("lgTime").value = (cfg.time||"18:00").slice(0,5);
-    const set = new Set(cfg.carteiras||[]);
-    document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
-  }).catch(()=>{});
+      // carregar config de logout (se houver)
+      fetch(`${API_BASE}/supervisao/logout-config`).then(r => r.json()).then(cfg => {
+        document.getElementById("lgEnabled").checked = !!cfg.enabled;
+        document.getElementById("lgTime").value = (cfg.time || "18:00").slice(0, 5);
+        const set = new Set(cfg.carteiras || []);
+        document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
+      }).catch(() => { });
 
-  // carrega chips + valor inicial do limite (se carteira já estiver selecionada)
-  carregarTicketsLimitList();
-})();
+      // carrega chips + valor inicial do limite (se carteira já estiver selecionada)
+      carregarTicketsLimitList();
+    })();
 
-/* === KPI / Online / Pendentes === */
-async function carregarOnlineEmetricas(){
-  const kpiMsg = document.getElementById("kpiMsg");
-  kpiMsg.textContent = "Atualizando…";
-  try{
-    // 1) Agentes online
-    const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
-    const r = await fetch(urlOnline);
-    const lista = await r.json();
-    ultimoOnline = Array.isArray(lista) ? lista : [];
+    /* === Ciclo de atualização com controle de concorrência === */
+    const REFRESH_MS = 10000; // 10s
+    let refreshTimer = null;
+    let refreshAbort = null;
+    let isRefreshing = false;
 
-    // KPIs de online por carteira
-    const porCarteira = {};
-    ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira]||0) + 1; });
-    document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
-    const wrap = document.getElementById("kpiOnlineCarteiras");
-    wrap.innerHTML = "";
-    Object.entries(porCarteira).forEach(([car,qt])=>{
-      const span = document.createElement("span");
-      span.className = "pill";
-      span.textContent = `${car}: ${qt}`;
-      wrap.appendChild(span);
-    });
+    function scheduleRefresh(delay = REFRESH_MS) {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
+    }
 
-    // 2) contagem agregada de tickets por agente (1 chamada)
-    mapaTicketsAtivos = {};
-    try{
-      const urlCnt = filtroCarteira
-        ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
-        : `${CONV_API}/api/tickets/contagem_por_agente`;
-      const rCnt = await fetch(urlCnt);
-      const jCnt = await rCnt.json();
-      if(jCnt && jCnt.ok && jCnt.mapa){ mapaTicketsAtivos = jCnt.mapa; }
-    }catch{ mapaTicketsAtivos = {}; }
+    // fetch JSON com timeout e suporte a abort
+    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
 
-    // total de tickets apenas dos agentes ONLINE
-    const totalTickets = ultimoOnline.reduce((s,a)=>{
-      const key = `${a.codigo_do_agente}-${a.carteira}`;
-      return s + (mapaTicketsAtivos[key] || 0);
-    }, 0);
-    document.getElementById("kpiEmAndamento").textContent = totalTickets;
+      let finalSignal = ctrl.signal;
+      if (signal) {
+        const composite = new AbortController();
+        signal.addEventListener("abort", () => composite.abort("parent"));
+        ctrl.signal.addEventListener("abort", () => composite.abort("timeout"));
+        finalSignal = composite.signal;
+      }
 
-    // 3) Pendentes por carteira
-    const agg = await fetch(`${API_BASE}/fila/pendentes_por_carteira`).then(r=>r.json()).catch(()=>[]);
-    pendentesCarteiraAgg = Array.isArray(agg)?agg:[];
-    const totalPend = pendentesCarteiraAgg
-      .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-      .reduce((s,x)=>s + (x.total||0), 0);
-    document.getElementById("kpiPendentesFila").textContent = totalPend;
+      try {
+        const r = await fetch(url, { signal: finalSignal });
+        return await r.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
 
-    const chips = document.getElementById("kpiPendentesPorCarteira");
-    chips.innerHTML = "";
-    pendentesCarteiraAgg
-      .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-      .forEach(({carteira,total})=>{
-        const span = document.createElement("span");
-        span.className = "pill";
-        span.textContent = `${carteira}: ${total}`;
-        chips.appendChild(span);
-      });
+    async function carregarTudo(reason = "manual") {
+      // se já existe um ciclo, aborta e inicia um novo (sempre 1 em voo)
+      if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
+      isRefreshing = true;
+      refreshAbort = new AbortController();
+      const { signal } = refreshAbort;
 
-    // Render tabela
-    renderOnlineTable();
+      const kpiMsg = document.getElementById("kpiMsg");
+      kpiMsg.textContent = reason === "auto" ? "Atualizando…" : "Atualizando (forçado)…";
 
-    document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
-    kpiMsg.textContent = "OK";
-  }catch(e){
-    kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
-  }
-}
+      try {
+        const urlOnline = filtroCarteira
+          ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}`
+          : `${API_BASE}/fila/status`;
+        const urlCnt = filtroCarteira
+          ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
+          : `${CONV_API}/api/tickets/contagem_por_agente`;
+        const urlPend = `${API_BASE}/fila/pendentes_por_carteira`;
 
-function renderOnlineTable(){
-  const tbody = document.getElementById("tbodyOnline");
-  tbody.innerHTML = "";
-  const filtrados = ultimoOnline;
-  filtrados.forEach(a=>{
-    const tr = document.createElement("tr");
-    const key = `${a.codigo_do_agente}-${a.carteira}`;
-    const tickets = (mapaTicketsAtivos[key] ?? 0);
-    tr.innerHTML = `
+        const [lista, contagem, pend] = await Promise.allSettled([
+          fetchJSON(urlOnline, { signal }),
+          fetchJSON(urlCnt, { signal }),
+          fetchJSON(urlPend, { signal })
+        ]);
+
+        // ONLINE
+        if (lista.status === "fulfilled" && Array.isArray(lista.value)) {
+          const sigOnline = sig(lista.value);
+          if (sigOnline !== lastSig.online) {
+            lastSig.online = sigOnline;
+            ultimoOnline = lista.value;
+            // KPIs por carteira
+            const porCarteira = {};
+            ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
+            document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
+            const wrap = document.getElementById("kpiOnlineCarteiras");
+            wrap.innerHTML = "";
+            Object.entries(porCarteira).forEach(([car, qt]) => {
+              const span = document.createElement("span");
+              span.className = "pill";
+              span.textContent = `${car}: ${qt}`;
+              wrap.appendChild(span);
+            });
+          }
+        }
+
+        // CONTAGEM (mapa)
+        if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
+          const sigCont = sig(contagem.value.mapa);
+          if (sigCont !== lastSig.contagem) {
+            lastSig.contagem = sigCont;
+            mapaTicketsAtivos = contagem.value.mapa;
+          }
+          const totalTickets = ultimoOnline.reduce((s, a) => {
+            const key = `${a.codigo_do_agente}-${a.carteira}`;
+            return s + (mapaTicketsAtivos[key] || 0);
+          }, 0);
+          document.getElementById("kpiEmAndamento").textContent = totalTickets;
+        }
+
+        // PENDENTES
+        if (pend.status === "fulfilled" && Array.isArray(pend.value)) {
+          const sigPend = sig(pend.value);
+          if (sigPend !== lastSig.pendentes) {
+            lastSig.pendentes = sigPend;
+            pendentesCarteiraAgg = pend.value;
+            const totalPend = pendentesCarteiraAgg
+              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
+              .reduce((s, x) => s + (x.total || 0), 0);
+            document.getElementById("kpiPendentesFila").textContent = totalPend;
+
+            const chips = document.getElementById("kpiPendentesPorCarteira");
+            chips.innerHTML = "";
+            pendentesCarteiraAgg
+              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
+              .forEach(({ carteira, total }) => {
+                const span = document.createElement("span");
+                span.className = "pill";
+                span.textContent = `${carteira}: ${total}`;
+                chips.appendChild(span);
+              });
+          }
+        }
+
+        // Render tabela (quando qualquer parte muda)
+        renderOnlineTable();
+
+        document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
+        kpiMsg.textContent = "OK";
+      } catch (e) {
+        if (String(e) !== "AbortError" && String(e) !== "superseded") {
+          kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
+        }
+      } finally {
+        isRefreshing = false;
+        scheduleRefresh(); // agenda o próximo 10s após conclusão
+      }
+    }
+
+    function renderOnlineTable() {
+      const tbody = document.getElementById("tbodyOnline");
+      tbody.innerHTML = "";
+      const filtrados = ultimoOnline;
+      filtrados.forEach(a => {
+        const tr = document.createElement("tr");
+        const key = `${a.codigo_do_agente}-${a.carteira}`;
+        const tickets = (mapaTicketsAtivos[key] ?? 0);
+        tr.innerHTML = `
       <td class="px-3 py-2">${a.codigo_do_agente}</td>
-      <td class="px-3 py-2">${a.nome||"-"}</td>
+      <td class="px-3 py-2">${a.nome || "-"}</td>
       <td class="px-3 py-2">${a.carteira}</td>
       <td class="px-3 py-2">${fmt(a.data_hora)}</td>
       <td class="px-3 py-2">${tickets}</td>
       <td class="px-3 py-2">
         <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
-          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g,"\\'")}')">Forçar offline</button>
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\'")}')">Forçar offline</button>
       </td>
     `;
-    tbody.appendChild(tr);
-  });
-  const msg = document.getElementById("onlineMsg");
-  msg.textContent = filtrados.length ? "" : (filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.");
-}
+        tbody.appendChild(tr);
+      });
+      const msg = document.getElementById("onlineMsg");
+      msg.textContent = filtrados.length ? "" : (filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.");
+    }
 
-async function forcarOffline(codigo, carteira){
-  if(!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
-  try{
-    const r = await fetch(`${API_BASE}/fila/offline`,{
-      method:"DELETE", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ codigo_do_agente: codigo, carteira })
+    async function forcarOffline(codigo, carteira) {
+      if (!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
+      try {
+        const r = await fetch(`${API_BASE}/fila/offline`, {
+          method: "DELETE", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: codigo, carteira })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao forçar offline");
+        carregarTudo("acao");
+      } catch (e) { alert(e.message || "Erro ao forçar offline"); }
+    }
+
+    /* === Limite de tickets por carteira === */
+    async function carregarTicketsLimitList() {
+      try {
+        const list = await fetch(`${CONV_API}/api/supervisao/tickets-limit`).then(r => r.json());
+        renderTicketsLimitChips(Array.isArray(list) ? list : []);
+      } catch {
+        renderTicketsLimitChips([]);
+      }
+    }
+    function renderTicketsLimitChips(items) {
+      const wrap = document.getElementById("tlChips");
+      wrap.innerHTML = "";
+      if (!items.length) {
+        wrap.innerHTML = `<span class="text-xs text-gray-500">Nenhuma carteira configurada — limite padrão 0 (sem restrição).</span>`;
+        return;
+      }
+      items.forEach(({ carteira, limit_per_agent }) => {
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = `${carteira}: ${limit_per_agent}`;
+        wrap.appendChild(span);
+      });
+    }
+    async function carregarTicketsLimitValor(carteira) {
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { document.getElementById("tlLimit").value = 0; return; }
+      tlMsg.textContent = "Carregando...";
+      try {
+        const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(carteira)}`).then(r => r.json());
+        document.getElementById("tlLimit").value = Number(j.limit_per_agent || 0);
+        tlMsg.textContent = "";
+      } catch (e) {
+        tlMsg.textContent = "Falha ao carregar valor.";
+      }
+    }
+    async function salvarTicketsLimit(limit, carteira) {
+      const tlMsg = document.getElementById("tlMsg");
+      tlMsg.textContent = "Salvando...";
+      try {
+        const r = await fetch(`${CONV_API}/api/supervisao/tickets-limit`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteira, limit_per_agent: Number(limit || 0) })
+        });
+        const j = await r.json();
+        tlMsg.textContent = j.ok ? "Limite salvo." : (j.erro || "Erro ao salvar.");
+        await carregarTicketsLimitList();
+      } catch (e) {
+        tlMsg.textContent = "Erro de rede ao salvar.";
+      }
+    }
+
+    document.getElementById("tlCarteira").addEventListener("change", (e) => {
+      const car = e.target.value || "";
+      carregarTicketsLimitValor(car);
     });
-    const j = await r.json();
-    if(!j.ok) throw new Error(j.erro||"Falha ao forçar offline");
-    await carregarOnlineEmetricas();
-  }catch(e){ alert(e.message||"Erro ao forçar offline"); }
-}
+    document.getElementById("btnSalvarTicketsLimit").onclick = async () => {
+      const carteira = document.getElementById("tlCarteira").value;
+      const v = Number(document.getElementById("tlLimit").value || 0);
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
+      if (!Number.isInteger(v) || v < 0 || v > 50) { tlMsg.textContent = "Informe um valor entre 0 e 50."; return; }
+      await salvarTicketsLimit(v, carteira);
+    };
+    document.getElementById("btnResetTicketsLimit").onclick = async () => {
+      const carteira = document.getElementById("tlCarteira").value;
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
+      document.getElementById("tlLimit").value = 0;
+      await salvarTicketsLimit(0, carteira);
+    };
 
-/* === Cadastro de agente === */
-document.getElementById("btnCadastrar").onclick = async () =>{
-  const msg = document.getElementById("cadMsg"); hideMsg(msg);
-  const codigo = Number(document.getElementById("cadCodigo").value);
-  const nome = (document.getElementById("cadNome").value||"").trim();
-  const carteira = document.getElementById("cadCarteira").value;
-  const origem = document.getElementById("cadOrigem").value;
-  if(!codigo||!Number.isInteger(codigo)) return showMsg(msg,"Código precisa ser inteiro.","warn");
-  if(!nome || nome.split(" ").length<2) return showMsg(msg,"Informe o nome completo.","warn");
-  if(!carteira) return showMsg(msg,"Selecione a carteira.","warn");
-  if(!origem) return showMsg(msg,"Selecione a origem BD.","warn");
+    /* === Logout automático === */
+    document.getElementById("btnSalvarLogout").onclick = async () => {
+      const lgMsg = document.getElementById("lgMsg");
+      const enabled = document.getElementById("lgEnabled").checked;
+      const time = document.getElementById("lgTime").value || "18:00";
+      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
+      lgMsg.textContent = "Salvando...";
+      try {
+        const r = await fetch(`${API_BASE}/supervisao/logout-config`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled, time, carteiras })
+        });
+        const j = await r.json();
+        lgMsg.textContent = j.ok ? "Configuração salva." : (j.erro || "Erro ao salvar.");
+      } catch (e) { lgMsg.textContent = "Erro de rede ao salvar."; }
+    };
+    document.getElementById("btnForcarLogout").onclick = async () => {
+      const lgMsg = document.getElementById("lgMsg");
+      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
+      if (!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
+      if (!confirm(`Forçar logout agora das carteiras: ${carteiras.join(" ")}`)) return;
+      lgMsg.textContent = "Executando...";
+      try {
+        const r = await fetch(`${API_BASE}/fila/forcar_logout`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteiras })
+        });
+        const j = await r.json();
+        lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
+        carregarTudo("acao");
+      } catch (e) { lgMsg.textContent = "Erro de rede ao forçar logout."; }
+    };
 
-  try{
-    const r = await fetch(`${API_BASE}/agentes`, {
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+    /* === Eventos globais === */
+    document.getElementById("filtroGlobalCarteira").addEventListener("change", (e) => {
+      filtroCarteira = e.target.value || "";
+      carregarTudo("filtro");
     });
-    const j = await r.json();
-    if(!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
-    showMsg(msg, "Agente cadastrado com sucesso.", "ok");
-    document.getElementById("cadCodigo").value="";
-    document.getElementById("cadNome").value="";
-    document.getElementById("cadCarteira").value="";
-    document.getElementById("cadOrigem").value="";
-    carregarOnlineEmetricas();
-  }catch(e){ showMsg(msg,"Erro de rede ao cadastrar.","err"); }
-};
 
-/* === Buscar/editar agente === */
-document.getElementById("btnBuscar").onclick = async () => {
-  const cod = Number(document.getElementById("buscaCodigo").value);
-  const msg = document.getElementById("editMsg"); hideMsg(msg);
-  if(!cod||!Number.isInteger(cod)) return showMsg(msg,"Informe um código inteiro válido.","warn");
-  try{
-    const r = await fetch(`${API_BASE}/agentes/${cod}`);
-    const j = await r.json();
-    if(!j.ok) { showMsg(msg, j.erro || "Não encontrado.", "warn"); document.getElementById("editBox").classList.add("hidden"); return; }
-    const ag = j.agente;
-    document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
-    document.getElementById("edNome").textContent = ag.nome;
-    document.getElementById("edCarteira").value = ag.carteira;
-    document.getElementById("edOrigem").textContent = ag.origem_bd;
-    document.getElementById("editBox").classList.remove("hidden");
-  }catch(e){ showMsg(msg, "Erro ao buscar agente.", "err"); }
-};
-document.getElementById("btnLimparBusca").onclick = () => {
-  document.getElementById("buscaCodigo").value="";
-  document.getElementById("editBox").classList.add("hidden");
-  hideMsg(document.getElementById("editMsg"));
-};
-document.getElementById("btnSalvarEdicao").onclick = async () => {
-  const msg = document.getElementById("editMsg"); hideMsg(msg);
-  const codigo = Number(document.getElementById("edCodigo").textContent);
-  const nova = document.getElementById("edCarteira").value;
-  if(!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
-  try{
-    const r = await fetch(`${API_BASE}/agentes/${codigo}`,{
-      method:"PUT", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ carteira: nova })
-    });
-    const j = await r.json();
-    if(!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
-    showMsg(msg, "Carteira atualizada.", "ok");
-    carregarOnlineEmetricas();
-  }catch(e){ showMsg(msg, "Erro de rede ao salvar.", "err"); }
-};
-
-/* === Limite de tickets por carteira === */
-async function carregarTicketsLimitList(){
-  try{
-    const list = await fetch(`${CONV_API}/api/supervisao/tickets-limit`).then(r=>r.json());
-    renderTicketsLimitChips(Array.isArray(list)?list:[]);
-  }catch{
-    renderTicketsLimitChips([]);
-  }
-}
-function renderTicketsLimitChips(items){
-  const wrap = document.getElementById("tlChips");
-  wrap.innerHTML = "";
-  if(!items.length){
-    wrap.innerHTML = `<span class="text-xs text-gray-500">Nenhuma carteira configurada — limite padrão 0 (sem restrição).</span>`;
-    return;
-  }
-  items.forEach(({carteira, limit_per_agent})=>{
-    const span = document.createElement("span");
-    span.className = "pill";
-    span.textContent = `${carteira}: ${limit_per_agent}`;
-    wrap.appendChild(span);
-  });
-}
-async function carregarTicketsLimitValor(carteira){
-  const tlMsg = document.getElementById("tlMsg");
-  if(!carteira){ document.getElementById("tlLimit").value = 0; return; }
-  tlMsg.textContent = "Carregando...";
-  try{
-    const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(carteira)}`).then(r=>r.json());
-    document.getElementById("tlLimit").value = Number(j.limit_per_agent||0);
-    tlMsg.textContent = "";
-  }catch(e){
-    tlMsg.textContent = "Falha ao carregar valor.";
-  }
-}
-async function salvarTicketsLimit(limit, carteira){
-  const tlMsg = document.getElementById("tlMsg");
-  tlMsg.textContent = "Salvando...";
-  try{
-    const r = await fetch(`${CONV_API}/api/supervisao/tickets-limit`, {
-      method:"PUT", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ carteira, limit_per_agent: Number(limit||0) })
-    });
-    const j = await r.json();
-    tlMsg.textContent = j.ok ? "Limite salvo." : (j.erro || "Erro ao salvar.");
-    await carregarTicketsLimitList();
-  }catch(e){
-    tlMsg.textContent = "Erro de rede ao salvar.";
-  }
-}
-
-document.getElementById("tlCarteira").addEventListener("change", (e)=>{
-  const car = e.target.value || "";
-  carregarTicketsLimitValor(car);
-});
-document.getElementById("btnSalvarTicketsLimit").onclick = async ()=>{
-  const carteira = document.getElementById("tlCarteira").value;
-  const v = Number(document.getElementById("tlLimit").value||0);
-  const tlMsg = document.getElementById("tlMsg");
-  if(!carteira){ tlMsg.textContent="Selecione uma carteira."; return; }
-  if(!Number.isInteger(v) || v<0 || v>50){ tlMsg.textContent="Informe um valor entre 0 e 50."; return; }
-  await salvarTicketsLimit(v, carteira);
-};
-document.getElementById("btnResetTicketsLimit").onclick = async ()=>{
-  const carteira = document.getElementById("tlCarteira").value;
-  const tlMsg = document.getElementById("tlMsg");
-  if(!carteira){ tlMsg.textContent="Selecione uma carteira."; return; }
-  document.getElementById("tlLimit").value = 0;
-  await salvarTicketsLimit(0, carteira);
-};
-
-/* === Logout automático === */
-document.getElementById("btnSalvarLogout").onclick = async () => {
-  const lgMsg = document.getElementById("lgMsg");
-  const enabled = document.getElementById("lgEnabled").checked;
-  const time = document.getElementById("lgTime").value || "18:00";
-  const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x=>x.value);
-  lgMsg.textContent = "Salvando...";
-  try{
-    const r = await fetch(`${API_BASE}/supervisao/logout-config`, {
-      method:"PUT", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ enabled, time, carteiras })
-    });
-    const j = await r.json();
-    lgMsg.textContent = j.ok ? "Configuração salva." : (j.erro || "Erro ao salvar.");
-  }catch(e){ lgMsg.textContent = "Erro de rede ao salvar."; }
-};
-document.getElementById("btnForcarLogout").onclick = async () => {
-  const lgMsg = document.getElementById("lgMsg");
-  const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x=>x.value);
-  if(!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
-  if(!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
-  lgMsg.textContent = "Executando...";
-  try{
-    const r = await fetch(`${API_BASE}/fila/forcar_logout`,{
-      method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ carteiras })
-    });
-    const j = await r.json();
-    lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
-    carregarOnlineEmetricas();
-  }catch(e){ lgMsg.textContent = "Erro de rede ao forçar logout."; }
-};
-
-/* === Eventos globais === */
-document.getElementById("filtroGlobalCarteira").addEventListener("change", (e)=>{
-  filtroCarteira = e.target.value || "";
-  carregarOnlineEmetricas();
-});
-
-/* === Auto refresh (10s) === */
-carregarOnlineEmetricas();
-setInterval(carregarOnlineEmetricas, 10000);
-</script>
+    /* === Auto refresh (10s após conclusão) === */
+    carregarTudo("primeiro");
+  </script>
 </body>
+
 </html>
