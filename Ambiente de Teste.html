@@ -340,14 +340,12 @@
       sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
       vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
     }
-    function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
 
     /* === Estados === */
     let filtroCarteira = "";
     let ultimoOnline = [];
     let mapaTicketsAtivos = {};
     let pendentesCarteiraAgg = [];
-    let lastSig = { online: "", contagem: "", pendentes: "" };
 
     /* === Init UI === */
     (function initUI() {
@@ -381,134 +379,74 @@
       carregarTicketsLimitList();
     })();
 
-    /* === Ciclo de atualização com controle de concorrência === */
-    const REFRESH_MS = 10000; // 10s
-    let refreshTimer = null;
-    let refreshAbort = null;
-    let isRefreshing = false;
-
-    function scheduleRefresh(delay = REFRESH_MS) {
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
-    }
-
-    // fetch JSON com timeout e suporte a abort
-    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
-
-      let finalSignal = ctrl.signal;
-      if (signal) {
-        const composite = new AbortController();
-        signal.addEventListener("abort", () => composite.abort("parent"));
-        ctrl.signal.addEventListener("abort", () => composite.abort("timeout"));
-        finalSignal = composite.signal;
-      }
-
-      try {
-        const r = await fetch(url, { signal: finalSignal });
-        return await r.json();
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-
-    async function carregarTudo(reason = "manual") {
-      // se já existe um ciclo, aborta e inicia um novo (sempre 1 em voo)
-      if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
-      isRefreshing = true;
-      refreshAbort = new AbortController();
-      const { signal } = refreshAbort;
-
+    /* === KPI / Online / Pendentes === */
+    async function carregarOnlineEmetricas() {
       const kpiMsg = document.getElementById("kpiMsg");
-      kpiMsg.textContent = reason === "auto" ? "Atualizando…" : "Atualizando (forçado)…";
-
+      kpiMsg.textContent = "Atualizando…";
       try {
-        const urlOnline = filtroCarteira
-          ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}`
-          : `${API_BASE}/fila/status`;
-        const urlCnt = filtroCarteira
-          ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
-          : `${CONV_API}/api/tickets/contagem_por_agente`;
-        const urlPend = `${API_BASE}/fila/pendentes_por_carteira`;
+        // 1) Agentes online
+        const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
+        const r = await fetch(urlOnline);
+        const lista = await r.json();
+        ultimoOnline = Array.isArray(lista) ? lista : [];
 
-        const [lista, contagem, pend] = await Promise.allSettled([
-          fetchJSON(urlOnline, { signal }),
-          fetchJSON(urlCnt, { signal }),
-          fetchJSON(urlPend, { signal })
-        ]);
+        // KPIs de online por carteira
+        const porCarteira = {};
+        ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
+        document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
+        const wrap = document.getElementById("kpiOnlineCarteiras");
+        wrap.innerHTML = "";
+        Object.entries(porCarteira).forEach(([car, qt]) => {
+          const span = document.createElement("span");
+          span.className = "pill";
+          span.textContent = `${car}: ${qt}`;
+          wrap.appendChild(span);
+        });
 
-        // ONLINE
-        if (lista.status === "fulfilled" && Array.isArray(lista.value)) {
-          const sigOnline = sig(lista.value);
-          if (sigOnline !== lastSig.online) {
-            lastSig.online = sigOnline;
-            ultimoOnline = lista.value;
-            // KPIs por carteira
-            const porCarteira = {};
-            ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
-            document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
-            const wrap = document.getElementById("kpiOnlineCarteiras");
-            wrap.innerHTML = "";
-            Object.entries(porCarteira).forEach(([car, qt]) => {
-              const span = document.createElement("span");
-              span.className = "pill";
-              span.textContent = `${car}: ${qt}`;
-              wrap.appendChild(span);
-            });
-          }
-        }
+        // 2) contagem agregada de tickets por agente (1 chamada)
+        mapaTicketsAtivos = {};
+        try {
+          const urlCnt = filtroCarteira
+            ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
+            : `${CONV_API}/api/tickets/contagem_por_agente`;
+          const rCnt = await fetch(urlCnt);
+          const jCnt = await rCnt.json();
+          if (jCnt && jCnt.ok && jCnt.mapa) { mapaTicketsAtivos = jCnt.mapa; }
+        } catch { mapaTicketsAtivos = {}; }
 
-        // CONTAGEM (mapa)
-        if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
-          const sigCont = sig(contagem.value.mapa);
-          if (sigCont !== lastSig.contagem) {
-            lastSig.contagem = sigCont;
-            mapaTicketsAtivos = contagem.value.mapa;
-          }
-          const totalTickets = ultimoOnline.reduce((s, a) => {
-            const key = `${a.codigo_do_agente}-${a.carteira}`;
-            return s + (mapaTicketsAtivos[key] || 0);
-          }, 0);
-          document.getElementById("kpiEmAndamento").textContent = totalTickets;
-        }
+        // total de tickets apenas dos agentes ONLINE
+        const totalTickets = ultimoOnline.reduce((s, a) => {
+          const key = `${a.codigo_do_agente}-${a.carteira}`;
+          return s + (mapaTicketsAtivos[key] || 0);
+        }, 0);
+        document.getElementById("kpiEmAndamento").textContent = totalTickets;
 
-        // PENDENTES
-        if (pend.status === "fulfilled" && Array.isArray(pend.value)) {
-          const sigPend = sig(pend.value);
-          if (sigPend !== lastSig.pendentes) {
-            lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value;
-            const totalPend = pendentesCarteiraAgg
-              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-              .reduce((s, x) => s + (x.total || 0), 0);
-            document.getElementById("kpiPendentesFila").textContent = totalPend;
+        // 3) Pendentes por carteira
+        const agg = await fetch(`${API_BASE}/fila/pendentes_por_carteira`).then(r => r.json()).catch(() => []);
+        pendentesCarteiraAgg = Array.isArray(agg) ? agg : [];
+        const totalPend = pendentesCarteiraAgg
+          .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
+          .reduce((s, x) => s + (x.total || 0), 0);
+        document.getElementById("kpiPendentesFila").textContent = totalPend;
 
-            const chips = document.getElementById("kpiPendentesPorCarteira");
-            chips.innerHTML = "";
-            pendentesCarteiraAgg
-              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-              .forEach(({ carteira, total }) => {
-                const span = document.createElement("span");
-                span.className = "pill";
-                span.textContent = `${carteira}: ${total}`;
-                chips.appendChild(span);
-              });
-          }
-        }
+        const chips = document.getElementById("kpiPendentesPorCarteira");
+        chips.innerHTML = "";
+        pendentesCarteiraAgg
+          .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
+          .forEach(({ carteira, total }) => {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.textContent = `${carteira}: ${total}`;
+            chips.appendChild(span);
+          });
 
-        // Render tabela (quando qualquer parte muda)
+        // Render tabela
         renderOnlineTable();
 
         document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
         kpiMsg.textContent = "OK";
       } catch (e) {
-        if (String(e) !== "AbortError" && String(e) !== "superseded") {
-          kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
-        }
-      } finally {
-        isRefreshing = false;
-        scheduleRefresh(); // agenda o próximo 10s após conclusão
+        kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
       }
     }
 
@@ -528,7 +466,7 @@
       <td class="px-3 py-2">${tickets}</td>
       <td class="px-3 py-2">
         <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
-          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\'")}')">Forçar offline</button>
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
       </td>
     `;
         tbody.appendChild(tr);
@@ -546,9 +484,76 @@
         });
         const j = await r.json();
         if (!j.ok) throw new Error(j.erro || "Falha ao forçar offline");
-        carregarTudo("acao");
+        await carregarOnlineEmetricas();
       } catch (e) { alert(e.message || "Erro ao forçar offline"); }
     }
+
+    /* === Cadastro de agente === */
+    document.getElementById("btnCadastrar").onclick = async () => {
+      const msg = document.getElementById("cadMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("cadCodigo").value);
+      const nome = (document.getElementById("cadNome").value || "").trim();
+      const carteira = document.getElementById("cadCarteira").value;
+      const origem = document.getElementById("cadOrigem").value;
+      if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
+      if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
+      if (!carteira) return showMsg(msg, "Selecione a carteira.", "warn");
+      if (!origem) return showMsg(msg, "Selecione a origem BD.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
+        showMsg(msg, "Agente cadastrado com sucesso.", "ok");
+        document.getElementById("cadCodigo").value = "";
+        document.getElementById("cadNome").value = "";
+        document.getElementById("cadCarteira").value = "";
+        document.getElementById("cadOrigem").value = "";
+        carregarOnlineEmetricas();
+      } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
+    };
+
+    /* === Buscar/editar agente === */
+    document.getElementById("btnBuscar").onclick = async () => {
+      const cod = Number(document.getElementById("buscaCodigo").value);
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      if (!cod || !Number.isInteger(cod)) return showMsg(msg, "Informe um código inteiro válido.", "warn");
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${cod}`);
+        const j = await r.json();
+        if (!j.ok) { showMsg(msg, j.erro || "Não encontrado.", "warn"); document.getElementById("editBox").classList.add("hidden"); return; }
+        const ag = j.agente;
+        document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
+        document.getElementById("edNome").textContent = ag.nome;
+        document.getElementById("edCarteira").value = ag.carteira;
+        document.getElementById("edOrigem").textContent = ag.origem_bd;
+        document.getElementById("editBox").classList.remove("hidden");
+      } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
+    };
+    document.getElementById("btnLimparBusca").onclick = () => {
+      document.getElementById("buscaCodigo").value = "";
+      document.getElementById("editBox").classList.add("hidden");
+      hideMsg(document.getElementById("editMsg"));
+    };
+    document.getElementById("btnSalvarEdicao").onclick = async () => {
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("edCodigo").textContent);
+      const nova = document.getElementById("edCarteira").value;
+      if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteira: nova })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
+        showMsg(msg, "Carteira atualizada.", "ok");
+        carregarOnlineEmetricas();
+      } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
+    };
 
     /* === Limite de tickets por carteira === */
     async function carregarTicketsLimitList() {
@@ -641,7 +646,7 @@
       const lgMsg = document.getElementById("lgMsg");
       const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
       if (!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
-      if (!confirm(`Forçar logout agora das carteiras: ${carteiras.join(" ")}`)) return;
+      if (!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
       lgMsg.textContent = "Executando...";
       try {
         const r = await fetch(`${API_BASE}/fila/forcar_logout`, {
@@ -650,18 +655,19 @@
         });
         const j = await r.json();
         lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
-        carregarTudo("acao");
+        carregarOnlineEmetricas();
       } catch (e) { lgMsg.textContent = "Erro de rede ao forçar logout."; }
     };
 
     /* === Eventos globais === */
     document.getElementById("filtroGlobalCarteira").addEventListener("change", (e) => {
       filtroCarteira = e.target.value || "";
-      carregarTudo("filtro");
+      carregarOnlineEmetricas();
     });
 
-    /* === Auto refresh (10s após conclusão) === */
-    carregarTudo("primeiro");
+    /* === Auto refresh (10s) === */
+    carregarOnlineEmetricas();
+    setInterval(carregarOnlineEmetricas, 10000);
   </script>
 </body>
 
