@@ -248,7 +248,7 @@
               <th class="text-left px-3 py-2">Carteira</th>
               <th class="text-left px-3 py-2">Desde</th>
               <th class="text-left px-3 py-2">Tickets ativos</th>
-              <th class="text-left px-3 py-2">Inatividade</th><!-- NOVO -->
+              <th class="text-left px-3 py-2">Inatividade</th>
               <th class="text-left px-3 py-2">Ações</th>
             </tr>
           </thead>
@@ -481,7 +481,7 @@
           }
         }
 
-        // CONTAGEM (mantido; não alteramos lógica existente)
+        // CONTAGEM 
         if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
           const sigCont = sig(contagem.value.mapa);
           if (sigCont !== lastSig.contagem) {
@@ -489,10 +489,15 @@
             mapaTicketsAtivos = contagem.value.mapa;
           }
           const totalTickets = ultimoOnline.reduce((s, a) => {
-            const key = `${a.codigo_do_agente}-${a.carteira}`;
-            return s + (mapaTicketsAtivos[key] || 0);
-          }, 0);
-          document.getElementById("kpiEmAndamento").textContent = totalTickets;
+          const key = `${a.codigo_do_agente}-${a.carteira}`;
+          const val = mapaTicketsAtivos[key];
+
+          const qtd = (typeof val === 'object' && val)
+            ? (val.qtd ?? 0)
+            : (Number(val) || 0);
+          return s + qtd;
+        }, 0);
+        document.getElementById("kpiEmAndamento").textContent = totalTickets;
         }
 
         // PENDENTES
@@ -500,10 +505,9 @@
           const sigPend = sig(pend.value);
           if (sigPend !== lastSig.pendentes) {
             lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value; // guarda último payload
+            pendentesCarteiraAgg = pend.value; // 
           }
 
-          // sempre renderiza, mesmo se o payload não mudou
           const norm = s => (s || "")
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, "")

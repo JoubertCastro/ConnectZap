@@ -248,6 +248,7 @@
               <th class="text-left px-3 py-2">Carteira</th>
               <th class="text-left px-3 py-2">Desde</th>
               <th class="text-left px-3 py-2">Tickets ativos</th>
+              <th class="text-left px-3 py-2">Inatividade</th>
               <th class="text-left px-3 py-2">Ações</th>
             </tr>
           </thead>
@@ -341,6 +342,29 @@
       vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
     }
     function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
+
+    // >>> NOVOS helpers para inatividade
+    function parseTempoInativo(v) {
+      // aceita segundos (número) ou string 'HH:MM:SS'
+      if (v == null) return null;
+      if (typeof v === 'number' && isFinite(v)) return v;
+      if (typeof v === 'string' && /^\d{1,2}:\d{2}:\d{2}$/.test(v)) {
+        const [h, m, s] = v.split(':').map(n => parseInt(n, 10));
+        return (h * 3600) + (m * 60) + s;
+      }
+      return null;
+    }
+    function fmtDuracao(seg) {
+      if (seg == null) return '—';
+      const h = Math.floor(seg / 3600);
+      const m = Math.floor((seg % 3600) / 60);
+      const s = Math.floor(seg % 60);
+      const hh = h.toString().padStart(2, '0');
+      const mm = m.toString().padStart(2, '0');
+      const ss = s.toString().padStart(2, '0');
+      return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
+    }
+    // <<< FIM helpers inatividade
 
     /* === Estados === */
     let filtroCarteira = "";
@@ -457,7 +481,7 @@
           }
         }
 
-        // CONTAGEM
+        // CONTAGEM 
         if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
           const sigCont = sig(contagem.value.mapa);
           if (sigCont !== lastSig.contagem) {
@@ -465,10 +489,15 @@
             mapaTicketsAtivos = contagem.value.mapa;
           }
           const totalTickets = ultimoOnline.reduce((s, a) => {
-            const key = `${a.codigo_do_agente}-${a.carteira}`;
-            return s + (mapaTicketsAtivos[key] || 0);
-          }, 0);
-          document.getElementById("kpiEmAndamento").textContent = totalTickets;
+          const key = `${a.codigo_do_agente}-${a.carteira}`;
+          const val = mapaTicketsAtivos[key];
+
+          const qtd = (typeof val === 'object' && val)
+            ? (val.qtd ?? 0)
+            : (Number(val) || 0);
+          return s + qtd;
+        }, 0);
+        document.getElementById("kpiEmAndamento").textContent = totalTickets;
         }
 
         // PENDENTES
@@ -476,10 +505,9 @@
           const sigPend = sig(pend.value);
           if (sigPend !== lastSig.pendentes) {
             lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value; // guarda último payload
+            pendentesCarteiraAgg = pend.value; // 
           }
 
-          // sempre renderiza, mesmo se o payload não mudou
           const norm = s => (s || "")
             .normalize("NFD")
             .replace(/\p{Diacritic}/gu, "")
@@ -521,16 +549,36 @@
       const tbody = document.getElementById("tbodyOnline");
       tbody.innerHTML = "";
       const filtrados = ultimoOnline;
+
       filtrados.forEach(a => {
         const tr = document.createElement("tr");
         const key = `${a.codigo_do_agente}-${a.carteira}`;
-        const tickets = (mapaTicketsAtivos[key] ?? 0);
+        const val = mapaTicketsAtivos[key];
+
+        // tickets (mantém compat com payload numérico)
+        const tickets = (typeof val === 'object' && val) ? (val.qtd ?? 0) : (mapaTicketsAtivos[key] ?? 0);
+
+        // inatividade (aceita segundos ou 'HH:MM:SS' em val.tempo_inativo_seconds / val.tempo_inativo)
+        let tempoSeg = null;
+        if (val && typeof val === 'object') {
+          tempoSeg = parseTempoInativo(val.tempo_inativo_seconds ?? val.tempo_inativo ?? null);
+        }
+
+        const critico = (tempoSeg != null && tempoSeg >= 3600); // 1h+
+
+        tr.className = "border-b";
+        if (critico) tr.classList.add("bg-amber-50");
+
         tr.innerHTML = `
       <td class="px-3 py-2">${a.codigo_do_agente}</td>
       <td class="px-3 py-2">${a.nome || "-"}</td>
       <td class="px-3 py-2">${a.carteira}</td>
       <td class="px-3 py-2">${fmt(a.data_hora)}</td>
       <td class="px-3 py-2">${tickets}</td>
+      <td class="px-3 py-2 ${critico ? 'text-amber-700 font-medium' : 'text-gray-600'}">
+        ${tempoSeg != null ? fmtDuracao(tempoSeg) : '—'}
+        ${critico ? '<span class="ml-2 inline-block px-2 py-[2px] text-[11px] rounded-full bg-amber-200 text-amber-900">1h+</span>' : ''}
+      </td>
       <td class="px-3 py-2">
         <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
           onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
@@ -538,6 +586,7 @@
     `;
         tbody.appendChild(tr);
       });
+
       const msg = document.getElementById("onlineMsg");
       msg.textContent = filtrados.length ? "" : (filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.");
     }
