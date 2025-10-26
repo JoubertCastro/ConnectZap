@@ -476,24 +476,30 @@
           const sigPend = sig(pend.value);
           if (sigPend !== lastSig.pendentes) {
             lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value;
-
-            const totalPend = pendentesCarteiraAgg
-              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-              .reduce((s, x) => s + (x.total || 0), 0);
-            document.getElementById("kpiPendentesFila").textContent = totalPend;
-
-            const chips = document.getElementById("kpiPendentesPorCarteira");
-            chips.innerHTML = "";
-            pendentesCarteiraAgg
-              .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
-              .forEach(({ carteira, total }) => {
-                const span = document.createElement("span");
-                span.className = "pill";
-                span.textContent = `${carteira}: ${total}`;
-                chips.appendChild(span);
-              });
+            pendentesCarteiraAgg = pend.value; // guarda último payload
           }
+
+          // sempre renderiza, mesmo se o payload não mudou
+          const norm = s => (s || "")
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .trim()
+            .toLowerCase();
+
+          const filtroN = norm(filtroCarteira);
+          const filtrados = pendentesCarteiraAgg.filter(x => !filtroN || norm(x.carteira) === filtroN);
+
+          const totalPend = filtrados.reduce((s, x) => s + (Number(x.total) || 0), 0);
+          document.getElementById("kpiPendentesFila").textContent = totalPend;
+
+          const chips = document.getElementById("kpiPendentesPorCarteira");
+          chips.innerHTML = "";
+          filtrados.forEach(({ carteira, total }) => {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.textContent = `${carteira}: ${total}`;
+            chips.appendChild(span);
+          });
         }
 
         // Render tabela
