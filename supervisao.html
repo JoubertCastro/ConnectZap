@@ -257,7 +257,7 @@
       <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
     </section>
 
-    <!-- NOVO: Limite de tickets por carteira -->
+    <!-- Limite de tickets -->
     <details class="card">
       <summary class="summary-row">
         <span class="font-bold text-lg">Configurar limite de tickets em andamento</span>
@@ -381,8 +381,8 @@
       carregarTicketsLimitList();
     })();
 
-    /* === Ciclo de atualização com controle de concorrência === */
-    const REFRESH_MS = 10000; // 10s
+    /* === Ciclo de atualização estável (1 requisição em voo) === */
+    const REFRESH_MS = 10000;
     let refreshTimer = null;
     let refreshAbort = null;
     let isRefreshing = false;
@@ -392,29 +392,30 @@
       refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
     }
 
-    // fetch JSON com timeout e suporte a abort
+    // fetch JSON com timeout e abort composto
     async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort("timeout"), timeoutMs);
+      const own = new AbortController();
+      const t = setTimeout(() => own.abort("timeout"), timeoutMs);
 
-      let finalSignal = ctrl.signal;
+      // compor sinais (parent + timeout)
+      let finalSignal = own.signal;
       if (signal) {
-        const composite = new AbortController();
-        signal.addEventListener("abort", () => composite.abort("parent"));
-        ctrl.signal.addEventListener("abort", () => composite.abort("timeout"));
-        finalSignal = composite.signal;
+        const comp = new AbortController();
+        signal.addEventListener("abort", () => comp.abort("parent"), { once: true });
+        own.signal.addEventListener("abort", () => comp.abort("timeout"), { once: true });
+        finalSignal = comp.signal;
       }
 
       try {
         const r = await fetch(url, { signal: finalSignal });
         return await r.json();
       } finally {
-        clearTimeout(timer);
+        clearTimeout(t);
       }
     }
 
     async function carregarTudo(reason = "manual") {
-      // se já existe um ciclo, aborta e inicia um novo (sempre 1 em voo)
+      // sempre manter UMA execução: aborta a anterior se ainda ativa
       if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
       isRefreshing = true;
       refreshAbort = new AbortController();
@@ -424,12 +425,8 @@
       kpiMsg.textContent = reason === "auto" ? "Atualizando…" : "Atualizando (forçado)…";
 
       try {
-        const urlOnline = filtroCarteira
-          ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}`
-          : `${API_BASE}/fila/status`;
-        const urlCnt = filtroCarteira
-          ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}`
-          : `${CONV_API}/api/tickets/contagem_por_agente`;
+        const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
+        const urlCnt = filtroCarteira ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}` : `${CONV_API}/api/tickets/contagem_por_agente`;
         const urlPend = `${API_BASE}/fila/pendentes_por_carteira`;
 
         const [lista, contagem, pend] = await Promise.allSettled([
@@ -444,9 +441,10 @@
           if (sigOnline !== lastSig.online) {
             lastSig.online = sigOnline;
             ultimoOnline = lista.value;
-            // KPIs por carteira
+
             const porCarteira = {};
             ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
+
             document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
             const wrap = document.getElementById("kpiOnlineCarteiras");
             wrap.innerHTML = "";
@@ -459,7 +457,7 @@
           }
         }
 
-        // CONTAGEM (mapa)
+        // CONTAGEM
         if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
           const sigCont = sig(contagem.value.mapa);
           if (sigCont !== lastSig.contagem) {
@@ -479,6 +477,7 @@
           if (sigPend !== lastSig.pendentes) {
             lastSig.pendentes = sigPend;
             pendentesCarteiraAgg = pend.value;
+
             const totalPend = pendentesCarteiraAgg
               .filter(x => !filtroCarteira || x.carteira === filtroCarteira)
               .reduce((s, x) => s + (x.total || 0), 0);
@@ -497,7 +496,7 @@
           }
         }
 
-        // Render tabela (quando qualquer parte muda)
+        // Render tabela
         renderOnlineTable();
 
         document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
@@ -508,7 +507,7 @@
         }
       } finally {
         isRefreshing = false;
-        scheduleRefresh(); // agenda o próximo 10s após conclusão
+        scheduleRefresh(); // agenda próximo ciclo após concluir
       }
     }
 
@@ -528,7 +527,7 @@
       <td class="px-3 py-2">${tickets}</td>
       <td class="px-3 py-2">
         <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
-          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\'")}')">Forçar offline</button>
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
       </td>
     `;
         tbody.appendChild(tr);
@@ -549,6 +548,82 @@
         carregarTudo("acao");
       } catch (e) { alert(e.message || "Erro ao forçar offline"); }
     }
+
+    /* === Cadastro de agente (RESTAURADO) === */
+    document.getElementById("btnCadastrar").onclick = async () => {
+      const msg = document.getElementById("cadMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("cadCodigo").value);
+      const nome = (document.getElementById("cadNome").value || "").trim();
+      const carteira = document.getElementById("cadCarteira").value;
+      const origem = document.getElementById("cadOrigem").value;
+
+      if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
+      if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
+      if (!carteira) return showMsg(msg, "Selecione a carteira.", "warn");
+      if (!origem) return showMsg(msg, "Selecione a origem BD.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
+        showMsg(msg, "Agente cadastrado com sucesso.", "ok");
+
+        document.getElementById("cadCodigo").value = "";
+        document.getElementById("cadNome").value = "";
+        document.getElementById("cadCarteira").value = "";
+        document.getElementById("cadOrigem").value = "";
+
+        carregarTudo("acao");
+      } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
+    };
+
+    /* === Buscar/editar agente (RESTAURADO) === */
+    document.getElementById("btnBuscar").onclick = async () => {
+      const cod = Number(document.getElementById("buscaCodigo").value);
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      if (!cod || !Number.isInteger(cod)) return showMsg(msg, "Informe um código inteiro válido.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${cod}`);
+        const j = await r.json();
+        if (!j.ok) {
+          showMsg(msg, j.erro || "Não encontrado.", "warn");
+          document.getElementById("editBox").classList.add("hidden");
+          return;
+        }
+        const ag = j.agente;
+        document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
+        document.getElementById("edNome").textContent = ag.nome;
+        document.getElementById("edCarteira").value = ag.carteira;
+        document.getElementById("edOrigem").textContent = ag.origem_bd;
+        document.getElementById("editBox").classList.remove("hidden");
+      } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
+    };
+    document.getElementById("btnLimparBusca").onclick = () => {
+      document.getElementById("buscaCodigo").value = "";
+      document.getElementById("editBox").classList.add("hidden");
+      hideMsg(document.getElementById("editMsg"));
+    };
+    document.getElementById("btnSalvarEdicao").onclick = async () => {
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("edCodigo").textContent);
+      const nova = document.getElementById("edCarteira").value;
+      if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteira: nova })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
+        showMsg(msg, "Carteira atualizada.", "ok");
+        carregarTudo("acao");
+      } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
+    };
 
     /* === Limite de tickets por carteira === */
     async function carregarTicketsLimitList() {
@@ -581,9 +656,7 @@
         const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(carteira)}`).then(r => r.json());
         document.getElementById("tlLimit").value = Number(j.limit_per_agent || 0);
         tlMsg.textContent = "";
-      } catch (e) {
-        tlMsg.textContent = "Falha ao carregar valor.";
-      }
+      } catch (e) { tlMsg.textContent = "Falha ao carregar valor."; }
     }
     async function salvarTicketsLimit(limit, carteira) {
       const tlMsg = document.getElementById("tlMsg");
@@ -596,9 +669,7 @@
         const j = await r.json();
         tlMsg.textContent = j.ok ? "Limite salvo." : (j.erro || "Erro ao salvar.");
         await carregarTicketsLimitList();
-      } catch (e) {
-        tlMsg.textContent = "Erro de rede ao salvar.";
-      }
+      } catch (e) { tlMsg.textContent = "Erro de rede ao salvar."; }
     }
 
     document.getElementById("tlCarteira").addEventListener("change", (e) => {
@@ -641,7 +712,7 @@
       const lgMsg = document.getElementById("lgMsg");
       const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
       if (!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
-      if (!confirm(`Forçar logout agora das carteiras: ${carteiras.join(" ")}`)) return;
+      if (!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
       lgMsg.textContent = "Executando...";
       try {
         const r = await fetch(`${API_BASE}/fila/forcar_logout`, {
@@ -660,7 +731,7 @@
       carregarTudo("filtro");
     });
 
-    /* === Auto refresh (10s após conclusão) === */
+    /* === Start === */
     carregarTudo("primeiro");
   </script>
 </body>
