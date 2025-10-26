@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ConnectZap — Agentes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --primary: #3b82f6;
+      --accent: #22c55e;
+      --bg: #f3f4f6;
+      --sidebar-bg: #ffffff;
+      --content-bg: #ffffff;
+      --text: #0f172a;
+
+      --muted: #6b7280;
+      /* texto secundário */
+      --border: #e5e7eb;
+      /* cor de borda padrão */
+      --link: #2563eb;
+      /* links */
+      --ghost-bg: #f3f4f6;
+      /* fundo de botões ghost */
+      --ring: rgba(59, 130, 246, .35);
+
+      /* Balões */
+      --bubble-out-g1: #dcf8c6;
+      --bubble-out-g2: #b8f0a4;
+      --bubble-out-fg: #111827;
+      /* texto balão enviado */
+      --bubble-in-bg: #fff;
+      --bubble-in-border: #e2e8f0;
+      --bubble-in-fg: #0f172a;
+      /* texto balão recebido */
+      --bubble-radius: 18px;
+
+      --btn-radius: 10px;
+      --card-radius: 16px;
+
+      --font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      --font-size: 14px;
+
+      /* Opacidade do fundo do chat (0 a 1) */
+      --chat-wallpaper-opacity: 0;
+    }
+
+    * {
+      outline-color: var(--ring);
+    }
+
+    html {
+      font-size: var(--font-size);
+    }
+
+    body {
+      font-family: var(--font-family);
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .card {
+      background: var(--content-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius)
+    }
+
+    .msg {
+      display: inline-block;
+      max-width: min(70%, 560px);
+      padding: 10px 14px 18px;
+      margin: 6px 0;
+      position: relative;
+      border-radius: var(--bubble-radius);
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .10);
+      transition: background .18s ease, border-color .18s ease, color .18s ease;
+    }
+
+    @media (max-width:768px) {
+      .msg {
+        max-width: 86%;
+      }
+    }
+
+    .msg.enviada {
+      align-self: flex-end;
+      background: linear-gradient(120deg, var(--bubble-out-g1), var(--bubble-out-g2));
+      color: var(--bubble-out-fg);
+    }
+
+    .msg.recebida {
+      align-self: flex-start;
+      background: var(--bubble-in-bg);
+      border: 1px solid var(--bubble-in-border);
+      color: var(--bubble-in-fg);
+    }
+
+    .msg .hora {
+      position: absolute;
+      right: 8px;
+      bottom: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .msg.enviada::after,
+    .msg.recebida::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    .msg.enviada::after {
+      right: -7px;
+      background: linear-gradient(120deg, var(--bubble-out-g1), var(--bubble-out-g2));
+    }
+
+    .msg.recebida::after {
+      left: -7px;
+      background: var(--bubble-in-bg);
+      border-left: 1px solid var(--bubble-in-border);
+      border-bottom: 1px solid var(--bubble-in-border);
+    }
+
+    .msg .btn-responder {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 14px;
+      color: var(--muted);
+      opacity: 0;
+      transition: opacity .2s;
+    }
+
+    .msg.recebida:hover .btn-responder {
+      opacity: 1;
+    }
+
+    .msg img.thumb {
+      max-width: 280px;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    /* ===== Player de áudio dentro do balão (ajuste do tamanho) ===== */
+    .msg audio {
+      width: 260px;
+      /* ajuste como preferir */
+      display: block;
+    }
+
+    @media (min-width: 640px) {
+      .msg audio {
+        width: 320px;
+        /* maior no desktop */
+      }
+    }
+
+    /* (opcional) melhora o clique nos controles no Chrome/WebKit */
+    .msg audio::-webkit-media-controls-panel {
+      padding: 6px 8px;
+    }
+
+    .dia {
+      text-align: center;
+      margin: 12px 0;
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .ticket-selected {
+      background: #f0f9ff !important
+    }
+
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 9999px;
+      padding: 2px 6px;
+      min-width: 18px;
+      text-align: center
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-right: 6px
+    }
+
+    .dot.online {
+      background: #16a34a
+    }
+
+    .dot.offline {
+      background: #9ca3af
+    }
+
+    .msg.system {
+      background: #f8fafc;
+      border: 1px dashed var(--border);
+      align-self: center;
+      max-width: 80%
+    }
+
+    .msg.system::after {
+      display: none;
+    }
+
+    .sys-title {
+      font-weight: 700;
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    .sys-body {
+      font-size: .92rem;
+      color: var(--text)
+    }
+
+    .sys-meta {
+      font-size: .75rem;
+      color: var(--muted)
+    }
+
+    .sys-pill {
+      display: inline-block;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .1rem .4rem;
+      border-radius: 9999px;
+      background: #eef2ff;
+      color: #3730a3
+    }
+
+    /* Fundo do chat */
+    .chat-wrap {
+      background: var(--bg);
+    }
+
+    .chat-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      opacity: var(--chat-wallpaper-opacity);
+      pointer-events: none;
+    }
+
+    .btn {
+      border-radius: var(--btn-radius);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(.95);
+    }
+
+    .btn-ghost {
+      background: var(--ghost-bg);
+    }
+
+    .kbd {
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 8px;
+      padding: .05rem .35rem
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(430px, 96%);
+      height: 100%;
+      background: var(--content-bg);
+      border-left: 1px solid var(--border);
+      box-shadow: -12px 0 24px rgba(0, 0, 0, .08);
+      transform: translateX(100%);
+      transition: transform .25s ease;
+      z-index: 60;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .preset {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: .5rem;
+      cursor: pointer;
+    }
+
+    .preset:hover {
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+    }
+
+    .topbar {
+      background: var(--content-bg);
+      border-color: var(--border);
+    }
+
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-color: var(--border);
+    }
+
+    /* Links genéricos */
+    a {
+      color: var(--link);
+    }
+
+    /* ===== THEME-AWARE SIDEBAR / INPUTS / HOVERS / SCROLLBAR ===== */
+    :root {
+      --hover: #f1f5f9;
+      --hover-strong: #e2e8f0;
+      --input-bg: #ffffff;
+      --input-fg: var(--text);
+      --scrollbar: #cbd5e1;
+    }
+
+    /* map common utility grays to theme vars (soft override) */
+    .text-gray-500 {
+      color: var(--muted) !important;
+    }
+
+    .text-gray-600 {
+      color: color-mix(in srgb, var(--text) 80%, transparent) !important;
+    }
+
+    .text-gray-400 {
+      color: color-mix(in srgb, var(--muted) 80%, var(--bg)) !important;
+    }
+
+    .bg-gray-50 {
+      background: color-mix(in srgb, var(--content-bg) 90%, var(--bg)) !important;
+    }
+
+    .hover\:bg-gray-100:hover {
+      background: var(--hover) !important;
+    }
+
+    /* Theme-friendly hover helper */
+    .hover-soft:hover {
+      background: var(--hover) !important;
+    }
+
+    .hover-strong:hover {
+      background: var(--hover-strong) !important;
+    }
+
+    /* Inputs themed */
+    input[type="text"],
+    input[type="search"],
+    input[type="color"],
+    input[type="file"],
+    textarea,
+    select {
+      background: var(--input-bg);
+      color: var(--input-fg);
+      border-color: var(--border) !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: color-mix(in srgb, var(--muted) 85%, var(--bg));
+    }
+
+    /* Sidebar list item borders and hover */
+    #listaTickets li {
+      border-color: var(--border) !important;
+    }
+
+    /* Scrollbar (webkit) */
+    *::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    *::-webkit-scrollbar-thumb {
+      background: var(--scrollbar);
+      border-radius: 10px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    *::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
+</head>
+
+<body class="h-screen flex" style="background:var(--bg)">
+
+  <!-- Sidebar -->
+  <aside class="sidebar w-1/3 lg:w-1/4 border-r flex flex-col">
+    <div class="p-3 border-b topbar">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <div class="text-xs text-gray-500">Agente</div>
+          <div id="agenteNome" class="font-semibold truncate">—</div>
+          <div class="text-xs text-gray-500">Carteira: <span id="agenteCarteira">—</span></div>
+          <div class="text-xs text-gray-500">Status: <span id="agenteStatus"><span
+                class="dot offline"></span>Offline</span></div>
+          <div class="mt-1 text-xs">
+            <span class="text-gray-500">Tickets:</span>
+            <span id="badgeAtivos" class="badge">0</span>
+            <span class="text-gray-500 mx-1">/</span>
+            <span id="badgeLimite" class="badge" style="background:#64748b">∞</span>
+          </div>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+          <button id="btnToggleOnline"
+            class="btn px-3 py-2 text-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+            disabled>
+            <svg id="toggleSpinner" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none">
+              </circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span id="toggleLabel">Ficar online</span>
+          </button>
+          <button id="btnPegarProxima"
+            class="btn px-3 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+            disabled>
+            <svg id="pegarSpinner" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none">
+              </circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a 8 8 0 018-8v4a 4 4 0 00-4 4H4z"></path>
+            </svg>
+            <span id="pegarLabel">Pegar próxima</span>
+          </button>
+          <button id="btnPrioridade" class="btn px-3 py-2 text-sm rounded-md text-white disabled:opacity-50" disabled
+            style="background: rebeccapurple">Pedir prioridade</button>
+          <div class="flex gap-2">
+            <button id="btnTheme" class="btn btn-ghost px-3 py-1 text-xs">🎨 Tema</button>
+            <button id="btnLogout" class="btn btn-ghost px-3 py-1 text-xs">Logout</button>
+          </div>
+        </div>
+      </div>
+      <div id="msgAviso" class="mt-2 text-xs text-amber-600 hidden"></div>
+      <div id="msgLimite" class="mt-1 text-xs text-red-600 hidden"></div>
+    </div>
+
+    <div class="p-2 border-b topbar">
+      <input id="buscaTicket" class="w-full p-2 border rounded-md text-sm"
+        style="background:var(--input-bg);color:var(--input-fg)" placeholder="🔍 Buscar nas minhas conversas"
+        oninput="filtrarTickets(this.value)" />
+    </div>
+
+    <ul id="listaTickets" class="flex-1 overflow-y-auto"></ul>
+
+    <div class="p-2 text-xs text-gray-500 border-t topbar">
+      Apenas conversas da sua carteira. “Pegar próxima” usa ordem por última mensagem <em>recebida</em>.
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col">
+    <div class="flex items-center justify-between p-3 border-b topbar">
+      <div class="min-w-0">
+        <div id="tituloConversa" class="font-bold text-lg truncate">Selecione um ticket</div>
+        <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btnLiberar" class="btn px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
+          disabled>Liberar</button>
+        <div class="relative">
+          <button id="btnConcluir" class="btn px-3 py-2 text-sm text-white disabled:opacity-50"
+            style="background:var(--accent)" disabled>Concluir</button>
+          <div id="menuConcluir" class="hidden absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg z-20">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative flex-1 overflow-hidden">
+      <div class="absolute inset-0 chat-wrap"></div>
+      <div class="chat-overlay"></div>
+      <div id="chat" class="relative h-full p-4 overflow-y-auto flex flex-col space-y-1" style="background:transparent">
+        <p id="loading" class="text-center text-gray-500">Pegue uma conversa para iniciar…</p>
+      </div>
+    </div>
+    <div id="digitando" class="px-4 text-left hidden">Digitando…</div>
+
+    <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
+      <div class="truncate max-w-[80%]">
+        <span class="font-semibold">Respondendo:</span> <span id="respostaTexto" class="text-gray-600"></span>
+      </div>
+      <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
+    </div>
+
+    <div class="p-3 border-t topbar flex space-x-2 items-center">
+      <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
+      <button onclick="document.getElementById('fileInput').click()" class="btn btn-primary px-3 py-2">📝 PDF</button>
+      <textarea id="textoMensagem" rows="1" class="flex-1 border rounded-md p-2 resize-none"
+        placeholder="Digite uma mensagem…" disabled></textarea>
+      <button id="btnEnviar" onclick="enviarMensagem()" class="btn px-4 py-2 text-white disabled:opacity-50"
+        style="background:var(--accent)" disabled>Enviar</button>
+    </div>
+  </main>
+
+  <!-- Modal imagem -->
+  <div id="imageModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
+    <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
+  </div>
+
+  <!-- Modal prioridade -->
+  <div id="priorityModal" class="hidden fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-black/60" onclick="fecharPriorityModal()"></div>
+    <div class="relative mx-auto mt-24 w-[95%] max-w-md bg-white rounded-xl shadow-xl border">
+      <div class="p-4 border-b flex items-center justify-between">
+        <h3 class="font-semibold">Pedir prioridade</h3>
+        <button class="text-gray-500" onclick="fecharPriorityModal()">✖</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <label class="block text-sm text-gray-600">Telefone do cliente</label>
+        <input id="priorityTelefone" class="w-full p-2 border rounded-md"
+          placeholder="Ex: 61999999999 ou 5561999999999" />
+        <p class="text-xs text-gray-500">Atenção: informe um telefone valido DDD + 8/9 Digitos.</p>
+        <div id="priorityInfo" class="text-sm text-gray-700 hidden"></div>
+        <div id="priorityErro" class="text-sm text-red-600 hidden"></div>
+      </div>
+      <div class="p-4 border-t flex items-center justify-end gap-2">
+        <button class="px-3 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200"
+          onclick="fecharPriorityModal()">Cancelar</button>
+        <button id="btnPriorityBuscar"
+          class="px-3 py-2 text-sm text-white rounded-md hover:bg-purple-700 flex items-center gap-2"
+          style="background: rebeccapurple">
+          <svg id="prioritySpinner" class="hidden animate-spin h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none">
+            </circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a 8 8 0 018-8v4a 4 4 0 00-4 4H4z"></path>
+          </svg>
+          <span id="priorityBtnLabel">Buscar e solicitar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Theme Drawer -->
+  <div id="themeDrawer" class="drawer">
+    <div class="h-full flex flex-col">
+      <div class="p-4 border-b flex items-center justify-between">
+        <h3 class="font-semibold">🎨 Seu tema</h3>
+        <div class="flex items-center gap-2">
+          <button id="btnThemeExport" class="btn btn-ghost px-2 py-1 text-xs">Salvar no meu computador</button>
+          <label class="btn btn-ghost px-2 py-1 text-xs cursor-pointer">
+            Importar um tema salvo <input id="importTheme" type="file" accept="application/json" class="hidden">
+          </label>
+          <button id="btnThemeClose" class="btn btn-ghost px-2 py-1 text-xs">✖</button>
+        </div>
+      </div>
+
+      <div class="p-4 overflow-y-auto space-y-6">
+        <!-- Temas rápidos -->
+        <section>
+          <div class="text-xs text-gray-500 mb-2">Temas rápidos</div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="preset" data-preset="corporate">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#0ea5e9,#2563eb)"></div>
+              <div class="mt-1 text-xs">Corporate</div>
+            </div>
+            <div class="preset" data-preset="ocean">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#06b6d4,#10b981)"></div>
+              <div class="mt-1 text-xs">Ocean</div>
+            </div>
+            <div class="preset" data-preset="sunset">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#fb923c,#ef4444)"></div>
+              <div class="mt-1 text-xs">Sunset</div>
+            </div>
+            <div class="preset" data-preset="dark">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#0b1220,#374151)"></div>
+              <div class="mt-1 text-xs">Dark</div>
+            </div>
+            <div class="preset" data-preset="minimal">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#f8fafc,#e2e8f0)"></div>
+              <div class="mt-1 text-xs">Minimal</div>
+            </div>
+            <div class="preset" data-preset="funky">
+              <div class="h-8 rounded" style="background:linear-gradient(90deg,#a78bfa,#ec4899)"></div>
+              <div class="mt-1 text-xs">Funky</div>
+            </div>
+          </div>
+        </section>
+
+        <hr class="border-gray-200">
+
+        <!-- Personalizar -->
+        <section>
+          <div class="text-xs text-gray-500 mb-2">Personalizar</div>
+
+          <!-- Cores principais -->
+          <div class="grid grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Botão PDF</span>
+              <input id="tPrimary" type="color" class="w-full h-10 border rounded" value="#3b82f6">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Botão Concluir</span>
+              <input id="tAccent" type="color" class="w-full h-10 border rounded" value="#22c55e">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Barra lateral</span>
+              <input id="tSidebar" type="color" class="w-full h-10 border rounded" value="#ffffff">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Cabeçalho</span>
+              <input id="tContentBg" type="color" class="w-full h-10 border rounded" value="#ffffff">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Cor de fundo</span>
+              <input id="tBg" type="color" class="w-full h-10 border rounded" value="#f3f4f6">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Texto</span>
+              <input id="tText" type="color" class="w-full h-10 border rounded" value="#0f172a">
+            </label>
+          </div>
+
+          <!-- Balões -->
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Minha mensagem cor 1</span>
+              <input id="tOutG1" type="color" class="w-full h-10 border rounded" value="#dcf8c6">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Minha mensagem cor 2</span>
+              <input id="tOutG2" type="color" class="w-full h-10 border rounded" value="#b8f0a4">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Cliente mensagem cor</span>
+              <input id="tInBg" type="color" class="w-full h-10 border rounded" value="#ffffff">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Cliente mensagem bordas</span>
+              <input id="tInBorder" type="color" class="w-full h-10 border rounded" value="#e2e8f0">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Canto arredondado dos balões</span>
+              <input id="tRadius" type="range" min="8" max="28" value="18" class="w-full">
+            </label>
+          </div>
+
+          <!-- Fundo -->
+          <div class="grid grid-cols-1 gap-3 mt-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Opacidade do fundo</span>
+              <input id="tBgOp" type="range" min="0" max="1" step="0.05" value="0">
+            </label>
+          </div>
+
+          <!-- Tipografia/UI -->
+          <div class="grid grid-cols-2 gap-3 mt-3">
+            <label class="block">
+              <span class="text-xs text-gray-600">Tamanho base</span>
+              <select id="tFontSize" class="w-full p-2 border rounded">
+                <option value="13px">13px</option>
+                <option value="14px" selected>14px</option>
+                <option value="15px">15px</option>
+                <option value="16px">16px</option>
+              </select>
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Canto arredondado dos botões</span>
+              <input id="tBtnRadius" type="range" min="6" max="16" value="10" class="w-full">
+            </label>
+            <label class="block">
+              <span class="text-xs text-gray-600">Canto arredondado dos cards de aviso</span>
+              <input id="tCardRadius" type="range" min="10" max="24" value="16" class="w-full">
+            </label>
+          </div>
+
+          <div class="flex items-center justify-between mt-4">
+            <div class="flex items-center gap-2">
+              <button id="btnRandom" class="btn btn-ghost px-3 py-2">🎲 Surpreenda-me</button>
+              <button id="btnReset" class="btn btn-ghost px-3 py-2">↺ Voltar ao padrão</button>
+            </div>
+            <button id="btnSaveTheme" class="btn btn-primary px-4 py-2">Salvar</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /** APIs */
+    const FILA_API = (window.FILA_API || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, '');
+    const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, '');
+    const LOGOUT_REDIRECT = window.LOGOUT_REDIRECT || null;
+
+    /** Carteiras */
+    const phoneIdMap = {
+      "828473960349364": "ConnectZap",
+      "805610009301153": "Banco PAN",
+      "727586317113885": "Recovery PJ",
+      "864779140046932": "Recovery PF",
+      "802977069563598": "Recovery PF",
+      "873637622491517": "Mercado Pago Cobrança",
+      "821562937700669": "Mercado Pago Cobrança",
+      "779797401888141": "DivZero",
+      "829210283602406": "Arc4U",
+      "713021321904495": "Serasa",
+      "803535039503723": "Mercado Pago Vendas"
+    };
+    const carteiraToPhoneId = Object.fromEntries(Object.entries(phoneIdMap).map(([id, nome]) => [nome, id]));
+
+    /** ====== Scheduler estável (único runner por tarefa) ====== */
+    const runners = new Map(); // name -> {running, stop, baseMs, failMs, fn}
+    let pageHidden = document.hidden;
+    document.addEventListener('visibilitychange', () => { pageHidden = document.hidden; }, { passive: true });
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const jitter = (ms) => ms + Math.floor(Math.random() * Math.min(400, ms * 0.15));
+    function runTask(name, fn, baseMs) {
+      if (runners.has(name)) return;
+      const state = { running: false, stop: false, baseMs: Math.max(1000, baseMs | 0), failMs: Math.max(1000, baseMs | 0), fn };
+      runners.set(name, state);
+      (async () => {
+        await safeTick(state);
+        while (!state.stop) {
+          if (pageHidden) { await sleep(1000); continue; }
+          await sleep(jitter(state.failMs));
+          await safeTick(state);
+        }
+      })();
+      async function safeTick(s) {
+        if (s.running || s.stop || pageHidden) return;
+        s.running = true;
+        try { await s.fn(); s.failMs = s.baseMs; }
+        catch { s.failMs = Math.min(Math.max(s.failMs * 2, s.baseMs), 60000); }
+        finally { s.running = false; }
+      }
+    }
+    function stopTask(name) {
+      const s = runners.get(name);
+      if (!s) return;
+      s.stop = true;
+      runners.delete(name);
+    }
+    window.addEventListener('beforeunload', () => {
+      for (const [name] of runners) stopTask(name);
+    });
+
+    /** Estado */
+    let agente = { codigo: null, nome: null, carteira: null, origem: null, online: false };
+    let tickets = []; let selecionado = null; let renderedKeys = new Set(); let lastTimestampMs = null; let lastDayRendered = null;
+    let isModalOpen = false; let userTyping = false; let respostaMsgId = null;
+    let limitPerAgent = 0; let ativosCount = 0;
+    let msgsCtrl = null; // AbortController apenas para o ticket atual
+
+    /** Consts */
+    const DOC_PREVIEW_MAX = 2 * 1024 * 1024;
+
+    /** Refs */
+    const elAgenteNome = document.getElementById("agenteNome");
+    const elAgenteCarteira = document.getElementById("agenteCarteira");
+    const elAgenteStatus = document.getElementById("agenteStatus");
+    const elMsgAviso = document.getElementById("msgAviso");
+    const elMsgLimite = document.getElementById("msgLimite");
+    const elListaTickets = document.getElementById("listaTickets");
+    const elTitulo = document.getElementById("tituloConversa");
+    const elSubInfo = document.getElementById("subInfo");
+    const chat = document.getElementById("chat");
+    const textarea = document.getElementById("textoMensagem");
+    const btnEnviar = document.getElementById("btnEnviar");
+    const btnPegarProxima = document.getElementById("btnPegarProxima");
+    const btnPrioridade = document.getElementById("btnPrioridade");
+    const btnLiberar = document.getElementById("btnLiberar");
+    const btnConcluir = document.getElementById("btnConcluir");
+    const menuConcluir = document.getElementById("menuConcluir");
+    const digitando = document.getElementById("digitando");
+    const btnLogout = document.getElementById("btnLogout");
+    const btnToggleOnline = document.getElementById("btnToggleOnline");
+    const badgeAtivos = document.getElementById("badgeAtivos");
+    const badgeLimite = document.getElementById("badgeLimite");
+
+    /** Theme Drawer refs */
+    const themeDrawer = document.getElementById('themeDrawer');
+    const btnTheme = document.getElementById('btnTheme');
+    const btnThemeClose = document.getElementById('btnThemeClose');
+    const btnSaveTheme = document.getElementById('btnSaveTheme');
+    const btnRandom = document.getElementById('btnRandom');
+    const btnReset = document.getElementById('btnReset');
+    const btnThemeExport = document.getElementById('btnThemeExport');
+    const importTheme = document.getElementById('importTheme');
+
+    const inputs = {
+      tPrimary: document.getElementById('tPrimary'),
+      tAccent: document.getElementById('tAccent'),
+      tSidebar: document.getElementById('tSidebar'),
+      tContentBg: document.getElementById('tContentBg'),
+      tBg: document.getElementById('tBg'),
+      tText: document.getElementById('tText'),
+      tOutG1: document.getElementById('tOutG1'),
+      tOutG2: document.getElementById('tOutG2'),
+      tInBg: document.getElementById('tInBg'),
+      tInBorder: document.getElementById('tInBorder'),
+      tRadius: document.getElementById('tRadius'),
+      tBgOp: document.getElementById('tBgOp'),
+      tFontSize: document.getElementById('tFontSize'),
+      tBtnRadius: document.getElementById('tBtnRadius'),
+      tCardRadius: document.getElementById('tCardRadius'),
+    };
+
+    /** Motivos */
+    const MOTIVOS_CONCLUSAO = ["Realizou negociação", "Solicitou 2ª via de boleto", "Recusou a proposta", "Dúvidas gerais", "Cliente ficou inativo"];
+    function renderMenuConcluir() {
+      menuConcluir.innerHTML = MOTIVOS_CONCLUSAO.map(m => `<button type="button" data-motivo="${m}" class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">${m}</button>`).join("");
+      menuConcluir.querySelectorAll("button[data-motivo]").forEach(btn => {
+        btn.onclick = async () => { await concluirAtendimento(btn.getAttribute("data-motivo")); fecharMenuConcluir(); };
+      });
+    }
+    function abrirMenuConcluir() { if (!selecionado || btnConcluir.disabled) return; menuConcluir.classList.remove("hidden"); document.addEventListener("click", clickForaMenuConcluir, { capture: true }); }
+    function fecharMenuConcluir() { menuConcluir.classList.add("hidden"); document.removeEventListener("click", clickForaMenuConcluir, { capture: true }); }
+    function clickForaMenuConcluir(e) { const within = menuConcluir.contains(e.target) || btnConcluir.contains(e.target); if (!within) fecharMenuConcluir(); }
+    btnConcluir.onclick = () => { menuConcluir.classList.contains("hidden") ? abrirMenuConcluir() : fecharMenuConcluir(); };
+    renderMenuConcluir();
+
+    /** Utils */
+    function qsParam(name) { return new URLSearchParams(location.search).get(name); }
+    function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+    function gerarCor(nome) { let h = 0; for (const c of (nome || "U")) h = c.charCodeAt(0) + ((h << 5) - h); return `hsl(${h % 360},70%,60%)`; }
+    function keyLocal() { return `cz:tickets:${agente.codigo}:${agente.carteira}`; }
+    function saveTickets() { localStorage.setItem(keyLocal(), JSON.stringify(tickets)); }
+    function loadTickets() { try { tickets = JSON.parse(localStorage.getItem(keyLocal()) || "[]") || []; } catch { tickets = []; } }
+    function bytesToHuman(n) { if (!n && n !== 0) return ""; const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, s = n; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++; } return `${s.toFixed(s >= 10 || i === 0 ? 0 : 1)} ${u[i]}`; }
+    function isIncoming(m) { const s = (m.status || "").toLowerCase(); if (typeof m.from_me === "boolean") return !m.from_me; if (m.direction) return String(m.direction).toLowerCase().startsWith("in"); if (["in", "received", "incoming"].includes(s)) return true; if (["out", "sent", "delivered", "read", "outgoing"].includes(s)) return false; return s === "in"; }
+
+    /** THEME */
+    function themeKey() { return `cz:theme:${agente.codigo || 'anon'}`; }
+    function defaultTheme() {
+      return {
+        primary: "#3b82f6", accent: "#22c55e",
+        sidebar: "#ffffff", contentBg: "#ffffff", bg: "#f3f4f6",
+        text: "#0f172a", muted: "#6b7280", border: "#e5e7eb", link: "#2563eb", ghostBg: "#f3f4f6",
+        outG1: "#dcf8c6", outG2: "#b8f0a4", outFg: "#111827",
+        inBg: "#ffffff", inBorder: "#e2e8f0", inFg: "#0f172a",
+        bubbleRadius: 18, btnRadius: 10, cardRadius: 16,
+        wallOp: 0,
+        fontSize: "14px"
+      };
+    }
+    function applyTheme(t) {
+      const r = document.documentElement.style;
+      r.setProperty('--primary', t.primary);
+      r.setProperty('--accent', t.accent);
+      r.setProperty('--sidebar-bg', t.sidebar);
+      r.setProperty('--content-bg', t.contentBg);
+      r.setProperty('--bg', t.bg);
+      r.setProperty('--text', t.text);
+
+      r.setProperty('--muted', t.muted || '#6b7280');
+      r.setProperty('--border', t.border || '#e5e7eb');
+      r.setProperty('--link', t.link || t.primary || '#2563eb');
+      r.setProperty('--ghost-bg', t.ghostBg || '#f3f4f6');
+
+      r.setProperty('--bubble-out-g1', t.outG1);
+      r.setProperty('--bubble-out-g2', t.outG2);
+      r.setProperty('--bubble-out-fg', t.outFg || '#111827');
+      r.setProperty('--bubble-in-bg', t.inBg);
+      r.setProperty('--bubble-in-border', t.inBorder);
+      r.setProperty('--bubble-in-fg', t.inFg || '#0f172a');
+
+      r.setProperty('--bubble-radius', t.bubbleRadius + 'px');
+      r.setProperty('--btn-radius', t.btnRadius + 'px');
+      r.setProperty('--card-radius', t.cardRadius + 'px');
+      r.setProperty('--font-size', t.fontSize);
+      r.setProperty('--chat-wallpaper-opacity', t.wallOp);
+
+
+      r.setProperty('--hover', t.hover || 'var(--ghost-bg)');
+      r.setProperty('--hover-strong', t.hoverStrong || 'var(--ghost-bg)');
+      r.setProperty('--input-bg', t.inputBg || t.contentBg || '#ffffff');
+      r.setProperty('--input-fg', t.inputFg || t.text || '#0f172a');
+      r.setProperty('--scrollbar', t.scrollbar || '#cbd5e1');
+      inputs.tPrimary.value = t.primary; inputs.tAccent.value = t.accent; inputs.tSidebar.value = t.sidebar;
+      inputs.tContentBg.value = t.contentBg; inputs.tBg.value = t.bg; inputs.tText.value = t.text;
+      inputs.tOutG1.value = t.outG1; inputs.tOutG2.value = t.outG2; inputs.tInBg.value = t.inBg; inputs.tInBorder.value = t.inBorder;
+      inputs.tRadius.value = t.bubbleRadius; inputs.tBgOp.value = t.wallOp; inputs.tFontSize.value = t.fontSize;
+      inputs.tBtnRadius.value = t.btnRadius; inputs.tCardRadius.value = t.cardRadius;
+    }
+    function readThemeFromInputs() {
+      return {
+        primary: inputs.tPrimary.value, accent: inputs.tAccent.value, sidebar: inputs.tSidebar.value,
+        contentBg: inputs.tContentBg.value, bg: inputs.tBg.value, text: inputs.tText.value,
+        outG1: inputs.tOutG1.value, outG2: inputs.tOutG2.value, inBg: inputs.tInBg.value, inBorder: inputs.tInBorder.value,
+        bubbleRadius: Number(inputs.tRadius.value), wallOp: Number(inputs.tBgOp.value),
+        fontSize: inputs.tFontSize.value, btnRadius: Number(inputs.tBtnRadius.value), cardRadius: Number(inputs.tCardRadius.value)
+      };
+    }
+    function saveTheme(t) { try { localStorage.setItem(themeKey(), JSON.stringify(t)); } catch (_) { } }
+    function loadTheme() { try { return JSON.parse(localStorage.getItem(themeKey())) || null; } catch (_) { return null; } }
+    function randomHex() { return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0'); }
+    function randomTheme() {
+      const b1 = randomHex(), b2 = randomHex();
+      return {
+        ...defaultTheme(), primary: randomHex(), accent: randomHex(), outG1: b1, outG2: b2, bg: '#f8fafc',
+        wallOp: Math.random() > .5 ? .08 : 0, bubbleRadius: 14 + Math.floor(Math.random() * 12),
+        btnRadius: 8 + Math.floor(Math.random() * 6), cardRadius: 14 + Math.floor(Math.random() * 8)
+      };
+    }
+    const presets = {
+      corporate: {
+        primary: "#2563eb", accent: "#22c55e", sidebar: "#ffffff", contentBg: "#ffffff", bg: "#f3f4f6", text: "#0f172a",
+        outG1: "#e0f2fe", outG2: "#bfdbfe", inBg: "#ffffff", inBorder: "#e2e8f0", bubbleRadius: 18, btnRadius: 10, cardRadius: 16, wallOp: 0, fontSize: "14px",
+        muted: "#6b7280", border: "#e5e7eb", link: "#2563eb", ghostBg: "#f3f4f6"
+      },
+      ocean: {
+        primary: "#06b6d4", accent: "#10b981", sidebar: "#f0fdff", contentBg: "#ecfeff", bg: "#f0fdfa", text: "#0b1320",
+        outG1: "#cffafe", outG2: "#a7f3d0", inBg: "#ffffff", inBorder: "#cbd5e1", bubbleRadius: 18, btnRadius: 12, cardRadius: 18, wallOp: .05, fontSize: "14px",
+        muted: "#475569", border: "#cbd5e1", link: "#0891b2", ghostBg: "#e2f2f3"
+      },
+      sunset: {
+        primary: "#f97316", accent: "#ef4444", sidebar: "#fff7ed", contentBg: "#fff7ed", bg: "#fff1f2", text: "#111827",
+        outG1: "#fed7aa", outG2: "#fda4af", inBg: "#ffffff", inBorder: "#fecaca", bubbleRadius: 20, btnRadius: 12, cardRadius: 20, wallOp: .06, fontSize: "14px",
+        muted: "#6b7280", border: "#f3d4cf", link: "#f97316", ghostBg: "#fff3e8"
+      },
+      dark: {
+        primary: "#60a5fa",
+        accent: "#22c55e",
+        sidebar: "#0b1220",
+        contentBg: "#0b1220",
+        bg: "#0a0f1a",
+        text: "#e5e7eb",
+        muted: "#94a3b8",
+        border: "#1f2937",
+        link: "#93c5fd",
+        ghostBg: "#111827",
+        outG1: "#1f2937",
+        outG2: "#0f172a",
+        outFg: "#e5e7eb",
+        inBg: "#0e1726",
+        inBorder: "#1f2937",
+        inFg: "#e5e7eb",
+        bubbleRadius: 16, btnRadius: 10, cardRadius: 16,
+        wallOp: 1,
+        fontSize: "14px",
+        /* new sidebar-aware helpers */
+        hover: "#111827",
+        hoverStrong: "#0f172a",
+        inputBg: "#0e1726",
+        inputFg: "#e5e7eb",
+        scrollbar: "#334155"
+      },
+      minimal: {
+        primary: "#111827", accent: "#64748b", sidebar: "#ffffff", contentBg: "#ffffff", bg: "#f8fafc", text: "#0f172a",
+        outG1: "#f3f4f6", outG2: "#e5e7eb", inBg: "#ffffff", inBorder: "#e5e7eb", bubbleRadius: 14, btnRadius: 8, cardRadius: 16, wallOp: 0, fontSize: "15px",
+        muted: "#6b7280", border: "#e5e7eb", link: "#111827", ghostBg: "#f3f4f6"
+      },
+      funky: {
+        primary: "#a78bfa", accent: "#ec4899", sidebar: "#faf5ff", contentBg: "#fff0f7", bg: "#fafafa", text: "#111827",
+        outG1: "#e9d5ff", outG2: "#fecdd3", inBg: "#ffffff", inBorder: "#f5d0fe", bubbleRadius: 22, btnRadius: 14, cardRadius: 22, wallOp: .08, fontSize: "14px",
+        muted: "#6b7280", border: "#e9d5ff", link: "#a78bfa", ghostBg: "#f5f3ff"
+      },
+    };
+    document.querySelectorAll('.preset').forEach(el => {
+      el.addEventListener('click', () => {
+        const name = el.dataset.preset;
+        const t = { ...defaultTheme(), ...(presets[name] || {}) };
+        applyTheme(t);
+      });
+    });
+
+    btnTheme.addEventListener('click', () => themeDrawer.classList.add('open'));
+    btnThemeClose.addEventListener('click', () => themeDrawer.classList.remove('open'));
+    Object.values(inputs).forEach(input => { input && input.addEventListener('input', () => applyTheme(readThemeFromInputs())); });
+    btnSaveTheme.addEventListener('click', () => { const t = readThemeFromInputs(); saveTheme(t); themeDrawer.classList.remove('open'); });
+    btnReset.addEventListener('click', () => { const t = defaultTheme(); applyTheme(t); saveTheme(t); });
+    btnRandom.addEventListener('click', () => { const t = randomTheme(); applyTheme(t); });
+
+    /* Salvar / Importar */
+    btnThemeExport.addEventListener('click', () => {
+      const t = readThemeFromInputs();
+      const blob = new Blob([JSON.stringify(t, null, 2)], { type: "application/json" });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `theme-${agente.codigo || 'meu'}.json`; a.click(); URL.revokeObjectURL(a.href);
+    });
+    importTheme.addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const text = await file.text(); const t = JSON.parse(text);
+        const merged = { ...defaultTheme(), ...t }; applyTheme(merged); saveTheme(merged);
+      } catch (_) { alert('Arquivo inválido.'); }
+      e.target.value = '';
+    });
+
+    /** ====== Ordem, fila, chat etc. (app) ====== */
+
+    let ordemCache = [];
+
+    async function boot() {
+      agente.codigo = localStorage.getItem("agente_codigo") || qsParam("codigo") || null;
+      agente.origem = localStorage.getItem("agente_origem") || qsParam("origem") || null;
+
+      // tema inicial
+      const savedT = loadTheme(); applyTheme(savedT || defaultTheme());
+
+      if (!agente.codigo) {
+        const cod = prompt("Informe seu código de agente:"); if (!cod) return; agente.codigo = String(parseInt(cod, 10));
+        const anonKey = `cz:theme:anon`; const anon = localStorage.getItem(anonKey);
+        if (anon && !localStorage.getItem(themeKey())) localStorage.setItem(themeKey(), anon);
+        localStorage.removeItem(anonKey);
+        const nowT = loadTheme(); nowT && applyTheme(nowT);
+      }
+
+      try {
+        const r = await fetch(`${FILA_API}/agentes/${encodeURIComponent(agente.codigo)}`); const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Agente não encontrado");
+        agente.nome = j.agente.nome; agente.carteira = j.agente.carteira;
+        localStorage.setItem("agente_codigo", agente.codigo);
+        localStorage.setItem("agente_nome", agente.nome);
+        localStorage.setItem("agente_carteira", agente.carteira);
+        elAgenteNome.textContent = `${agente.nome} (#${agente.codigo})`;
+        elAgenteCarteira.textContent = agente.carteira;
+
+        const tAgente = loadTheme(); if (tAgente) applyTheme(tAgente);
+
+        await verificarOnline();
+
+        try {
+          const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(agente.codigo)}&carteira=${encodeURIComponent(agente.carteira)}`;
+          const r2 = await fetch(url);
+          if (r2.ok) { tickets = await r2.json(); saveTickets(); }
+        } catch (_) { }
+
+        renderTickets();
+
+        // Inicia runners estáveis (sem setInterval / sem recriar em visibility)
+        runTask("ordemCarteira", refreshOrdemCarteira, 8000);
+        await refreshOrdemCarteira();
+
+        runTask("ativosLimite", refreshAtivosELimite, 15000);
+        await refreshAtivosELimite();
+
+        runTask("filaStatus", verificarOnline, 30000);
+
+        if (!tickets.length) btnPegarProxima.disabled = !agente.online || (limitPerAgent > 0 && ativosCount >= limitPerAgent);
+      } catch (e) {
+        elMsgAviso.classList.remove("hidden");
+        elMsgAviso.textContent = "Falha ao carregar agente. Verifique seu código ou API.";
+      }
+    }
+
+    async function verificarOnline() {
+      try {
+        const r = await fetch(`${FILA_API}/fila/status?carteira=${encodeURIComponent(agente.carteira)}`);
+        const lista = await r.json();
+        const achou = Array.isArray(lista) && lista.some(x => String(x.codigo_do_agente) === String(agente.codigo));
+        setStatus(achou);
+        if (!achou) { elMsgAviso.classList.remove("hidden"); elMsgAviso.textContent = "Você está OFFLINE nesta carteira. Use “Ficar online” para entrar na fila."; }
+        else { elMsgAviso.classList.add("hidden"); elMsgAviso.textContent = ""; }
+      } catch (e) { setStatus(false); }
+    }
+
+    function setStatus(online) {
+      elAgenteStatus.innerHTML = online ? '<span class="dot online"></span>Online' : '<span class="dot offline"></span>Offline';
+      agente.online = !!online;
+      btnPegarProxima.disabled = !online || (limitPerAgent > 0 && ativosCount >= limitPerAgent);
+      btnPrioridade.disabled = !online || (limitPerAgent > 0 && ativosCount >= limitPerAgent);
+      const toggleLabel = document.getElementById("toggleLabel"); btnToggleOnline.disabled = false;
+      if (agente.online) { toggleLabel.textContent = "Ficar offline"; btnToggleOnline.classList.remove("bg-green-600", "hover:bg-green-700", "text-white"); btnToggleOnline.classList.add("bg-gray-100"); }
+      else { toggleLabel.textContent = "Ficar online"; btnToggleOnline.classList.add("bg-green-600", "text-white", "hover:bg-green-700"); btnToggleOnline.classList.remove("bg-gray-100"); }
+    }
+
+    async function refreshOrdemCarteira() {
+      const phoneId = carteiraToPhoneId[agente.carteira]; if (!phoneId) return;
+      try {
+        const res = await fetch(`${CONV_API}/api/conversas/contatos`);
+        const contatos = await res.json();
+        const filtrados = (contatos || []).filter(c => c.phone_id === phoneId);
+        filtrados.sort((a, b) => { const ai = a.status === 'in', bi = b.status === 'in'; if (ai !== bi) return bi - ai; return new Date(b.data_hora) - new Date(a.data_hora); });
+        ordemCache = filtrados;
+      } catch (e) { /* silencia para não “travancar” o runner */ }
+    }
+
+    async function refreshAtivosELimite() {
+      try {
+        const url = `${CONV_API}/api/tickets/minhas?agente=${encodeURIComponent(agente.codigo)}&carteira=${encodeURIComponent(agente.carteira)}`;
+        const r = await fetch(url); const rows = r.ok ? await r.json() : []; ativosCount = Array.isArray(rows) ? rows.length : 0;
+      } catch { ativosCount = tickets.length; }
+      try {
+        const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(agente.carteira)}`).then(r => r.json());
+        limitPerAgent = Number(j.limit_per_agent || 0);
+      } catch { limitPerAgent = 0; }
+      renderAtivosLimiteUI();
+    }
+    function renderAtivosLimiteUI() {
+      badgeAtivos.textContent = String(ativosCount);
+      badgeLimite.textContent = limitPerAgent > 0 ? String(limitPerAgent) : "∞";
+      const atingiu = (limitPerAgent > 0 && ativosCount >= limitPerAgent);
+      if (atingiu) { elMsgLimite.textContent = `Limite de ${limitPerAgent} tickets simultâneos atingido. Conclua ou libere um atendimento para continuar. Duvidas, fale com seu supervisor`; elMsgLimite.classList.remove("hidden"); }
+      else { elMsgLimite.classList.add("hidden"); elMsgLimite.textContent = ""; }
+      btnPegarProxima.disabled = !agente.online || atingiu; btnPrioridade.disabled = !agente.online || atingiu;
+    }
+
+    btnToggleOnline.onclick = async () => {
+      if (!agente.carteira || !agente.codigo) return;
+      const toggleSpinner = document.getElementById('toggleSpinner'); const toggleLabel = document.getElementById('toggleLabel');
+      elMsgAviso.classList.add("hidden"); elMsgAviso.textContent = ""; const indoOnline = !agente.online;
+      btnToggleOnline.disabled = true; toggleSpinner.classList.remove('hidden'); toggleLabel.textContent = indoOnline ? 'Entrando…' : 'Saindo…';
+      try {
+        if (indoOnline) {
+          const r = await fetch(`${FILA_API}/fila/online`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), carteira: agente.carteira })
+          });
+          const j = await r.json(); if (!j.ok) throw new Error(j.erro || "Erro ao entrar online");
+          setStatus(true); await refreshOrdemCarteira(); await refreshAtivosELimite();
+        } else {
+          const r = await fetch(`${FILA_API}/fila/offline`, {
+            method: "DELETE", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), carteira: agente.carteira })
+          });
+          const j = await r.json(); if (!j.ok) throw new Error(j.erro || "Erro ao ficar offline");
+          setStatus(false);
+        }
+      } catch (e) {
+        elMsgAviso.classList.remove("hidden"); elMsgAviso.textContent = (e?.message || "Falha ao alterar status");
+      } finally {
+        toggleSpinner.classList.add('hidden'); toggleLabel.textContent = agente.online ? 'Ficar offline' : 'Ficar online'; btnToggleOnline.disabled = false;
+      }
+    };
+
+    btnPegarProxima.onclick = async () => {
+      if (!agente.online) { alert("Você está offline. Clique em “Ficar online”."); return; }
+      if (limitPerAgent > 0 && ativosCount >= limitPerAgent) {
+        elMsgLimite.textContent = `Limite de ${limitPerAgent} tickets simultâneos atingido. Conclua/libere um antes de pegar outro.`; elMsgLimite.classList.remove('hidden'); renderAtivosLimiteUI(); return;
+      }
+      const spinner = document.getElementById('pegarSpinner'); const label = document.getElementById('pegarLabel');
+      btnPegarProxima.disabled = true; spinner.classList.remove('hidden'); label.textContent = 'Buscando…';
+      try {
+        const r = await fetch(`${CONV_API}/api/tickets/claim`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), carteira: agente.carteira })
+        });
+        const j = await r.json().catch(() => ({ ok: false, erro: 'Falha na resposta' }));
+        if (r.status === 409 && j && (j.limit_per_agent !== undefined)) {
+          limitPerAgent = Number(j.limit_per_agent || 0); ativosCount = Number(j.ativos || ativosCount);
+          elMsgLimite.textContent = j.erro || `Limite de ${limitPerAgent} atingido.`; elMsgLimite.classList.remove('hidden'); renderAtivosLimiteUI(); return;
+        }
+        if (!r.ok || !j.ok) { alert(j.erro || "Sem conversas disponíveis."); return; }
+        if (!tickets.find(t => t.remetente === j.ticket.remetente && t.phone_id === j.ticket.phone_id)) { tickets.unshift(j.ticket); saveTickets(); }
+        renderTickets(); abrirTicket(j.ticket); ativosCount++; renderAtivosLimiteUI();
+      } catch (e) { alert("Falha ao pegar próxima."); }
+      finally {
+        spinner.classList.add('hidden'); label.textContent = 'Pegar próxima';
+        btnPegarProxima.disabled = !agente.online || (limitPerAgent > 0 && ativosCount >= limitPerAgent);
+      }
+    };
+
+    const priorityModal = document.getElementById('priorityModal');
+    const priorityTelefone = document.getElementById('priorityTelefone');
+    const priorityInfo = document.getElementById('priorityInfo');
+    const priorityErro = document.getElementById('priorityErro');
+    const btnPriorityBuscar = document.getElementById('btnPriorityBuscar');
+    const prioritySpinner = document.getElementById('prioritySpinner');
+    const priorityBtnLabel = document.getElementById('priorityBtnLabel');
+
+    btnPrioridade.onclick = () => {
+      if (!agente.online) { alert('Você está offline. Clique em “Ficar online”.'); return; }
+      if (limitPerAgent > 0 && ativosCount >= limitPerAgent) { elMsgLimite.textContent = `Limite de ${limitPerAgent} tickets simultâneos atingido. Conclua/libere um antes de solicitar prioridade.`; elMsgLimite.classList.remove('hidden'); return; }
+      abrirPriorityModal();
+    };
+    function abrirPriorityModal() { isModalOpen = true; priorityInfo.classList.add('hidden'); priorityErro.classList.add('hidden'); priorityTelefone.value = ''; priorityModal.classList.remove('hidden'); setTimeout(() => priorityTelefone.focus(), 50); }
+    function fecharPriorityModal() { isModalOpen = false; priorityModal.classList.add('hidden'); }
+    priorityTelefone.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); btnPriorityBuscar.click(); } });
+    document.addEventListener('keydown', e => { if (!priorityModal.classList.contains('hidden') && e.key === 'Escape') { fecharPriorityModal(); } });
+
+    function normalizarTelefone(raw) {
+      let d = String(raw || '').replace(/\D/g, ''); if (!d) return ''; if (!d.startsWith('55')) d = '55' + d;
+      const m = d.match(/^55(\d{2})(\d{8,9})(.*)$/); if (m) { const ddd = m[1]; let numero = m[2]; const tail = m[3] || ''; if (numero.length === 9 && numero.startsWith('9')) numero = numero.slice(1); d = '55' + ddd + numero + tail; }
+      return d;
+    }
+    async function findContatoNaOrdem(remetente) {
+      let c = (ordemCache || []).find(x => String(x.remetente) === String(remetente)); if (c) return c;
+      try {
+        const r = await fetch(`${CONV_API}/api/conversas/contatos`); const all = await r.json();
+        const phoneId = carteiraToPhoneId[agente.carteira];
+        c = (all || []).find(x => x.phone_id === phoneId && String(x.remetente) === String(remetente)); return c || null;
+      } catch { return null; }
+    }
+    btnPriorityBuscar.onclick = async () => {
+      priorityInfo.classList.add('hidden'); priorityErro.classList.add('hidden');
+      if (limitPerAgent > 0 && ativosCount >= limitPerAgent) { priorityErro.textContent = `Limite de ${limitPerAgent} tickets simultâneos atingido. Conclua/libere um antes de solicitar prioridade.`; priorityErro.classList.remove('hidden'); return; }
+      const nrm = normalizarTelefone(priorityTelefone.value); if (nrm.length < 11) { priorityErro.textContent = 'Informe ao menos DDI (55) + DDD (2) + número (8).'; priorityErro.classList.remove('hidden'); return; }
+      priorityInfo.innerHTML = `Buscando por: <code>${nrm}</code>`; priorityInfo.classList.remove('hidden');
+      const phoneIdCarteira = carteiraToPhoneId[agente.carteira]; await findContatoNaOrdem(nrm);
+      btnPriorityBuscar.disabled = true; prioritySpinner.classList.remove('hidden'); priorityBtnLabel.textContent = 'Solicitando…';
+      try {
+        const body = { codigo_do_agente: parseInt(agente.codigo, 10), carteira: agente.carteira, remetente: nrm, phone_id: phoneIdCarteira, prioridade: true };
+        const r = await fetch(`${CONV_API}/api/tickets/claim`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await r.json().catch(() => ({ ok: false, erro: 'Falha na resposta' }));
+        if (r.status === 409 && data && (data.limit_per_agent !== undefined)) {
+          limitPerAgent = Number(data.limit_per_agent || 0); ativosCount = Number(data.ativos || ativosCount);
+          priorityErro.textContent = data.erro || `Limite de ${limitPerAgent} atingido.`; priorityErro.classList.remove('hidden'); await refreshAtivosELimite(); return;
+        }
+        if (r.ok && data && data.ok && data.ticket) {
+          priorityInfo.innerHTML = `<span class="text-emerald-700 font-medium">Prioridade concedida.</span> Abrindo o ticket…`;
+          if (!tickets.find(t => t.remetente === data.ticket.remetente && t.phone_id === data.ticket.phone_id)) { tickets.unshift(data.ticket); saveTickets(); renderTickets(); }
+          fecharPriorityModal(); abrirTicket(data.ticket);
+          ativosCount++; renderAtivosLimiteUI(); return;
+        }
+        if (data && (data.assigned_to || data.atendimento)) {
+          const owner = data.assigned_to || data.atendimento;
+          priorityErro.innerHTML = `Outro agente já está atendendo: <strong>${escapeHtml(owner.nome || '—')}</strong> (#${escapeHtml(String(owner.codigo || '—'))}).`; priorityErro.classList.remove('hidden'); return;
+        }
+        if (r.status === 404) { priorityErro.textContent = 'Contato não está na fila desta carteira.'; priorityErro.classList.remove('hidden'); return; }
+        const msg = (data && (data.erro || data.message)) || 'Não foi possível conceder prioridade.'; priorityErro.textContent = msg; priorityErro.classList.remove('hidden');
+      } catch (e) { priorityErro.textContent = 'Falha ao solicitar prioridade.'; priorityErro.classList.remove('hidden'); }
+      finally { btnPriorityBuscar.disabled = false; prioritySpinner.classList.add('hidden'); priorityBtnLabel.textContent = 'Buscar e solicitar'; }
+    };
+
+    btnLiberar.onclick = async () => {
+      if (!selecionado) return;
+      try {
+        const r = await fetch(`${CONV_API}/api/tickets/liberar`, {
+          method: "DELETE", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), remetente: selecionado.remetente, phone_id: selecionado.phone_id })
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) { alert(j.erro || "Não foi possível liberar."); return; }
+        tickets = tickets.filter(t => !(t.remetente === selecionado.remetente && t.phone_id === selecionado.phone_id));
+        saveTickets(); renderTickets(); limparChat();
+        elTitulo.textContent = "Selecione um ticket"; elSubInfo.textContent = ""; btnLiberar.disabled = true; btnConcluir.disabled = true; fecharMenuConcluir();
+        if (ativosCount > 0) ativosCount--; renderAtivosLimiteUI();
+      } catch (e) { alert("Erro ao liberar."); }
+    };
+
+    btnLogout.onclick = async () => {
+      try {
+        await fetch(`${FILA_API}/fila/offline`, {
+          method: "DELETE", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), carteira: agente.carteira })
+        }).catch(() => { });
+      } catch (_) { }
+      try {
+        localStorage.removeItem("agente_codigo"); localStorage.removeItem("agente_nome"); localStorage.removeItem("agente_carteira"); localStorage.removeItem("agente_origem");
+        Object.keys(localStorage).forEach(k => { if (k.startsWith("cz:tickets:")) localStorage.removeItem(k); });
+      } catch (_) { }
+      // Para os runners de mensagens (outros podem permanecer, mas aqui vai um hard stop)
+      stopTask("mensagens");
+      setStatus(false); tickets = []; renderTickets(); limparChat();
+      elTitulo.textContent = "Selecione um ticket"; elSubInfo.textContent = ""; btnLiberar.disabled = true;
+      if (LOGOUT_REDIRECT) { window.location.href = LOGOUT_REDIRECT; } else { window.location.reload(); }
+    };
+
+    async function concluirAtendimento(motivo) {
+      if (!selecionado) return;
+      try {
+        btnConcluir.disabled = true;
+        const r = await fetch(`${CONV_API}/api/tickets/concluir`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: parseInt(agente.codigo, 10), remetente: selecionado.remetente, phone_id: selecionado.phone_id, motivo })
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) { alert(j.erro || "Não foi possível concluir."); btnConcluir.disabled = false; return; }
+        tickets = tickets.filter(t => !(t.remetente === selecionado.remetente && t.phone_id === selecionado.phone_id));
+        saveTickets(); renderTickets(); limparChat();
+        elTitulo.textContent = "Selecione um ticket"; elSubInfo.textContent = ""; btnLiberar.disabled = true; btnConcluir.disabled = true; selecionado = null;
+        if (ativosCount > 0) ativosCount--; renderAtivosLimiteUI();
+      } catch (e) { alert("Erro ao concluir."); btnConcluir.disabled = false; }
+    }
+
+    function renderTickets(filtro = "") {
+      const q = (filtro || "").toLowerCase().trim(); elListaTickets.innerHTML = "";
+      tickets.forEach(t => {
+        const nome = t.nome_exibicao || t.remetente; const ultima = t.mensagem_final ? t.mensagem_final.slice(0, 70) : "";
+        const hora = t.data_hora ? new Date(t.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
+        const hay = `${nome} ${t.remetente}`.toLowerCase(); if (q && !hay.includes(q)) return;
+        const li = document.createElement("li"); li.className = "flex items-center p-3 hover-soft cursor-pointer border-b"; li.onclick = () => abrirTicket(t);
+        li.innerHTML = `<div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium" style="background:${gerarCor(nome)};color:#fff;">
+        ${(nome || "U").charAt(0).toUpperCase()}</div>
+      <div class="flex-1 min-w-0"><div class="font-semibold truncate">${escapeHtml(nome)}</div>
+        <div class="text-sm text-gray-600 truncate">${escapeHtml(ultima)}</div></div>
+      <div class="text-xs text-gray-400 pl-2">${hora}</div>`;
+        if (selecionado && selecionado.remetente === t.remetente) li.classList.add("ticket-selected");
+        elListaTickets.appendChild(li);
+      });
+    }
+    function filtrarTickets(v) { renderTickets(v); }
+
+    function startMensagensPoll() {
+      stopTask("mensagens");
+      runTask("mensagens", async () => {
+        if (!userTyping && !isModalOpen && selecionado) {
+          await carregarMensagens(true);
+        }
+      }, 5000);
+    }
+
+    async function abrirTicket(t) {
+      selecionado = t; renderTickets();
+      elTitulo.textContent = t.nome_exibicao ? `${t.nome_exibicao} (${t.remetente})` : t.remetente;
+      elSubInfo.textContent = `conta: ${phoneIdMap[t.phone_id] || t.phone_id}`;
+      textarea.disabled = false; textarea.focus(); btnEnviar.disabled = true; btnLiberar.disabled = false; btnConcluir.disabled = false;
+
+      // reinicia controller de mensagens só na troca de ticket
+      if (msgsCtrl) { try { msgsCtrl.abort(); } catch { } }
+      msgsCtrl = new AbortController();
+
+      lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear(); chat.innerHTML = "";
+      await carregarMensagens(false);
+
+      startMensagensPoll();
+    }
+
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto"; textarea.style.height = textarea.scrollHeight + "px";
+      btnEnviar.disabled = textarea.value.trim().length === 0;
+      digitando.style.display = textarea.value.trim() ? "block" : "none";
+    });
+    textarea.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!btnEnviar.disabled) enviarMensagem(); }
+    });
+
+    async function carregarMensagens(incremental = true) {
+      if (!selecionado || !msgsCtrl) return;
+      const signal = msgsCtrl.signal;
+      let url = `${CONV_API}/api/conversas/${encodeURIComponent(selecionado.remetente)}`;
+      if (selecionado.phone_id) url += `?phone_id=${encodeURIComponent(selecionado.phone_id)}`;
+      const r = await fetch(url, { cache: 'no-store', keepalive: false, signal });
+      if (!r.ok) throw new Error("Erro histórico");
+      const msgs = await r.json(); msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+      if (!incremental) { chat.innerHTML = ""; lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear(); }
+      const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
+      msgs.forEach(m => renderMsg(m, incremental)); if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
+    }
+
+    function renderMsg(m, incremental) {
+      const tMs = new Date(m.data_hora).getTime();
+      const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
+      if (renderedKeys.has(key)) return;
+      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
+
+      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      if (!lastDayRendered || lastDayRendered !== dia) { const sep = document.createElement("div"); sep.className = "dia"; sep.textContent = `— ${dia} —`; chat.appendChild(sep); lastDayRendered = dia; }
+      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+      const incoming = isIncoming(m); const div = document.createElement("div"); div.className = `msg ${incoming ? 'recebida' : 'enviada'}`;
+
+      if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
+        div.innerHTML = `<div class="text-gray-600 italic">[imagem recebida]</div><button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button><span class="hora">${hora}</span>`;
+        const btn = div.querySelector(".btn-olhinho"); if (!m.msg_id) { btn.disabled = true; btn.textContent = "Imagem indisponível"; } else btn.onclick = () => carregarImagem(div, btn, m.msg_id);
+      } else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
+        div.innerHTML = `<div class="text-gray-600 italic">[áudio recebido]</div><button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button><span class="hora">${hora}</span>`;
+        const btn = div.querySelector(".btn-audio"); if (!m.msg_id) { btn.disabled = true; btn.textContent = "Áudio indisponível"; } else btn.onclick = () => carregarAudio(div, btn, m.msg_id);
+      } else if (m.tipo === "document" || m.mensagem_final === "[document]") {
+        div.innerHTML = `<div class="text-gray-600 italic">[documento recebido]</div><button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button><span class="hora">${hora}</span>`;
+        const btn = div.querySelector(".btn-doc"); if (!m.msg_id) { btn.disabled = true; btn.textContent = "Documento indisponível"; } else btn.onclick = () => carregarDocumento(div, btn, m.msg_id);
+      } else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
+        const lines = m.mensagem_final.split("\n"); const filename = (lines[0] || "").replace("📎 PDF:", "").trim() || "Arquivo"; const link = (lines[1] || "").replace("🔗", "").trim();
+        div.innerHTML = `<div class="flex items-start gap-2"><div class="text-xl leading-none">📄</div><div class="min-w-0">
+        <div class="font-semibold">${escapeHtml(filename)}</div>${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}</div></div><span class="hora">${hora}</span>`;
+      } else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
+        const wrap = document.createElement("div"); wrap.className = "flex items-center gap-2";
+        const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl"; emojiEl.textContent = "🙂";
+        const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
+        wrap.appendChild(emojiEl); wrap.appendChild(label); div.appendChild(wrap);
+        const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
+        if (m.msg_id) {
+          fetch(`${CONV_API}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`).then(r => r.json())
+            .then(j => { if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado"; })
+            .catch(() => label.textContent = "falha ao carregar emoji");
+        }
+      } else if (m.tipo === "system" || m.mensagem_final === "[system]") {
+        div.className = "msg system";
+        div.innerHTML = `<div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
+      <div class="sys-body mt-1">Obtendo detalhes…</div><div class="sys-meta mt-1"></div><span class="hora">${hora}</span>`;
+        if (!m.msg_id) { div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id)."; const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível"; }
+        else {
+          (async () => {
+            try {
+              const r = await fetch(`${CONV_API}/api/conversas/system/${encodeURIComponent(m.msg_id)}`); const j = await r.json();
+              const pill = div.querySelector(".sys-pill"); const bodyEl = div.querySelector(".sys-body"); const metaEl = div.querySelector(".sys-meta");
+              if (!j.ok) { if (pill) pill.textContent = "erro"; bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento."; return; }
+              if (pill) pill.textContent = j.type || "system";
+              if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
+                bodyEl.innerHTML = `O cliente alterou o número:<br><span class="font-semibold">${escapeHtml(j.old_wa_id)}</span> <span class="mx-1">→</span> <span class="font-semibold">${escapeHtml(j.wa_id)}</span>`;
+              } else { bodyEl.textContent = j.body || "Evento de sistema recebido."; }
+              const src = j.from || j.old_wa_id || ""; const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : ""; metaEl.textContent = `${src ? "Origem: " + src : ""}${pid}`;
+            } catch (e) { const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro"; div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento."; }
+          })();
+        }
+      } else {
+        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+      }
+
+      if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
+        const btn = document.createElement("button"); btn.className = "btn-responder"; btn.title = "Responder"; btn.innerHTML = "↩";
+        btn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || ""); div.appendChild(btn);
+      }
+
+      chat.appendChild(div);
+      renderedKeys.add(key);
+      // poda simples para evitar crescimento indefinido
+      if (renderedKeys.size > 500) {
+        const it = renderedKeys.values();
+        for (let i = 0; i < 100; i++) { const v = it.next(); if (v.done) break; renderedKeys.delete(v.value); }
+      }
+
+      if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
+    }
+
+    async function carregarImagem(div, btn, msg_id) {
+      btn.disabled = true; btn.textContent = "⏳ Carregando…";
+      try {
+        const r = await fetch(`${CONV_API}/api/conversas/image/${encodeURIComponent(msg_id)}`); const j = await r.json();
+        if (j.ok && j.data_uri) {
+          const img = document.createElement("img"); img.src = j.data_uri; img.alt = "Imagem"; img.className = "thumb mt-2";
+          img.onclick = () => abrirModalImagem(j.data_uri); div.insertBefore(img, btn); btn.remove();
+        }
+        else throw new Error(j.erro || "Resposta inválida");
+      } catch { alert("Erro ao carregar imagem"); btn.disabled = false; btn.textContent = "👁 Ver imagem"; }
+    }
+
+    async function carregarAudio(div, btn, msg_id) {
+      btn.disabled = true; btn.textContent = "⏳ Carregando…";
+      try {
+        const r = await fetch(`${CONV_API}/api/conversas/audio/${encodeURIComponent(msg_id)}`); const j = await r.json();
+        if (j.ok && j.data_uri) {
+          const audio = document.createElement("audio");
+          audio.src = j.data_uri;
+          audio.controls = true;
+          audio.preload = "metadata";
+          audio.className = "mt-2";
+          div.insertBefore(audio, btn);
+          btn.remove();
+        } else {
+          throw new Error(j.erro || "Resposta inválida");
+        }
+      } catch { alert("Erro ao carregar áudio"); btn.disabled = false; btn.textContent = "▶ Reproduzir áudio"; }
+    }
+
+    async function carregarDocumento(div, btn, msg_id) {
+      btn.disabled = true; btn.textContent = "⏳ Carregando…";
+      try {
+        const r = await fetch(`${CONV_API}/api/conversas/document/${encodeURIComponent(msg_id)}`); const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha no backend");
+        const filename = j.filename || "arquivo"; const mime = j.mime_type || "application/octet-stream"; const size = j.size_bytes ?? null;
+        const box = document.createElement("div"); box.className = "mt-2 space-y-1";
+        if (mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)) {
+          const preview = document.createElement("embed"); preview.src = j.data_uri; preview.type = mime; preview.className = "w-[260px] h-[200px] rounded border"; box.appendChild(preview);
+          const meta = document.createElement("div"); meta.className = "text-xs text-slate-600";
+          const link = `${CONV_API}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+          meta.innerHTML = `<div class="font-semibold truncate">${escapeHtml(filename)}</div><div>${size ? bytesToHuman(size) : ""}</div>
+        <a href="${link}" target="_blank" class="text-blue-600 underline">Abrir/baixar</a>`; box.appendChild(meta);
+        } else {
+          const link = `${CONV_API}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+          const row = document.createElement("div"); row.className = "flex items-start gap-2";
+          row.innerHTML = `<div class="text-xl leading-none">📎</div><div class="min-w-0">
+          <div class="font-semibold truncate">${escapeHtml(filename)}</div>
+          <div class="text-xs text-slate-600">${escapeHtml(mime)} ${size ? ("• " + bytesToHuman(size)) : ""}</div>
+          <a href="${link}" target="_blank" class="text-blue-600 underline break-all">Baixar documento</a></div>`;
+          box.appendChild(row);
+        }
+        div.insertBefore(box, btn); btn.remove();
+      } catch (e) { console.error(e); alert("Erro ao carregar documento"); btn.disabled = false; btn.textContent = "📎 Ver documento"; }
+    }
+
+    function responderMensagem(msgId, conteudo) {
+      respostaMsgId = msgId || null; document.getElementById("respostaPreview").classList.remove("hidden"); document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0, 50);
+      textarea.focus();
+    }
+    function cancelarResposta() { respostaMsgId = null; document.getElementById("respostaPreview").classList.add("hidden"); document.getElementById("respostaTexto").innerText = ""; }
+
+    async function enviarMensagem() {
+      if (!selecionado) return; const texto = textarea.value.trim(); if (!texto) return;
+      userTyping = true; btnEnviar.disabled = true;
+      try {
+        const body = { texto, phone_id: selecionado.phone_id, msg_id: respostaMsgId || null };
+        const r = await fetch(`${CONV_API}/api/conversas/${encodeURIComponent(selecionado.remetente)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const j = await r.json(); if (j.ok) { textarea.value = ""; textarea.style.height = "auto"; cancelarResposta(); await carregarMensagens(true); }
+        else { alert("Erro ao enviar: " + (j.erro || JSON.stringify(j))); }
+      } catch (e) { alert("Erro ao enviar mensagem. Verifique rede/CORS."); }
+      finally { userTyping = false; btnEnviar.disabled = textarea.value.trim().length === 0; }
+    }
+
+    /** Modal imagem */
+    const imageModal = document.getElementById("imageModal"); const modalImg = document.getElementById("modalImg"); const closeModal = document.getElementById("closeModal");
+    function abrirModalImagem(src) { isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
+    closeModal.onclick = fecharModal; imageModal.onclick = e => { if (e.target === imageModal) fecharModal(); };
+    function fecharModal() { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; }
+
+    function limparChat() { chat.innerHTML = '<p id="loading" class="text-center text-gray-500">Pegue uma conversa para iniciar…</p>'; }
+
+    document.getElementById("buscaTicket").addEventListener("input", e => filtrarTickets(e.target.value));
+
+    async function enviarPDF(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!selecionado) { alert("Abra um ticket antes de enviar PDF."); return; }
+      if (file.type !== "application/pdf") { alert("Somente arquivos PDF são permitidos."); return; }
+      try {
+        const res = await fetch(`${CONV_API}/api/upload/pdf`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name })
+        });
+        const j = await res.json();
+        if (!j.ok) {
+          console.error("Presign falhou:", j);
+          alert("Erro ao gerar URL: " + j.erro);
+          return;
+        }
+        const putResp = await fetch(j.upload_url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/pdf" },
+          body: file
+        });
+
+        if (!putResp.ok) {
+          const txt = await putResp.text().catch(() => "");
+          console.error("S3 PUT falhou", putResp.status, txt);
+          alert(`Falha no upload (S3): HTTP ${putResp.status}\n${txt.slice(0,300)}`);
+          return;
+        }
+        const send = await fetch(`${CONV_API}/api/conversas/${encodeURIComponent(selecionado.remetente)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone_id: selecionado.phone_id, file_url: j.file_url, original_filename: file.name })
+        });
+        const sj = await send.json().catch(()=>({ok:false, erro:"resposta inválida"}));
+        if (sj.ok) {
+          await carregarMensagens(true);
+        } else {
+          console.error("Erro ao enviar PDF para WhatsApp:", sj);
+          alert("Erro ao enviar PDF (API META): " + (sj.erro || JSON.stringify(sj)));
+        }
+      } catch (e) {
+        console.error("Erro geral ao enviar PDF:", e);
+        alert("Erro ao enviar PDF (rede).");
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    // boot
+    boot();
+  </script>
+</body>
+
+</html>
