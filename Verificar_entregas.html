@@ -66,7 +66,7 @@
     }
     thead th{
       position:sticky;top:0;background:#f9fafb;border-bottom:1px solid var(--outline);
-      padding:12px 14px;text-align:left;font-size:13px;font-weight:700;color:var(--muted);z-index:1
+      padding:12px 14px;text-align:left;font-size:13px;font-weight:700;color:#64748b;z-index:1
     }
     tbody td{padding:12px 14px;border-bottom:1px solid var(--outline);font-size:14px}
     tbody tr:nth-child(even){background:#fcfdff}
@@ -87,7 +87,7 @@
   <div class="container">
     <div class="card">
       <h1>Status das Mensagens WhatsApp</h1>
-      <div class="muted">Atualiza automaticamente a cada 5 segundos. Você pode refinar por conta, telefone do cliente, período e status.</div>
+      <div class="muted">Atualiza automaticamente a cada <strong>60 segundos</strong> (e a cada 120s quando a aba estiver em segundo plano). Você pode refinar por conta, telefone do cliente, período e status.</div>
 
       <!-- Filtros -->
       <details id="flt" class="filter-block" open>
@@ -127,7 +127,7 @@
               <label for="filtroStatus">Status</label>
               <select id="filtroStatus">
                 <option value="">Todos</option>
-                <!-- opções serão preenchidas dinamicamente -->
+                <!-- opções dinâmicas -->
               </select>
             </div>
 
@@ -171,6 +171,8 @@
 
       <div class="toolbar">
         <div class="muted grow" id="contadorResultados">—</div>
+        <button class="btn-outline" id="btnAtualizarAgora" title="Forçar atualização agora">Atualizar agora</button>
+        <span class="muted" id="lastUpdated">—</span>
       </div>
 
       <table>
@@ -202,6 +204,8 @@
     const resumoDiv     = document.getElementById("resumo");
     const contador      = document.getElementById("contadorResultados");
     const fltResumo     = document.getElementById("fltResumo");
+    const btnAtualizarAgora = document.getElementById("btnAtualizarAgora");
+    const lastUpdatedEl = document.getElementById("lastUpdated");
 
     const chips = Array.from(document.querySelectorAll(".chip"));
 
@@ -210,19 +214,23 @@
     let statusesConhecidos = new Set();
     let firstBuildStatus = true;
 
+    // ===== util =====
     const pad = n => String(n).padStart(2,"0");
     const toYMD = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     function soDigitos(s){ return (s||"").replace(/\D/g,""); }
     function fmtData(s){
       const d = new Date(s);
-      // se quiser fixar fuso: { timeZone: "America/Sao_Paulo" }
-      return d.toLocaleString("pt-BR");
+      return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    }
+    function setUpdatedNow() {
+      lastUpdatedEl.textContent = `Atualizado em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
     }
 
+    // ===== períodos rápidos =====
     function setQuickRange(kind){
       const now = new Date();
       let a = new Date(), b = new Date();
-      if(kind==="hoje"){ /* a=b hoje */ }
+      if(kind==="hoje"){ /* dia atual */ }
       if(kind==="ontem"){ a.setDate(now.getDate()-1); b.setDate(now.getDate()-1); }
       if(kind==="7d"){ a.setDate(now.getDate()-6); }
       if(kind==="30d"){ a.setDate(now.getDate()-29); }
@@ -231,11 +239,12 @@
       dataFim.value    = `${toYMD(b)}T23:59`;
     }
     function highlightChip(btn){ chips.forEach(c=>c.classList.remove("active")); if(btn) btn.classList.add("active"); }
-    chips.forEach(btn => btn.addEventListener("click", () => { setQuickRange(btn.dataset.range); highlightChip(btn); atualizarResumoCompacto(); }));
+    chips.forEach(btn => btn.addEventListener("click", () => { setQuickRange(btn.dataset.range); highlightChip(btn); atualizarResumoCompacto(); aplicarFiltrosERender(); }));
 
     // default: hoje
     setQuickRange("hoje"); highlightChip(chips[0]);
 
+    // ===== resumo compacto no summary =====
     function atualizarResumoCompacto(){
       const conta = filtroConta.value || "todas";
       const cli = filtroCliente.value ? soDigitos(filtroCliente.value) : "—";
@@ -244,27 +253,42 @@
       const df  = dataFim.value ? new Date(dataFim.value).toLocaleString("pt-BR") : "—";
       fltResumo.textContent = `(conta: ${conta} • cliente: ${cli} • status: ${st} • ${di} → ${df})`;
     }
-    [filtroConta, filtroCliente, filtroStatus, dataInicio, dataFim, ordemSel].forEach(el => el.addEventListener("change", atualizarResumoCompacto));
+    [filtroConta, filtroCliente, filtroStatus, dataInicio, dataFim, ordemSel].forEach(el => el.addEventListener("change", () => { atualizarResumoCompacto(); aplicarFiltrosERender(); }));
     atualizarResumoCompacto();
 
-    async function fetchStatus(){
-      if(isLoading) return;
+    // ===== carga e cache =====
+    let currentCtrl = null;
+    function abortInFlight() {
+      try { currentCtrl && currentCtrl.abort(); } catch (_) {}
+      currentCtrl = null;
+    }
+
+    async function fetchStatus(force=false){
+      if(isLoading && !force) return;
+      abortInFlight();
       isLoading = true;
+      const ctrl = new AbortController();
+      currentCtrl = ctrl;
+      const timeoutId = setTimeout(() => ctrl.abort("timeout"), 25000); // 25s de segurança
+
       try{
-        const resp = await fetch(API);
+        const resp = await fetch(API, { signal: ctrl.signal });
         const dados = await resp.json();
         cache = Array.isArray(dados) ? dados : [];
-        buildStatusOptions(cache); // popula lista de status dinamicamente
+        buildStatusOptions(cache); // popula lista de status apenas na 1ª vez
         aplicarFiltrosERender();
+        setUpdatedNow();
       }catch(e){
+        // mantém cache anterior; apenas loga
         console.error("Erro ao carregar status:", e);
       }finally{
+        clearTimeout(timeoutId);
+        if (currentCtrl === ctrl) currentCtrl = null;
         isLoading = false;
       }
     }
 
     function buildStatusOptions(rows){
-      // coleta e ordena alfabeticamente
       rows.forEach(r => r.status && statusesConhecidos.add(r.status));
       if(!statusesConhecidos.size || !firstBuildStatus) return;
       const atuais = new Set(Array.from(filtroStatus.options).map(o=>o.value));
@@ -278,6 +302,7 @@
       firstBuildStatus = false;
     }
 
+    // ===== render =====
     function aplicarFiltrosERender(){
       const conta = filtroConta.value;
       const clienteDigits = soDigitos(filtroCliente.value);
@@ -318,14 +343,12 @@
       });
       resumoDiv.innerHTML = "";
       if(!rows.length){ return; }
-      // cria uma pill para cada status encontrado
       Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).forEach(([k,qt])=>{
         const p = document.createElement("span");
         p.className = "pill";
         p.innerHTML = `<strong>${k}</strong> ${qt}`;
         resumoDiv.appendChild(p);
       });
-      // total
       const total = document.createElement("span");
       total.className = "pill";
       total.innerHTML = `<strong>Total</strong> ${rows.length}`;
@@ -365,7 +388,7 @@
       });
     }
 
-    // Botões
+    // ===== ações dos botões =====
     document.getElementById("btnAplicar").addEventListener("click", aplicarFiltrosERender);
     document.getElementById("btnLimpar").addEventListener("click", ()=>{
       filtroConta.value = "";
@@ -377,9 +400,47 @@
       atualizarResumoCompacto();
     });
 
-    // Polling
-    setInterval(fetchStatus, 5000);
-    fetchStatus();
+    btnAtualizarAgora.addEventListener("click", ()=>{
+      // força um refresh sem esperar o agendamento
+      fetchStatus(true);
+      // reinicia o ciclo de polling a partir de agora
+      scheduleNextPoll();
+    });
+
+    // ===== polling inteligente (sem chamadas concorrentes) =====
+    const ACTIVE_MS = 60000;  // 60s aba visível
+    const HIDDEN_MS = 120000; // 120s aba oculta
+    let pollTimer = null;
+
+    function getPollDelay(){
+      return document.hidden ? HIDDEN_MS : ACTIVE_MS;
+    }
+
+    function clearPoll(){
+      if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+    }
+
+    async function pollOnce(){
+      // faz o fetch e, quando terminar (com sucesso ou erro), agenda o próximo ciclo
+      await fetchStatus();
+      scheduleNextPoll();
+    }
+
+    function scheduleNextPoll(){
+      clearPoll();
+      pollTimer = setTimeout(pollOnce, getPollDelay());
+    }
+
+    document.addEventListener("visibilitychange", ()=>{
+      // ao mudar visibilidade, reprograma o próximo ciclo (sem disparar novo fetch imediato)
+      scheduleNextPoll();
+    });
+
+    // ===== boot =====
+    (async function init(){
+      await fetchStatus();  // primeira carga
+      scheduleNextPoll();   // inicia ciclo
+    })();
   </script>
 </body>
 </html>
