@@ -8,7 +8,7 @@
 <style>
 /* ========= Bolhas de mensagem (ajustadas) ========= */
 .msg{
-  display:inline-block;                         /* encolhe ao conteúdo */
+  display:inline-block;
   max-width:min(70%, 560px);
   padding:10px 14px 18px;
   margin:6px 0;
@@ -19,9 +19,7 @@
   box-shadow:0 1px 2px rgba(0,0,0,.10);
   transition:background .18s ease;
 }
-@media (max-width: 768px){
-  .msg{ max-width:86%; }
-}
+@media (max-width: 768px){ .msg{ max-width:86%; } }
 .msg.enviada{
   align-self:flex-end;
   background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
@@ -36,58 +34,36 @@
   position:absolute; right:8px; bottom:4px;
   font-size:11px; color:#4b5563;
 }
-
 /* Caudas dos balões */
 .msg.enviada::after, .msg.recebida::after{
-  content:"";
-  position:absolute; bottom:0; width:14px; height:14px;
-  clip-path:polygon(0 0, 100% 0, 0 100%);
+  content:""; position:absolute; bottom:0; width:14px; height:14px; clip-path:polygon(0 0, 100% 0, 0 100%);
 }
-.msg.enviada::after{
-  right:-7px;
-  background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
-}
+.msg.enviada::after{ right:-7px; background:linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4)); }
 .msg.recebida::after{
-  left:-7px;
-  background:var(--bubble-in-bg, #fff);
+  left:-7px; background:var(--bubble-in-bg, #fff);
   border-left:1px solid var(--bubble-in-border, #e2e8f0);
   border-bottom:1px solid var(--bubble-in-border, #e2e8f0);
 }
-
-/* Ações dentro do balão (ex: responder) */
-.msg .actions{
-  position:absolute; top:6px; right:6px;
-  display:flex; gap:6px;
-  opacity:0; pointer-events:none;
-  transition:opacity .18s ease;
-}
-.msg:hover .actions,
-.msg:focus-within .actions{ opacity:1; pointer-events:auto; }
+/* Ações dentro do balão */
+.msg .actions{ position:absolute; top:6px; right:6px; display:flex; gap:6px; opacity:0; pointer-events:none; transition:opacity .18s ease; }
+.msg:hover .actions, .msg:focus-within .actions{ opacity:1; pointer-events:auto; }
 .icon-btn{ font-size:14px; color:#64748b; cursor:pointer; }
 .icon-btn:hover{ color:#2563eb; }
-
 /* Mídia */
 .msg img.thumb{ max-width:280px; height:auto; border-radius:12px; border:1px solid #e5e7eb; cursor:pointer; }
-
 /* ========= Cartões de sistema ========= */
-.msg.system{
-  background:#f8fafc;                 /* slate-50 */
-  border:1px dashed #cbd5e1;          /* slate-300 */
-  color:#0f172a;                      /* slate-900 */
-}
-.msg.system::after{ display:none; }   /* sem cauda */
+.msg.system{ background:#f8fafc; border:1px dashed #cbd5e1; color:#0f172a; }
+.msg.system::after{ display:none; }
 .sys-title{ font-weight:700; font-size:.9rem; display:flex; align-items:center; gap:.5rem; }
 .sys-body{ font-size:.9rem; color:#334155; }
 .sys-meta{ font-size:.75rem; color:#64748b; }
 .sys-pill{ display:inline-block; font-size:.7rem; font-weight:700; padding:.1rem .4rem; border-radius:9999px; background:#eef2ff; color:#3730a3; }
-
 /* Extras existentes */
 .badge{ position:absolute; top:8px; right:8px; background:#22c55e; color:#fff; font-size:10px; font-weight:700; border-radius:9999px; padding:2px 6px; min-width:18px; text-align:center; }
 .dia{ text-align:center; margin:12px 0; font-size:12px; color:#888; }
 .contato-selected{ background:#f0f9ff !important; }
 mark{ background:#ffef6b; color:#000; padding:0 2px; border-radius:2px; }
 #digitando{ font-size:12px; color:#666; margin-bottom:4px; }
-
 /* Filtros minimizáveis */
 details.filter-block{ border:1px solid #e2e8f0; border-radius:.75rem; background:#fff; }
 details.filter-block>summary{
@@ -100,7 +76,6 @@ details.filter-block[open]>summary{ border-bottom:1px dashed #e2e8f0; }
 .summary-label{ display:flex; align-items:center; gap:.5rem; }
 .summary-chevron{ transition:transform .2s ease; }
 details.filter-block[open] .summary-chevron{ transform:rotate(180deg); }
-
 .chip-btn{ padding:.4rem .7rem; font-size:.8rem; border-radius:.6rem; border:1px solid #e2e8f0; background:#fff; color:#334155; font-weight:600; }
 .chip-btn.active{ background:#1d4ed8; color:#fff; border-color:#1d4ed8; }
 @media (max-width: 768px){ aside{ width:42%; } }
@@ -239,11 +214,11 @@ const phoneIdMap = {
 
 let contatoSelecionado = null, phoneIdAtual = null;
 let respostaMsgId = null;
-let contactsInterval = null, messagesInterval = null, userTyping = false, isModalOpen = false;
+let filtrosAplicados = false;
+let userTyping = false, isModalOpen = false;
 
 let novasMensagens = {};
 let ultimoStatusContatos = {};
-let filtrosAplicados = false;
 
 // incremento por data no chat
 let lastTimestampMs = null;
@@ -292,34 +267,18 @@ function setQuickRange(kind){
   dataInicioEl.value = toYMD(a); dataFimEl.value = toYMD(b);
   atualizarResumo();
 }
-function highlightChip(btn){
-  chipBtns.forEach(b=>b.classList.remove("active"));
-  if(btn) btn.classList.add("active");
-}
-chipBtns.forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    const k = btn.dataset.range;
-    if(k!=="custom") setQuickRange(k);
-    highlightChip(btn);
-  });
-});
-(function initPeriodoDefault(){
-  setQuickRange("hoje");
-  highlightChip(document.querySelector('[data-range="hoje"]'));
-})();
+function highlightChip(btn){ chipBtns.forEach(b=>b.classList.remove("active")); if(btn) btn.classList.add("active"); }
+chipBtns.forEach(btn=>{ btn.addEventListener("click", ()=>{ const k = btn.dataset.range; if(k!=="custom") setQuickRange(k); highlightChip(btn); }); });
+(function initPeriodoDefault(){ setQuickRange("hoje"); highlightChip(document.querySelector('[data-range="hoje"]')); })();
 
 /* ======= Helpers ======= */
-function gerarCor(nome){
-  let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); }
-  return `hsl(${hash % 360},70%,60%)`;
-}
+function gerarCor(nome){ let hash=0; for(let i=0;i<nome.length;i++){ hash=nome.charCodeAt(i)+((hash<<5)-hash); } return `hsl(${hash % 360},70%,60%)`; }
 function escapeHtml(s){ if(!s) return ""; return s.replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function toLocalDateYMD(isoString){
   const d = new Date(isoString);
   const parts = new Date(d.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   return `${parts.getFullYear()}-${pad(parts.getMonth()+1)}-${pad(parts.getDate())}`;
 }
-/* Heurística robusta para direção da mensagem */
 function isIncoming(m){
   const s = (m.status || "").toLowerCase();
   if (typeof m.from_me === "boolean") return !m.from_me;
@@ -328,15 +287,7 @@ function isIncoming(m){
   if (["out","sent","delivered","read","outgoing"].includes(s)) return false;
   return s === "in";
 }
-
-/* Helper de tamanho legível */
-function bytesToHuman(n){
-  if(!n && n !== 0) return "";
-  const u=["B","KB","MB","GB","TB"];
-  let i=0, s=n;
-  while(s>=1024 && i<u.length-1){ s/=1024; i++; }
-  return `${s.toFixed(s>=10||i===0?0:1)} ${u[i]}`;
-}
+function bytesToHuman(n){ if(!n && n !== 0) return ""; const u=["B","KB","MB","GB","TB"]; let i=0, s=n; while(s>=1024 && i<u.length-1){ s/=1024; i++; } return `${s.toFixed(s>=10||i===0?0:1)} ${u[i]}`; }
 
 /* ======= Resumo filtros ======= */
 function atualizarResumo(){
@@ -348,12 +299,147 @@ function atualizarResumo(){
 [filtroContaEl, dataInicioEl, dataFimEl].forEach(el => el.addEventListener("change", atualizarResumo));
 atualizarResumo();
 
+/* ======= NOVO: motor de atualização eficiente ======= */
+const CADENCE = { active: 10000, idle: 30000, hidden: 60000 };
+const BACKOFF_MAX = 120000;            // até 2 min
+let failureStreak = 0;                  // backoff exponencial simples
+let cycleCount = 0;                     // para amostragem de contatos
+
+let refreshTimer = null;                // único timer
+let refreshAbort = null;                // aborta requisição anterior
+let isRefreshing = false;               // trava single-flight
+
+// ETags por URL
+const etags = new Map();
+
+// decide próximo delay com base em estado
+function computeNextDelay(){
+  if (failureStreak > 0) {
+    const base = CADENCE.active;
+    return Math.min(BACKOFF_MAX, base * Math.pow(2, failureStreak));
+  }
+  if (document.hidden) return CADENCE.hidden;
+
+  // Se há conversa aberta e usuário não está digitando, mantemos ativo
+  const ativo = !!contatoSelecionado && !userTyping && !isModalOpen;
+  return ativo ? CADENCE.active : CADENCE.idle;
+}
+function scheduleRefresh(delay = computeNextDelay()){
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(()=>refreshLoop("auto"), delay);
+}
+// fetch com If-None-Match + timeout + abort composto
+async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}){
+  const own = new AbortController();
+  const t = setTimeout(()=>own.abort("timeout"), timeoutMs);
+
+  let finalSignal = own.signal;
+  if (signal){
+    const comp = new AbortController();
+    signal.addEventListener("abort", ()=>comp.abort("parent"), { once:true });
+    own.signal.addEventListener("abort", ()=>comp.abort("timeout"), { once:true });
+    finalSignal = comp.signal;
+  }
+
+  const headers = {};
+  const knownEtag = etags.get(url);
+  if (knownEtag) headers["If-None-Match"] = knownEtag;
+
+  try{
+    const r = await fetch(url, { signal: finalSignal, headers, keepalive: true, cache: "no-store" });
+    if (r.status === 304) return { __notModified: true };
+    const et = r.headers.get("ETag");
+    if (et) etags.set(url, et);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+
+async function refreshLoop(reason="manual"){
+  // pausa mensagens se modal aberto ou digitando
+  const pauseMsgs = userTyping || isModalOpen;
+
+  // single-flight
+  if (isRefreshing){ try{ refreshAbort?.abort("superseded"); }catch{} }
+  isRefreshing = true;
+  refreshAbort = new AbortController();
+  const { signal } = refreshAbort;
+
+  try{
+    cycleCount++;
+
+    // decide se busca contatos neste ciclo:
+    // - sempre que aplicar/limpar filtro (reason !== "auto"), OU
+    // - a cada 3 ciclos quando uma conversa está aberta, OU
+    // - a cada ciclo quando não há conversa aberta.
+    const fetchContatosEsteCiclo =
+      (reason !== "auto") ||
+      (!contatoSelecionado) ||
+      (cycleCount % 3 === 1);
+
+    const urls = [];
+    if (filtrosAplicados && fetchContatosEsteCiclo) urls.push("__CONTATOS__");
+    if (contatoSelecionado && !pauseMsgs) urls.push("__MENSAGENS__");
+
+    // nada para fazer? só reagendar
+    if (!urls.length){
+      failureStreak = 0;
+      scheduleRefresh();
+      return;
+    }
+
+    const contatosUrl = `${API_BASE}/api/conversas/contatos`;
+    let mensagensUrl = null;
+    if (contatoSelecionado){
+      mensagensUrl = `${API_BASE}/api/conversas/${contatoSelecionado}${phoneIdAtual ? `?phone_id=${encodeURIComponent(phoneIdAtual)}` : ""}`;
+    }
+
+    const calls = urls.map(tag=>{
+      if (tag === "__CONTATOS__") return fetchJSON(contatosUrl, { signal });
+      if (tag === "__MENSAGENS__") return fetchJSON(mensagensUrl, { signal });
+    });
+
+    const results = await Promise.allSettled(calls);
+
+    let idx = 0;
+    for (const tag of urls){
+      const res = results[idx++];
+
+      if (tag === "__CONTATOS__"){
+        if (res.status === "fulfilled"){
+          if (!res.value?.__notModified){
+            await renderContatos(res.value);
+          }
+        }
+      }
+
+      if (tag === "__MENSAGENS__"){
+        if (res.status === "fulfilled"){
+          if (!res.value?.__notModified){
+            await renderMensagens(res.value, /*incremental*/ true);
+          }
+        }
+      }
+    }
+
+    failureStreak = 0;
+  } catch(e){
+    if (String(e) !== "AbortError" && String(e) !== "superseded"){
+      failureStreak = Math.min(failureStreak + 1, 10);
+      console.warn("Refresh falhou:", e);
+    }
+  } finally {
+    isRefreshing = false;
+    scheduleRefresh();
+  }
+}
+
 /* ======= Aplicar/Limpar filtros ======= */
 btnAplicarFiltros.addEventListener("click", ()=>{
   if(!filtroContaEl.value){ alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
   filtrosAplicados = true;
   hintFiltro.classList.add("hidden");
-  startContactsPolling();
+  // força pedido imediato
+  refreshLoop("aplicar-filtros");
 });
 btnLimparFiltros.addEventListener("click", ()=>{
   filtroContaEl.value = "";
@@ -363,96 +449,10 @@ btnLimparFiltros.addEventListener("click", ()=>{
   filtrosAplicados = false;
   hintFiltro.classList.remove("hidden");
   contatosUL.innerHTML = "";
-  if(contactsInterval) clearInterval(contactsInterval);
+  contatoSelecionado = null; phoneIdAtual = null;
+  lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
   atualizarResumo();
 });
-
-/* ======= Contatos ======= */
-async function carregarContatos(){
-  if(!filtrosAplicados) return;
-  try{
-    if(!contatosUL.children.length){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Carregando contatos…</li>`;
-    }
-    const res = await fetch(`${API_BASE}/api/conversas/contatos`);
-    if(!res.ok) throw new Error("Falha ao buscar contatos");
-    const contatos = await res.json();
-
-    const carteirafiltro = filtroContaEl.value;
-    const di = dataInicioEl.value || null;
-    const df = dataFimEl.value || null;
-    const busc = document.getElementById("searchInput").value.toLowerCase().trim();
-
-    let filtrados = contatos;
-    if(carteirafiltro && carteirafiltro !== "*"){
-      filtrados = filtrados.filter(c => c.phone_id === carteirafiltro);
-    }
-    if(di || df){
-      filtrados = filtrados.filter(c=>{
-        if(!c.data_hora) return false;
-        const ymd = toLocalDateYMD(c.data_hora);
-        if(di && ymd < di) return false;
-        if(df && ymd > df) return false;
-        return true;
-      });
-    }
-    if(busc){
-      filtrados = filtrados.filter(c=>{
-        const nome = (c.nome_exibicao||"").toLowerCase();
-        const num  = (c.remetente||"").toLowerCase();
-        return nome.includes(busc) || num.includes(busc);
-      });
-    }
-
-    contatosUL.innerHTML = "";
-    if(filtrados.length === 0){
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato no período/filtros.</li>`;
-      return;
-    }
-
-    filtrados.forEach(c=>{
-      const nome = c.nome_exibicao||c.remetente;
-      const ultimaMsg = c.mensagem_final?c.mensagem_final.substring(0,70):"";
-      const hora = c.data_hora?new Date(c.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
-
-      if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
-        novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
-      }
-      ultimoStatusContatos[c.remetente] = c.data_hora;
-
-      const li = document.createElement("li");
-      li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
-      li.dataset.remetente=c.remetente.toLowerCase();
-
-      const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
-        ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
-        : "";
-
-      li.innerHTML=`
-        <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
-             style="background:${gerarCor(nome)};color:white;">
-          ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold truncate">${escapeHtml(nome)}</div>
-          <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
-        </div>
-        <div class="text-xs text-gray-400 pl-2">${hora}</div>
-        ${badge}
-      `;
-      li.onclick = ()=>abrirConversaFromElement(c,li);
-      contatosUL.appendChild(li);
-    });
-  }catch(err){
-    console.error("Erro ao carregar contatos",err);
-    contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
-  }
-}
-function startContactsPolling(){
-  if(contactsInterval) clearInterval(contactsInterval);
-  carregarContatos();
-  contactsInterval = setInterval(()=>{ if(filtrosAplicados) carregarContatos(); }, 10000);
-}
 
 /* ======= Busca local ======= */
 function filtrarContatos(q){
@@ -469,6 +469,80 @@ function filtrarContatos(q){
   });
 }
 
+/* ======= Contatos (render) ======= */
+async function renderContatos(contatos){
+  if(!Array.isArray(contatos)){
+    contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum dado retornado.</li>`;
+    return;
+  }
+  // aplica filtros no cliente
+  const carteirafiltro = filtroContaEl.value;
+  const di = dataInicioEl.value || null;
+  const df = dataFimEl.value || null;
+  const busc = document.getElementById("searchInput").value.toLowerCase().trim();
+
+  let filtrados = contatos;
+  if(carteirafiltro && carteirafiltro !== "*"){
+    filtrados = filtrados.filter(c => c.phone_id === carteirafiltro);
+  }
+  if(di || df){
+    filtrados = filtrados.filter(c=>{
+      if(!c.data_hora) return false;
+      const ymd = toLocalDateYMD(c.data_hora);
+      if(di && ymd < di) return false;
+      if(df && ymd > df) return false;
+      return true;
+    });
+  }
+  if(busc){
+    filtrados = filtrados.filter(c=>{
+      const nome = (c.nome_exibicao||"").toLowerCase();
+      const num  = (c.remetente||"").toLowerCase();
+      return nome.includes(busc) || num.includes(busc);
+    });
+  }
+
+  contatosUL.innerHTML = "";
+  if(filtrados.length === 0){
+    contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato no período/filtros.</li>`;
+    return;
+  }
+
+  filtrados.forEach(c=>{
+    const nome = c.nome_exibicao||c.remetente;
+    const ultimaMsg = c.mensagem_final?c.mensagem_final.substring(0,70):"";
+    const hora = c.data_hora?new Date(c.data_hora).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}):"";
+
+    if (ultimoStatusContatos[c.remetente] !== c.data_hora && contatoSelecionado !== c.remetente) {
+      novasMensagens[c.remetente] = (novasMensagens[c.remetente] || 0) + 1;
+    }
+    ultimoStatusContatos[c.remetente] = c.data_hora;
+
+    const li = document.createElement("li");
+    li.className="flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
+    li.dataset.remetente=c.remetente.toLowerCase();
+
+    const badge = (novasMensagens[c.remetente] && novasMensagens[c.remetente] > 0) 
+      ? `<span class="badge">${novasMensagens[c.remetente]}</span>` 
+      : "";
+
+    li.innerHTML=`
+      <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
+           style="background:${gerarCor(nome)};color:white;">
+        ${(nome||c.remetente||"U").charAt(0).toUpperCase()}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold truncate">${escapeHtml(nome)}</div>
+        <div class="text-sm text-gray-600 truncate">${escapeHtml(ultimaMsg)}</div>
+      </div>
+      <div class="text-xs text-gray-400 pl-2">${hora}</div>
+      ${badge}
+    `;
+    li.onclick = ()=>abrirConversaFromElement(c,li);
+    contatosUL.appendChild(li);
+  });
+}
+
 /* ======= Abrir conversa ======= */
 function abrirConversaFromElement(c,el){
   document.querySelectorAll("#contatos li").forEach(li=>li.classList.remove("contato-selected"));
@@ -477,7 +551,6 @@ function abrirConversaFromElement(c,el){
 }
 async function abrirConversa(c){
   contatoSelecionado=c.remetente; phoneIdAtual=c.phone_id;
-
   lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
   novasMensagens[c.remetente] = 0;
 
@@ -485,228 +558,196 @@ async function abrirConversa(c){
   document.getElementById("subInfo").innerText=c.phone_id?`conta: ${phoneIdMap[c.phone_id]||c.phone_id}`:"";
   textarea.disabled=false; textarea.focus(); btnEnviar.disabled=true;
 
-  if(messagesInterval) clearInterval(messagesInterval);
-  await carregarMensagens(false);
-  messagesInterval=setInterval(()=>{ if(!userTyping && !isModalOpen){ carregarMensagens(true); } }, 5000);
+  // força ciclo imediato para mensagens
+  await refreshLoop("abrir-conversa");
 }
 
-/* ======= Mensagens ======= */
-async function carregarMensagens(incremental = true) {
+/* ======= Mensagens (render) ======= */
+async function renderMensagens(msgs, incremental = true) {
   if (!contatoSelecionado) return;
   const chat = document.getElementById("chat");
+  if (!Array.isArray(msgs)) return;
 
-  let url = `${API_BASE}/api/conversas/${contatoSelecionado}`;
-  if (phoneIdAtual) url += `?phone_id=${encodeURIComponent(phoneIdAtual)}`;
+  msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Erro ao obter histórico");
-    const msgs = await res.json();
+  if (!incremental) {
+    chat.innerHTML = "";
+    lastTimestampMs = null;
+    lastDayRendered = null;
+    renderedKeys.clear();
+  }
 
-    msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+  const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
 
-    if (!incremental) {
-      chat.innerHTML = "";
-      lastTimestampMs = null;
-      lastDayRendered = null;
-      renderedKeys.clear();
+  msgs.forEach((m) => {
+    const tMs = new Date(m.data_hora).getTime();
+    const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
+    if (renderedKeys.has(key)) return;
+    if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
+
+    const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    if (!lastDayRendered || lastDayRendered !== dia) {
+      const sep = document.createElement("div");
+      sep.className = "dia";
+      sep.innerText = `— ${dia} —`;
+      chat.appendChild(sep);
+      lastDayRendered = dia;
     }
 
-    const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
+    const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+    const div = document.createElement("div");
+    const incoming = isIncoming(m);
+    div.className = `msg ${incoming ? "recebida" : "enviada"}`;
 
-    msgs.forEach((m) => {
-      const tMs = new Date(m.data_hora).getTime();
-      const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-      if (renderedKeys.has(key)) return;
-      if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
-
-      const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-      if (!lastDayRendered || lastDayRendered !== dia) {
-        const sep = document.createElement("div");
-        sep.className = "dia";
-        sep.innerText = `— ${dia} —`;
-        chat.appendChild(sep);
-        lastDayRendered = dia;
-      }
-
-      const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-      const div = document.createElement("div");
-      const incoming = isIncoming(m);
-      div.className = `msg ${incoming ? "recebida" : "enviada"}`;
-
-      if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[imagem recebida]</div>
-          <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-olhinho");
-        if (!m.msg_id) {
-          btn.disabled = true; btn.innerText = "Imagem indisponível";
-        } else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const img = document.createElement("img");
-                img.src = j.data_uri; img.alt = "Imagem recebida";
-                img.className = "thumb mt-2";
-                img.onclick = () => abrirModalImagem(j.data_uri);
-                div.insertBefore(img, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro imagem:", e); btn.disabled=false; btn.innerText="👁 Ver imagem"; alert("Erro ao carregar imagem"); }
-          };
-        }
-      }
-      else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[áudio recebido]</div>
-          <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-audio");
-        if (!m.msg_id) { btn.disabled = true; btn.innerText="Áudio indisponível"; }
-        else {
-          btn.onclick = async () => {
-            btn.disabled = true; btn.innerText = "⏳ Carregando...";
-            try {
-              const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              if (j.ok && j.data_uri) {
-                const audio = document.createElement("audio");
-                audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2";
-                div.insertBefore(audio, btn); btn.remove();
-              } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-            } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
-          };
-        }
-      }
-      else if (m.tipo === "document" || m.mensagem_final === "[document]") {
-        // ✅ Documento recebido
-        div.innerHTML = `
-          <div class="text-gray-600 italic">[documento recebido]</div>
-          <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
-          <span class="hora">${hora}</span>
-        `;
-        const btn = div.querySelector(".btn-doc");
-        if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
-        else {
-          btn.onclick = () => carregarDocumento(div, btn, m.msg_id);
-        }
-      }
-      else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
-        // ✅ Mensagem enviada com nosso formato vira cartão com link
-        const lines = m.mensagem_final.split("\n");
-        const filename = (lines[0]||"").replace("📎 PDF:","").trim() || "Arquivo";
-        const link = (lines[1]||"").replace("🔗","").trim();
-        div.innerHTML = `
-          <div class="flex items-start gap-2">
-            <div class="text-xl leading-none">📄</div>
-            <div class="min-w-0">
-              <div class="font-semibold">${escapeHtml(filename)}</div>
-              ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
-            </div>
-          </div>
-          <span class="hora">${hora}</span>
-        `;
-      }
-      else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-        const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
-        const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
-        const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
-        wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
-        const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
-        if (m.msg_id) {
-          (async ()=>{ try {
-            const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
+    if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
+      div.innerHTML = `
+        <div class="text-gray-600 italic">[imagem recebida]</div>
+        <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
+        <span class="hora">${hora}</span>
+      `;
+      const btn = div.querySelector(".btn-olhinho");
+      if (!m.msg_id) {
+        btn.disabled = true; btn.innerText = "Imagem indisponível";
+      } else {
+        btn.onclick = async () => {
+          btn.disabled = true; btn.innerText = "⏳ Carregando...";
+          try {
+            const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
             const j = await r.json();
-            if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
-          } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
-        } else { label.textContent = "emoji indisponível"; }
+            if (j.ok && j.data_uri) {
+              const img = document.createElement("img");
+              img.src = j.data_uri; img.alt = "Imagem recebida";
+              img.className = "thumb mt-2";
+              img.onclick = () => abrirModalImagem(j.data_uri);
+              div.insertBefore(img, btn); btn.remove();
+            } else { throw new Error(j.erro || "Resposta inválida do backend"); }
+          } catch (e) { console.error("Erro imagem:", e); btn.disabled=false; btn.innerText="👁 Ver imagem"; alert("Erro ao carregar imagem"); }
+        };
       }
-      else if (m.tipo === "system" || m.mensagem_final === "[system]") {
-        /* ✅ Evento de sistema */
-        div.classList.add("system");
-        // esqueleto
-        div.innerHTML = `
-          <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
-          <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
-          <div class="sys-meta mt-1"></div>
-          <span class="hora">${hora}</span>
-        `;
-        if (!m.msg_id) {
-          div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
-          const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
-        } else {
-          (async ()=>{
-            try{
-              const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
-              const j = await r.json();
-              const pill = div.querySelector(".sys-pill");
-              const bodyEl = div.querySelector(".sys-body");
-              const metaEl = div.querySelector(".sys-meta");
-
-              if(!j.ok){
-                if (pill) pill.textContent = "erro";
-                bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento.";
-                return;
-              }
-
-              if (pill) pill.textContent = j.type || "system";
-              // Corpo
-              if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
-                bodyEl.innerHTML = `
-                  O cliente alterou o número:<br>
-                  <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
-                  <span class="mx-1">→</span>
-                  <span class="font-semibold">${escapeHtml(j.wa_id)}</span>
-                `;
-              } else {
-                bodyEl.textContent = j.body || "Evento de sistema recebido.";
-              }
-              // Meta
-              const src = j.from || j.old_wa_id || "";
-              const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
-              metaEl.textContent = `${src ? "Origem: "+src : ""}${pid}`;
-            }catch(e){
-              console.error("Erro system:", e);
-              const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro";
-              div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento.";
-            }
-          })();
-        }
-      }
+    }
+    else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
+      div.innerHTML = `
+        <div class="text-gray-600 italic">[áudio recebido]</div>
+        <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
+        <span class="hora">${hora}</span>
+      `;
+      const btn = div.querySelector(".btn-audio");
+      if (!m.msg_id) { btn.disabled = true; btn.innerText="Áudio indisponível"; }
       else {
-        div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+        btn.onclick = async () => {
+          btn.disabled = true; btn.innerText = "⏳ Carregando...";
+          try {
+            const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
+            const j = await r.json();
+            if (j.ok && j.data_uri) {
+              const audio = document.createElement("audio");
+              audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2";
+              div.insertBefore(audio, btn); btn.remove();
+            } else { throw new Error(j.erro || "Resposta inválida do backend"); }
+          } catch (e) { console.error("Erro áudio:", e); btn.disabled=false; btn.innerText="▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
+        };
       }
+    }
+    else if (m.tipo === "document" || m.mensagem_final === "[document]") {
+      div.innerHTML = `
+        <div class="text-gray-600 italic">[documento recebido]</div>
+        <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
+        <span class="hora">${hora}</span>
+      `;
+      const btn = div.querySelector(".btn-doc");
+      if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
+      else { btn.onclick = () => carregarDocumento(div, btn, m.msg_id); }
+    }
+    else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
+      const lines = m.mensagem_final.split("\n");
+      const filename = (lines[0]||"").replace("📎 PDF:","").trim() || "Arquivo";
+      const link = (lines[1]||"").replace("🔗","").trim();
+      div.innerHTML = `
+        <div class="flex items-start gap-2">
+          <div class="text-xl leading-none">📄</div>
+          <div class="min-w-0">
+            <div class="font-semibold">${escapeHtml(filename)}</div>
+            ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
+          </div>
+        </div>
+        <span class="hora">${hora}</span>
+      `;
+    }
+    else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
+      const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
+      const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
+      const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
+      wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
+      const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
+      if (m.msg_id) {
+        (async ()=>{ try {
+          const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
+          const j = await r.json();
+          if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
+        } catch(e){ console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }})();
+      } else { label.textContent = "emoji indisponível"; }
+    }
+    else if (m.tipo === "system" || m.mensagem_final === "[system]") {
+      div.classList.add("system");
+      div.innerHTML = `
+        <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
+        <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
+        <div class="sys-meta mt-1"></div>
+        <span class="hora">${hora}</span>
+      `;
+      if (!m.msg_id) {
+        div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
+        const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
+      } else {
+        (async ()=>{ try{
+          const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
+          const j = await r.json();
+          const pill = div.querySelector(".sys-pill");
+          const bodyEl = div.querySelector(".sys-body");
+          const metaEl = div.querySelector(".sys-meta");
 
-      /* Ação de Responder (apenas para mensagens do cliente, não para system) */
-      if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
-        const actions = document.createElement("div");
-        actions.className = "actions";
-        const replyBtn = document.createElement("button");
-        replyBtn.className = "icon-btn";
-        replyBtn.title = "Responder";
-        replyBtn.textContent = "↩";
-        replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
-        actions.appendChild(replyBtn);
-        div.appendChild(actions);
+          if(!j.ok){ if (pill) pill.textContent = "erro"; bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento."; return; }
+          if (pill) pill.textContent = j.type || "system";
+          if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
+            bodyEl.innerHTML = `O cliente alterou o número:<br>
+              <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
+              <span class="mx-1">→</span>
+              <span class="font-semibold">${escapeHtml(j.wa_id)}</span>`;
+          } else {
+            bodyEl.textContent = j.body || "Evento de sistema recebido.";
+          }
+          const src = j.from || j.old_wa_id || "";
+          const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
+          metaEl.textContent = `${src ? "Origem: "+src : ""}${pid}`;
+        }catch(e){ console.error("Erro system:", e); const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro"; div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento."; }})();
       }
+    }
+    else {
+      div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+    }
 
-      chat.appendChild(div);
-      renderedKeys.add(key);
-      if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
-    });
+    // Ação de Responder (apenas mensagens do cliente)
+    if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
+      const actions = document.createElement("div");
+      actions.className = "actions";
+      const replyBtn = document.createElement("button");
+      replyBtn.className = "icon-btn";
+      replyBtn.title = "Responder";
+      replyBtn.textContent = "↩";
+      replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
+      actions.appendChild(replyBtn);
+      div.appendChild(actions);
+    }
 
-    if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
-  } catch (err) {
-    console.error("Erro ao carregar mensagens", err);
-  }
+    chat.appendChild(div);
+    renderedKeys.add(key);
+    if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
+  });
+
+  if (isNearBottom) chat.scrollTo({ top: chat.scrollHeight, behavior: "smooth" });
 }
 
-/* ======= Documento (novo) ======= */
+/* ======= Documento (carregar) ======= */
 async function carregarDocumento(div, btn, msg_id){
   btn.disabled = true; btn.textContent = "⏳ Carregando…";
   try{
@@ -723,9 +764,7 @@ async function carregarDocumento(div, btn, msg_id){
 
     if(mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)){
       const preview = document.createElement("embed");
-      preview.src = j.data_uri;
-      preview.type = mime;
-      preview.className = "w-[260px] h-[200px] rounded border";
+      preview.src = j.data_uri; preview.type = mime; preview.className = "w-[260px] h-[200px] rounded border";
       box.appendChild(preview);
 
       const meta = document.createElement("div");
@@ -773,7 +812,7 @@ function cancelarResposta(){
 
 /* ======= Enviar texto ======= */
 async function enviarMensagem(){
-  const texto=textarea.value.trim(); 
+  const texto=textarea.value.trim();
   if(!texto||!contatoSelecionado) return;
   userTyping=true; btnEnviar.disabled=true;
   try{
@@ -785,7 +824,8 @@ async function enviarMensagem(){
     if(json.ok){
       textarea.value=""; textarea.style.height="auto";
       cancelarResposta();
-      await carregarMensagens(true);
+      // força refresh imediato após enviar
+      await refreshLoop("enviar");
     } else { alert("Erro ao enviar: "+(json.erro||JSON.stringify(json))); }
   }catch(err){ console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network."); }
   finally{ userTyping=false; btnEnviar.disabled=textarea.value.trim().length===0; }
@@ -813,8 +853,9 @@ async function enviarPDF(event){
       method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)
     });
     const sendJson = await sendRes.json();
-    if(sendJson.ok){ await carregarMensagens(true); }
-    else { alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson))); }
+    if(sendJson.ok){
+      await refreshLoop("enviar-pdf");
+    } else { alert("Erro ao enviar PDF: "+(sendJson.erro||JSON.stringify(sendJson))); }
   }catch(err){
     console.error("Erro ao enviar PDF",err); alert("Erro ao enviar PDF");
   }finally{ event.target.value = ""; }
@@ -829,10 +870,17 @@ closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = 
 imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
 
 /* ======= Visibilidade ======= */
-document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(filtrosAplicados) carregarContatos(); if(contatoSelecionado) carregarMensagens(true); } });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ scheduleRefresh(1000); } else { clearTimeout(refreshTimer); } });
 
 /* ======= Inicial ======= */
-/* Não carrega contatos até aplicar filtros */
+// Não carrega contatos até aplicar filtros; agenda o motor
+scheduleRefresh();
+
+/* ======= Abrir conversa utilitário ======= */
+async function abrirConversaDirect(remetente, phoneId){
+  abrirConversa({ remetente, phone_id: phoneId, nome_exibicao: remetente });
+}
+
 </script>
 </body>
 </html>
