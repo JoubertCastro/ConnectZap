@@ -209,7 +209,7 @@
       }
     }
 
-    /* Ajudantes de acessibilidade (mantém número no textContent p/ busca) */
+    /* Acessibilidade */
     .sr-only {
       position: absolute;
       width: 1px;
@@ -259,10 +259,10 @@
           </div>
 
           <div class="space-y-2">
-            <div class="text-xs text-gray-500 font-medium">Período</div>
+            <div class="text-xs text-gray-500 font-medium">Ordenação</div>
             <div class="flex flex-wrap gap-2">
-              <button class="chip-btn" data-range="hoje">Hoje</button>
-              <button class="chip-btn" data-range="ontem">Ontem</button>
+              <button class="chip-btn" data-sort="desc">Mais recentes primeiro</button>
+              <button class="chip-btn" data-sort="asc">Mais antigos primeiro</button>
             </div>
             <div class="flex gap-2">
               <button id="btnAtualizar"
@@ -274,7 +274,8 @@
           </div>
 
           <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-            Selecione a <b>carteira</b> e o <b>período</b> (Hoje/ Ontem) e clique em <b>Atualizar fila</b>.
+            Selecione a <b>carteira</b>, escolha a <b>ordenação</b> e clique em <b>Atualizar fila</b>. Mostrando sempre
+            os <b>últimos 2 dias</b>.
           </div>
         </div>
       </div>
@@ -349,10 +350,10 @@
 
     let contatoSelecionado = null, phoneIdAtual = null;
     let respostaMsgId = null;
-    let periodo = "hoje"; // 'hoje' | 'ontem'
     let userTyping = false, isModalOpen = false;
+    let sortOrder = "desc"; // 'desc' (mais recentes) | 'asc' (mais antigos)
 
-    // incremento por data no chat
+    /* Mensagens render state */
     let lastTimestampMs = null;
     let lastDayRendered = null;
     let renderedKeys = new Set();
@@ -369,9 +370,9 @@
     const btnAtualizar = document.getElementById("btnAtualizar");
     const searchInput = document.getElementById("searchInput");
     const hintFiltro = document.getElementById("hintFiltro");
-    const chipBtns = [...document.querySelectorAll(".chip-btn")];
     const fltResumoEl = document.getElementById("fltResumo");
     const rangeResumo = document.getElementById("rangeResumo");
+    const sortBtns = [...document.querySelectorAll(".chip-btn[data-sort]")];
 
     /* ======= UX da textarea ======= */
     textarea.addEventListener("input", () => {
@@ -384,25 +385,16 @@
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!btnEnviar.disabled) enviarMensagem(); }
     });
 
-    /* ======= Período: Hoje/Ontem ======= */
-    function pad(n) { return String(n).padStart(2, "0"); }
-    function toYMD(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
-    function setPeriodo(k) {
-      periodo = (k === "ontem") ? "ontem" : "hoje";
-      chipBtns.forEach(b => b.classList.toggle("active", b.dataset.range === periodo));
-      atualizarResumo();
+    /* ======= Ordenação ======= */
+    function setSort(order) {
+      sortOrder = (order === "asc") ? "asc" : "desc";
+      sortBtns.forEach(b => b.classList.toggle("active", b.dataset.sort === sortOrder));
     }
-    function atualizarResumo() {
-      const now = new Date();
-      let a = new Date(), b = new Date();
-      if (periodo === "ontem") { a.setDate(now.getDate() - 1); b.setDate(now.getDate() - 1); }
-      fltResumoEl.textContent = `(carteira: ${filtroContaEl.value ? (filtroContaEl.value === "*" ? "todas" : "selecionada") : "—"} • ${toYMD(a)} → ${toYMD(b)})`;
-      rangeResumo.textContent = `(${periodo.toUpperCase()} • ${toYMD(a)} → ${toYMD(b)})`;
-    }
-    chipBtns.forEach(btn => btn.addEventListener("click", () => setPeriodo(btn.dataset.range)));
-    setPeriodo("hoje");
+    sortBtns.forEach(btn => btn.addEventListener("click", () => { setSort(btn.dataset.sort); }));
 
     /* ======= Helpers ======= */
+    function pad(n) { return String(n).padStart(2, "0"); }
+    function toYMD(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
     function gerarCor(nome) { let hash = 0; for (let i = 0; i < String(nome || 'U').length; i++) { hash = String(nome || 'U').charCodeAt(i) + ((hash << 5) - hash); } return `hsl(${hash % 360},70%,60%)`; }
     function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
     function isIncoming(m) {
@@ -414,6 +406,19 @@
       return s === "in";
     }
     function bytesToHuman(n) { if (!n && n !== 0) return ""; const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, s = n; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++; } return `${s.toFixed(s >= 10 || i === 0 ? 0 : 1)} ${u[i]}`; }
+    function isWithinLastTwoDays(iso) {
+      const d = new Date(iso);
+      const today = new Date();
+      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      return d.toDateString() === today.toDateString() || d.toDateString() === yesterday.toDateString();
+    }
+    function updateResumoLabels() {
+      const today = new Date();
+      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      fltResumoEl.textContent = `(carteira: ${filtroContaEl.value ? (filtroContaEl.value === "*" ? "todas" : "selecionada") : "—"} • últimos 2 dias: ${toYMD(yesterday)} → ${toYMD(today)})`;
+      rangeResumo.textContent = `(ÚLTIMOS 2 DIAS • ${toYMD(yesterday)} → ${toYMD(today)})`;
+    }
+    updateResumoLabels();
 
     /* ======= Contatos: busca local ======= */
     searchInput.addEventListener("input", () => filtrarContatos(searchInput.value));
@@ -442,13 +447,19 @@
           itens = itens.filter(c => String(c.phone_id) === String(carteirafiltro));
         }
 
-        // filtra período (hoje/ontem) no cliente
-        const isHoje = (d) => { const x = new Date(d); const t = new Date(); return x.toDateString() === t.toDateString(); };
-        const isOntem = (d) => { const x = new Date(d); const t = new Date(); t.setDate(t.getDate() - 1); return x.toDateString() === t.toDateString(); };
-        itens = itens.filter(c => c.data_hora && (periodo === 'hoje' ? isHoje(c.data_hora) : isOntem(c.data_hora)));
+        // filtra últimos 2 dias (hoje e ontem)
+        itens = itens.filter(c => c.data_hora && isWithinLastTwoDays(c.data_hora));
+
+        // ordenação
+        itens.sort((a, b) => {
+          const da = new Date(a.data_hora).getTime();
+          const db = new Date(b.data_hora).getTime();
+          return sortOrder === "asc" ? (da - db) : (db - da);
+        });
 
         renderContatos(itens);
         hintFiltro.classList.add("hidden");
+        updateResumoLabels();
       } catch (e) {
         console.error(e);
         contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
@@ -458,7 +469,7 @@
     function renderContatos(lista) {
       contatosUL.innerHTML = "";
       if (!Array.isArray(lista) || !lista.length) {
-        contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato no período.</li>`;
+        contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato nos últimos 2 dias.</li>`;
         return;
       }
       const frag = document.createDocumentFragment();
@@ -496,6 +507,10 @@
     }
     async function abrirConversa(c) {
       contatoSelecionado = c.remetente; phoneIdAtual = c.phone_id;
+
+      // LIMPA chat imediatamente para evitar confusão com conversa anterior
+      const chatEl = document.getElementById("chat");
+      chatEl.innerHTML = ""; // <<< limpeza imediata
       lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
 
       document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
@@ -892,6 +907,8 @@
       if (!document.hidden) { scheduleRefresh(1000); } else { clearTimeout(refreshTimer); }
     });
 
+    /* ======= Inicial ======= */
+    setSort("desc"); // padrão: mais recentes primeiro
   </script>
 </body>
 
