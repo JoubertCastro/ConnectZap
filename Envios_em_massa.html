@@ -11,7 +11,7 @@
     }
     *{box-sizing:border-box}
     body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
-      margin:0;padding:24px;background:var(--bg);color:var(--txt);}
+      margin:0;padding:24px;background:var(--bg);color:#222}
     .container{max-width:1200px;margin:0 auto}
     .card{background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
       box-shadow:0 6px 24px rgba(0,0,0,.04);}
@@ -25,7 +25,7 @@
     .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--outline);
       cursor:pointer;background:var(--primary);color:#fff;font-weight:600;}
     .btn:hover{background:var(--primary-d)}
-    .btn.secondary{background:#fff;color:var(--txt)}.btn.secondary:hover{background:#f8fafc}
+    .btn.secondary{background:#fff;color:#222}.btn.secondary:hover{background:#f8fafc}
     .btn.success{background:var(--success)}.btn.warn{background:var(--warn)}.btn.danger{background:var(--danger)}
     #previewArea{background:#f1f5f9;border:1px dashed #cbd5e1;padding:12px;border-radius:10px;white-space:pre-wrap;}
     #output{background:#0b1220;color:#d1e6ff;padding:12px;border-radius:10px;min-height:140px;font-family:ui-monospace,monospace;
@@ -39,14 +39,10 @@
     .hide{display:none !important}
     details summary{cursor:pointer}
     .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
-    /* Tabs */
-        .modal{
-      position:fixed; inset:0; background:rgba(0,0,0,.35);
-      display:none; align-items:center; justify-content:center; z-index:50;
-    }
-    .modal.open{ display:flex; }
-    /* opcional: evita que o conteúdo do modal estoure a tela */
-    .modal .card{ max-height:90vh; overflow:auto; }
+    /* Tabs & Modal */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50;}
+    .modal.open{display:flex;}
+    .modal .card{max-height:90vh; overflow:auto;}
     .tabs{display:flex;gap:8px;margin-bottom:16px}
     .tab-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--outline);background:#fff;cursor:pointer;font-weight:600}
     .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
@@ -72,7 +68,7 @@
           <div class="card">
             <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-09-27</span></h1>
             <div class="muted">
-              Restaura a pré-visualização com substituição de variáveis, mapeamento e custo; mantém os novos campos e o envio via backend.
+              Prévia com variáveis, mapeamento, custos e envio via backend.
             </div>
 
             <!-- Credenciais -->
@@ -80,7 +76,7 @@
             <div class="row">
               <div class="col-6">
                 <label for="token">Token de Acesso</label>
-                <input id="token" placeholder="Cole seu token (opcional se usar backend)" />
+                <input id="token" placeholder="Cole seu token (opcional para estratégias e templates)" />
               </div>
               <div class="col-6">
                 <label for="contaSelect">Conta</label>
@@ -98,7 +94,6 @@
                   <option value="serasa">Serasa</option>
                   <option value="mpvendas">Mercado Pago Vendas</option>
                 </select>
-
               </div>
               <div class="col-6">
                 <label for="wabaId">WhatsApp Business ID</label>
@@ -153,15 +148,15 @@
               </div>
             </div>
 
-            <!-- Configurações do HEADER (aparece conforme o formato) -->
+            <!-- Configurações do HEADER -->
             <div class="row" id="headerParams" style="margin-top:6px;">
               <div id="headerTextWrap" class="col-12 hide">
                 <div class="muted">
-                  Header <b>TEXT</b> com variáveis: faça o mapeamento em <b>Mapeamento de Variáveis</b> (abaixo).
+                  Header <b>TEXT</b> com variáveis: mapeie na seção <b>Mapeamento de Variáveis</b>.
                 </div>
               </div>
               <div class="col-12 hide" id="mediaLinkWrap">
-                <label for="mediaLink">Link da Mídia do Header (quando HEADER = IMAGE/VIDEO/DOCUMENT)</label>
+                <label for="mediaLink">Link da Mídia do Header (IMAGE/VIDEO/DOCUMENT)</label>
                 <input id="mediaLink" placeholder="https://... (acessível publicamente)" />
                 <div class="muted">Se informado, será enviado como header de mídia do template.</div>
               </div>
@@ -185,11 +180,20 @@
                     <input id="fileInput" type="file" accept=".csv,.txt" />
                   </div>
                   <div>
-                    <label for="estrategiaSelect">Estratégia (exemplo interno)</label>
+                    <label for="estrategiaSelect">Estratégia pré cadastrada</label>
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
-                      <option value="estrategia1">estrategia1</option>
-                      <option value="estrategia2">estrategia2</option>
+                      <optgroup label="Consulta no SIC">
+                        <option value="arc4u">Arc4U — Venc hoje</option>
+                        <option value="mercado_pago">Mercado Pago — Venc hoje</option>
+                        <option value="serasa">Serasa — Venc hoje</option>
+                      </optgroup>
+                      <optgroup label="Exemplos internos">
+                        <option value="estrategia1">Teste Karen</option>
+                        <option value="estrategia2">Teste Josimar e Larissa</option>
+                        <option value="estrategia3">Teste Matheus Ribeiro</option>
+                        <option value="estrategia4">Teste Hellen</option>
+                      </optgroup>
                     </select>
                   </div>
                 </div>
@@ -231,7 +235,7 @@
                     <input id="dataHoraEnvio" type="datetime-local" />
                   </div>
                 </div>
-                <div class="muted" style="margin-top:6px;">Para agendar, mantenha a aba aberta até o envio ocorrer (se usando envio local). Para backend, o agendamento é processado pelo servidor.</div>
+                <div class="muted" style="margin-top:6px;">Para backend, o agendamento é processado no servidor.</div>
               </div>
               <div class="col-6">
                 <h2>Ritmo / Lotes</h2>
@@ -296,42 +300,35 @@
         </div>
 
         <script>
-          // ---------------------------- Estado ----------------------------
+          // ================== Config de backends ==================
+          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";     // envios/agendamentos
+          const ESTRAT_API = "https://consultasic-production.up.railway.app";             // estratégias (seu backend)
+
+          // ================== Estado ==================
           const estrategias = {
             estrategia1: [
-              { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
-              { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
-              { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
+              { to: "5561982263659", vars: ["Karen", "100.00", "01/01/2025"] },
             ],
             estrategia2: [
-              { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
-              { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+              { to: "5561993242214", vars: ["Larissa", "100.00", "01/01/2025"] },
+              { to: "5561986092009", vars: ["Josimar", "100.00", "01/01/2025"] },
+            ],
+            estrategia3: [
+              { to: "5561999260399", vars: ["Matheus", "100.00", "01/01/2025"] },
+            ],
+            estrategia4: [
+              { to: "5561994013534", vars: ["Hellen", "100.00", "01/01/2025"] },
             ],
           };
 
-          let contatos = [];              // [{ to: '55...', vars: ['v1','v2', ...] }]
-          let csvHeaders = [];            // ['telefone','nome','codigo', ...]
-          let custoEmDolar = 0;           // custo estimado
-          let mapping = {                 // qual coluna alimenta cada {{n}}
-            body: [],                     // array de índices (0-based) para {{1}}, {{2}} ...
-            headerText: [],               // idem, para HEADER TEXT
-            urlButtons: {},               // { index: 0 => [colIdxFor{{1}}] }
-          };
-          let tmpl = {                    // metadados do template selecionado
-            name: "",
-            category: "",
-            components: [],
-            bodyText: "",
-            bodyVars: 0,
-            headerType: null,             // null | TEXT | IMAGE | VIDEO | DOCUMENT
-            headerText: "",
-            headerVars: 0,
-            urlButtons: [],               // lista de {index, url, hasVar}
-          };
+          let contatos = [];              // [{ to, vars[] }]
+          let csvHeaders = [];
+          let custoEmDolar = 0;
+          let mapping = { body: [], headerText: [], urlButtons: {} };
+          let tmpl = { name:"", category:"", components:[], bodyText:"", bodyVars:0, headerType:null, headerText:"", headerVars:0, urlButtons:[] };
+          let flags = { paused:false, cancelled:false };
 
-          let flags = { paused: false, cancelled: false };
-
-          // ---------------------------- Utils ----------------------------
+          // ================== Utils ==================
           const $ = (sel) => document.querySelector(sel);
           const byId = (id) => document.getElementById(id);
 
@@ -340,30 +337,24 @@
             out.textContent += (out.textContent ? "\n" : "") + line;
             out.scrollTop = out.scrollHeight;
           }
-
           function setProgress(done, total){
             const pct = total > 0 ? (done / total) * 100 : 0;
             byId('progressBar').style.width = pct.toFixed(1) + '%';
             byId('progressTxt').textContent = `${done}/${total}`;
           }
-
           function countPlaceholders(text){
             if(!text) return 0;
             const matches = text.match(/\{\{\d+\}\}/g);
             return matches ? new Set(matches).size : 0;
           }
-
           function substitutePlaceholders(text, values){
-            // values: array where index 0 is {{1}}, index 1 is {{2}}, ...
             if(!text) return '';
             return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
               const idx = parseInt(n,10) - 1;
               return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
             });
           }
-
           function parseCSV(text){
-            // CSV simples com , ou ; e aspas
             const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
             const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
             const rows = [];
@@ -386,17 +377,15 @@
             }
             return rows;
           }
-
           function ensureNumber(v, fallback=0){
             const n = Number(v);
             return Number.isFinite(n) ? n : fallback;
           }
-
           function escapeHtml(str=''){
             return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
           }
 
-          // ---------------------------- UI Helpers ----------------------------
+          // ================== UI Helpers ==================
           function renderSelect(id, varIndex, current){
             let opts = '';
             if(csvHeaders.length>0){
@@ -405,7 +394,6 @@
                 opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
               });
             }else{
-              // fallback pelo nº de colunas detectado
               const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
               for(let idx=0; idx<maxCols; idx++){
                 const sel = idx === current ? 'selected' : '';
@@ -478,7 +466,6 @@
               </div>
             `;
 
-            // listeners dos selects
             if(tmpl.headerType === 'TEXT'){
               for(let i=0;i<tmpl.headerVars;i++){
                 byId(`map-header-${i}`)?.addEventListener('change', (e) => {
@@ -490,7 +477,7 @@
             for(let i=0;i<tmpl.bodyVars;i++){
               byId(`map-body-${i}`)?.addEventListener('change', (e) => {
                 mapping.body[i] = ensureNumber(e.target.value, 0);
-                renderMapUI(); // refresh preview + UI
+                renderMapUI();
                 updatePreview();
               });
             }
@@ -505,7 +492,7 @@
             updatePreview();
           }
 
-          // ---------------------------- Custos ----------------------------
+          // ================== Custos ==================
           async function calcularCusto(){
             const categoria = byId('templateCategory').value;
             const qtd = contatos.length;
@@ -514,7 +501,6 @@
               byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
               return;
             }
-            // valores aproximados — ajuste conforme sua tabela vigente
             const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
             custoEmDolar = qtd * price;
             byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
@@ -522,42 +508,36 @@
             try{
               const res = await fetch('https://open.er-api.com/v6/latest/USD');
               const data = await res.json();
-              const brl = data?.rates?.BRL ?? 5.0; // fallback
+              const brl = data?.rates?.BRL ?? 5.0;
               const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
               const final = custoEmDolar * brl * taxa;
               byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
             }catch(e){
-              const brl = 5.0; // fallback
+              const brl = 5.0;
               const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
               const final = custoEmDolar * brl * taxa;
               byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
             }
           }
 
-          // ---------------------------- Pré-visualização (restaurada) ----------------------------
+          // ================== Pré-visualização ==================
           function updatePreview(){
             if(!tmpl.name){ byId('previewArea').textContent = '—'; return; }
 
-            // 1) Se o template tem exemplos no BODY, usar;
-            // 2) Caso contrário, se houver contatos + mapping, usar o primeiro contato;
-            // 3) Senão, mostrar o body cru.
             const body = tmpl.bodyText || '';
             let values = [];
 
-            // tenta exemplos do template
             const compBody = (tmpl.components || []).find(c => c.type === 'BODY');
             const exemploBody = compBody?.example?.body_text?.[0];
             if(Array.isArray(exemploBody) && exemploBody.length){
               values = exemploBody;
             }else if(contatos.length && tmpl.bodyVars > 0){
-              // fallback: primeiro contato
               const sample = contatos[0];
               values = (mapping.body || []).map(ci => sample.vars[ci] ?? '');
             }
 
             const bodyPreview = values.length ? substitutePlaceholders(body, values) : body;
 
-            // Header TEXT opcional
             let headerPreview = '';
             if(tmpl.headerType === 'TEXT'){
               const headerVals = [];
@@ -573,7 +553,6 @@
             if(headerPreview){ parts.push(`*${headerPreview}*\n`); }
             parts.push(bodyPreview);
 
-            // Botões URL com variável — exibe como anotação
             if(tmpl.urlButtons?.length){
               const btns = tmpl.urlButtons.map((b, i) => {
                 if(!b.hasVar) return `• Botão ${i+1}: URL fixa`;
@@ -588,7 +567,7 @@
             byId('previewArea').textContent = parts.join('\n\n');
           }
 
-          // ---------------------------- Templates ----------------------------
+          // ================== Templates ==================
           byId('btnBuscar').addEventListener('click', buscarTemplates);
           async function buscarTemplates(){
             const token = byId('token').value.trim();
@@ -645,7 +624,6 @@
             const body = tmpl.components.find(c => c.type === 'BODY');
             const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
 
-            // Reset UI header
             tmpl.headerType = null;
             tmpl.headerText = '';
             tmpl.headerVars = 0;
@@ -653,9 +631,8 @@
             byId('headerTextWrap').classList.add('hide');
             byId('mediaLinkWrap').classList.add('hide');
 
-            // Header
             if(header){
-              const fmt = header.format; // TEXT | IMAGE | VIDEO | DOCUMENT
+              const fmt = header.format;
               tmpl.headerType = fmt;
               byId('headerFormat').value = fmt || '';
               if(fmt === 'TEXT'){
@@ -667,11 +644,9 @@
               }
             }
 
-            // Body
             tmpl.bodyText = body?.text || '';
             tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
 
-            // Buttons (apenas URL com {{1}})
             tmpl.urlButtons = [];
             if(buttons && Array.isArray(buttons.buttons)){
               buttons.buttons.forEach((b, idx) => {
@@ -682,7 +657,6 @@
               });
             }
 
-            // Mapeamento padrão
             mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
             mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
             mapping.urlButtons = {};
@@ -692,15 +666,69 @@
             updatePreview();
           }
 
-          // ---------------------------- Contatos ----------------------------
-          byId('estrategiaSelect').addEventListener('change', function(){
+          // ================== Estratégias ONLINE (cliente via seu backend) ==================
+          async function carregarEstrategiaOnline(fonte){
+            const clientToken = (document.getElementById("token").value || "").trim();
+            const headers = clientToken ? { "X-Auth-Token": clientToken } : {};
+            // AGORA: 3 endpoints dedicados no seu backend
+            // arc4u -> /api/estrategias/arc4u
+            // mercado_pago -> /api/estrategias/mercado_pago
+            // serasa -> /api/estrategias/serasa
+            const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
+
+            const res = await fetch(url, { headers });
+            if(!res.ok){
+              const msg = await res.text();
+              throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
+            }
+            const data = await res.json();
+            const rows = Array.isArray(data?.dados) ? data.dados : [];
+
+            // Converte formato do backend para {to, vars}
+            // Padrão: vars = [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
+            // (ajuste a ordem se quiser)
+            contatos = rows.map(r => {
+              const tel = String(r?.TELEFONE || "").replace(/\D+/g,"");
+              const nome = (r?.PrimeiroNome ?? "").toString();
+              const valor = (r?.VALOR_PARCELA ?? "").toString();
+              const vcto  = (r?.VENCIMENTO ?? "").toString(); // já vem DD/MM/YYYY
+              return { to: tel, vars: [nome, valor, vcto] };
+            }).filter(c => c.to);
+
+            csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
+            document.getElementById('contagemContatos').textContent =
+              `✔️ Estratégia "${fonte}" (online) carregada com ${contatos.length} contato(s).`;
+
+            renderMapUI();
+            calcularCusto();
+          }
+
+          // ================== Contatos (arquivo e exemplos) ==================
+          byId('estrategiaSelect').addEventListener('change', async function(){
             const selected = this.value;
-            if(estrategias[selected]){
-              contatos = JSON.parse(JSON.stringify(estrategias[selected]));
-              csvHeaders = [];
-              byId('contagemContatos').textContent = `✔️ Estratégia "${selected}" carregada com ${contatos.length} contato(s).`;
-              renderMapUI();
-              calcularCusto();
+            try{
+              if(selected === "arc4u" || selected === "mercado_pago" || selected === "serasa"){
+                document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
+                await carregarEstrategiaOnline(selected);
+                return;
+              }
+              if(estrategias[selected]){
+                contatos = JSON.parse(JSON.stringify(estrategias[selected]));
+                csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
+                document.getElementById('contagemContatos').textContent =
+                  `✔️ Estratégia "${selected}" (exemplo) carregada com ${contatos.length} contato(s).`;
+                renderMapUI();
+                calcularCusto();
+              }else{
+                contatos = [];
+                csvHeaders = [];
+                document.getElementById('contagemContatos').textContent = 'Nenhum contato ainda.';
+                renderMapUI();
+                calcularCusto();
+              }
+            }catch(e){
+              console.error(e);
+              document.getElementById('contagemContatos').textContent = `❌ ${e.message}`;
             }
           });
 
@@ -712,7 +740,6 @@
               const rows = parseCSV(e.target.result);
               if(rows.length === 0) return;
 
-              // Detecta cabeçalho
               const head = rows[0].map(c => (c||'').toLowerCase());
               const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
 
@@ -724,7 +751,7 @@
                 vars: r.slice(1),
               })).filter(c => c.to);
 
-              byId('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
+              document.getElementById('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
               renderMapUI();
               calcularCusto();
             };
@@ -734,17 +761,17 @@
           byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
           byId('templateCategory').addEventListener('change', calcularCusto);
 
-          // ---------------------------- Agendamento UI ----------------------------
+          // ================== Agendamento UI ==================
           byId('modoEnvio').addEventListener('change', () => {
             const isAgendar = byId('modoEnvio').value === 'agendar';
             byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
           });
 
-          // ---------------------------- Envio via BACKEND (novo) ----------------------------
+          // ================== Envio via BACKEND ==================
           async function onEnviarClick(){
-            if(contatos.length === 0){ 
-              alert('Nenhum contato carregado.'); 
-              return; 
+            if(contatos.length === 0){
+              alert('Nenhum contato carregado.');
+              return;
             }
 
             const payload = {
@@ -771,12 +798,12 @@
               },
               contatos: contatos.map(c => ({
                 telefone: c.to,
-                conteudo: c.vars.join(",")   // simples para o worker processar
+                conteudo: c.vars.join(",")
               }))
             };
 
             try {
-              const res = await fetch("https://whatsapp-webhook-production-9a27.up.railway.app/api/envios", {
+              const res = await fetch(`${API_BASE}/api/envios`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -791,10 +818,9 @@
               log("❌ Falha de rede ao salvar disparo: " + e.message);
             }
           }
-
           document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
 
-          // Botões de pausa/retomar/cancelar — apenas UI (backend controla o envio)
+          // Pausa/retomar/cancelar (apenas UI)
           byId('btnPausar').addEventListener('click', () => {
             flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausa solicitada (se aplicável ao backend).');
           });
@@ -805,7 +831,7 @@
             flags.cancelled = true; log('🛑 Cancelamento solicitado (se aplicável ao backend).');
           });
 
-          // ---------------------------- Novo Envio ----------------------------
+          // Novo envio (reset leve)
           byId('btnNovoEnvio').addEventListener('click', () => {
             contatos = [];
             csvHeaders = [];
@@ -819,35 +845,30 @@
             byId('contagemContatos').textContent = 'Nenhum contato ainda.';
             renderMapUI();
             calcularCusto();
-            log('🔄 Novo envio iniciado, mantenha suas credenciais preenchidas se for buscar templates.');
+            log('🔄 Novo envio iniciado — mantenha suas credenciais se for buscar templates.');
           });
-          // --- Preencher IDs ao selecionar conta ---
+
+          // IDs por conta
           const contas = {
             connectzap:   { phone: "828473960349364", waba: "1478379640276127" },
             bancopan:     { phone: "805610009301153", waba: "25205080369078050" },
             recoverypj:   { phone: "727586317113885", waba: "844006574616797" },
-            recoverypf1:   { phone: "864779140046932", waba: "1341565711046522" },
-            recoverypf2:   { phone: "802977069563598", waba: "825347669829173" },
-            mpcobranca1:   { phone: "873637622491517", waba: "1462086308422656" },
-            mpcobranca2:   { phone: "821562937700669", waba: "1989071868573988" },
+            recoverypf1:  { phone: "864779140046932", waba: "1341565711046522" },
+            recoverypf2:  { phone: "802977069563598", waba: "825347669829173" },
+            mpcobranca1:  { phone: "873637622491517", waba: "1462086308422656" },
+            mpcobranca2:  { phone: "821562937700669", waba: "1989071868573988" },
             divzero:      { phone: "779797401888141", waba: "1714740535849713" },
             arc4u:        { phone: "829210283602406", waba: "757728786687884" },
             serasa:       { phone: "713021321904495", waba: "803987045361450" },
             mpvendas:     { phone: "803535039503723", waba: "760293050103603" }
           };
-
           document.getElementById("contaSelect").addEventListener("change", function() {
             const conta = contas[this.value];
-            if (conta) {
-              document.getElementById("phoneId").value = conta.phone;
-              document.getElementById("wabaId").value = conta.waba;
-            } else {
-              document.getElementById("phoneId").value = "";
-              document.getElementById("wabaId").value = "";
-            }
+            document.getElementById("phoneId").value = conta?.phone || "";
+            document.getElementById("wabaId").value  = conta?.waba  || "";
           });
-          
-          // ---------------------------- Baixar Log ----------------------------
+
+          // Baixar log
           byId('btnBaixarLog').addEventListener('click', () => {
             const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
@@ -960,9 +981,8 @@
         </div>
       </div>
 
-
 <script>
-  // ==== Tabs (inalterado) ====
+  // ==== Tabs ====
   document.querySelectorAll(".tab-btn").forEach(btn=>{
     btn.addEventListener("click",()=>{
       document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
@@ -973,13 +993,11 @@
     });
   });
 
-  // ==== Config ====
-  const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";
   const PAGE_SIZE = 10;
 
   // ==== State da aba Agendamentos ====
-  let agRaw = [];         // dados crus do /api/envios
-  let agFiltered = [];    // filtrados por busca/modo/status
+  let agRaw = [];
+  let agFiltered = [];
   let agPage = 1;
 
   // ==== Helpers ====
@@ -987,37 +1005,29 @@
     `<span class="pill" style="${kind==='ok'?'background:#ecfdf5;border-color:#bbf7d0;color:#065f46':kind==='warn'?'background:#fff7ed;border-color:#fed7aa;color:#9a3412':kind==='err'?'background:#fef2f2;border-color:#fecaca;color:#991b1b':'background:#eef2ff;border-color:#c7d2fe;color:#3730a3'}">${text}</span>`;
 
   const pad2 = n => String(n).padStart(2,"0");
-
   function toLocalISO(dtStr){
-    // Espera "YYYY-MM-DDTHH:MM:SS" (ou com Z) e devolve "YYYY-MM-DDTHH:MM"
     if(!dtStr) return "";
     const d = new Date(dtStr);
     const y = d.getFullYear(), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
     const hh = pad2(d.getHours()), mm = pad2(d.getMinutes());
     return `${y}-${m}-${day}T${hh}:${mm}`;
   }
-
   function fmtDateTime(dtStr){
     if(!dtStr) return "—";
     const d = new Date(dtStr);
     return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
   }
-
   function progressBar(done, total){
     const pct = total>0 ? Math.round((done/total)*100) : 0;
     return `
-      <div class="bar" title="${pct}%">
-        <span style="width:${pct}%"></span>
-      </div>
+      <div class="bar" title="${pct}%"><span style="width:${pct}%"></span></div>
       <div class="muted">${done}/${total}</div>
     `;
   }
-
   function computeDone(e){
     const t = e.totais||{};
     return (t.enviados||0) + (t.erros||0) + (t.cancelados||0);
   }
-
   function statusBadge(s){
     switch(s){
       case "agendado": return fmtBadge("Agendado");
@@ -1028,7 +1038,6 @@
       default: return fmtBadge(s || "—");
     }
   }
-
   function renderTotals(list){
     const box = document.getElementById("agTotals");
     if(!list.length){ box.innerHTML = `<div class="col-12 muted">Nenhum agendamento.</div>`; return; }
@@ -1062,19 +1071,16 @@
     agPage = 1;
     renderTable();
   }
-
   function pageSlice(){
     const start = (agPage-1)*PAGE_SIZE;
     return agFiltered.slice(start, start+PAGE_SIZE);
   }
-
   function renderPagination(){
     const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
     document.getElementById("agPageInfo").textContent = `Página ${agPage}/${totalPages}`;
     document.getElementById("agPrev").disabled = agPage<=1;
     document.getElementById("agNext").disabled = agPage>=totalPages;
   }
-
   document.getElementById("agPrev").addEventListener("click", ()=>{ if(agPage>1){ agPage--; renderTable(); } });
   document.getElementById("agNext").addEventListener("click", ()=>{
     const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
@@ -1145,7 +1151,7 @@
       const data = await res.json();
 
       agRaw = Array.isArray(data) ? data : [];
-      applyFilters(); // isso renderiza também
+      applyFilters();
     }catch(err){
       console.error(err);
       tbody.innerHTML=`<tr><td colspan="7" class="muted">Erro ao carregar agendamentos</td></tr>`;
@@ -1165,7 +1171,7 @@
   function openModal(envio){
     editingId = envio.id;
     document.getElementById("mNome").value = envio.nome_disparo || "";
-    document.getElementById("mGrupo").value = envio.grupo_trabalho || "";
+    document.getElementById("mGrupo").value = envio.grupo_trabalho || ""
     document.getElementById("mModo").value = envio.modo_envio || "imediato";
     document.getElementById("mDataHora").value = envio.data_hora_agendamento ? toLocalISO(envio.data_hora_agendamento) : "";
     document.getElementById("mTam").value = envio.tamanho_lote ?? "";
@@ -1174,19 +1180,11 @@
     toggleModalDate();
     modal.classList.add("open");
   }
-
-  function closeModal(){
-    modal.classList.remove("open");
-    editingId = null;
-  }
-  // fechar clicando fora
+  function closeModal(){ modal.classList.remove("open"); editingId = null; }
   modal.addEventListener("click", (e) => { if(e.target === modal) closeModal(); });
-  // fechar com Esc
   document.addEventListener("keydown", (e) => {
     if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
   });
-
-
 
   function toggleModalDate(){
     const wrap = document.getElementById("mDataWrap");
@@ -1220,13 +1218,12 @@
     }
   });
 
-  // ==== Ações expostas no escopo global ====
+  // ==== Ações globais ====
   window.editarEnvio = (id)=>{
     const e = agRaw.find(x=>x.id===id);
     if(!e){ alert("Envio não encontrado"); return; }
     openModal(e);
   };
-
   window.excluirEnvio = async (id)=>{
     if(!confirm("Excluir este envio? Essa ação é irreversível.")) return;
     try{
@@ -1239,7 +1236,6 @@
       console.error(e);
     }
   };
-
   window.pausarEnvio = async (id)=>{
     if(!confirm("Pausar envio? Itens pendentes irão para 'pausado'.")) return;
     try{
@@ -1252,7 +1248,6 @@
       console.error(e);
     }
   };
-
   window.retomarEnvio = async (id)=>{
     try{
       const res = await fetch(`${API_BASE}/api/envios/${id}/resume`, { method:"PATCH" });
@@ -1264,7 +1259,6 @@
       console.error(e);
     }
   };
-
   window.cancelarEnvio = async (id)=>{
     if(!confirm("Cancelar envio? Pendentes/pausados serão marcados como 'cancelado'.")) return;
     try{
@@ -1290,7 +1284,7 @@
   function stopAgAutoRefresh(){ if(agInterval) clearInterval(agInterval); }
   startAgAutoRefresh();
 
-  // Primeira carga se o usuário já estiver na aba
+  // Primeira carga se a aba já estiver ativa
   if(document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos'){
     carregarAgendamentos(true);
   }
