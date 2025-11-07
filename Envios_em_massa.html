@@ -39,7 +39,6 @@
     .hide{display:none !important}
     details summary{cursor:pointer}
     .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
-    /* Tabs & Modal */
     .modal{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50;}
     .modal.open{display:flex;}
     .modal .card{max-height:90vh; overflow:auto;}
@@ -75,8 +74,8 @@
             <h2>Credenciais</h2>
             <div class="row">
               <div class="col-6">
-                <label for="token">Token de Acesso</label>
-                <input id="token" placeholder="Cole seu token (opcional para estratégias e templates)" />
+                <label for="token">Token de Acesso (apenas para ENVIOS)</label>
+                <input id="token" placeholder="Cole seu token" />
               </div>
               <div class="col-6">
                 <label for="contaSelect">Conta</label>
@@ -301,8 +300,11 @@
 
         <script>
           // ================== Config de backends ==================
-          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";     // envios/agendamentos
-          const ESTRAT_API = "https://consultasic-production.up.railway.app";             // estratégias (seu backend)
+          const API_BASE   = "https://whatsapp-webhook-production-9a27.up.railway.app"; // envios/agendamentos
+          const ESTRAT_API = "https://consultasic-production.up.railway.app";           // estratégias (seu backend)
+
+          // Token do BACKEND para carregar estratégias (NÃO é o token digitado na UI)
+          const ESTRAT_BACKEND_TOKEN = "SEU_TOKEN_DE_BACKEND_AQUI";
 
           // ================== Estado ==================
           const estrategias = {
@@ -666,16 +668,13 @@
             updatePreview();
           }
 
-          // ================== Estratégias ONLINE (cliente via seu backend) ==================
+          // ================== Estratégias ONLINE (sempre com token do backend) ==================
           async function carregarEstrategiaOnline(fonte){
-            const clientToken = (document.getElementById("token").value || "").trim();
-            const headers = clientToken ? { "X-Auth-Token": clientToken } : {};
-            // AGORA: 3 endpoints dedicados no seu backend
-            // arc4u -> /api/estrategias/arc4u
-            // mercado_pago -> /api/estrategias/mercado_pago
-            // serasa -> /api/estrategias/serasa
-            const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
+            const headers = ESTRAT_BACKEND_TOKEN
+              ? { "Authorization": `Bearer ${ESTRAT_BACKEND_TOKEN}` }
+              : {};
 
+            const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
             const res = await fetch(url, { headers });
             if(!res.ok){
               const msg = await res.text();
@@ -684,14 +683,12 @@
             const data = await res.json();
             const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            // Converte formato do backend para {to, vars}
-            // Padrão: vars = [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
-            // (ajuste a ordem se quiser)
+            // Converte para {to, vars} — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
             contatos = rows.map(r => {
-              const tel = String(r?.TELEFONE || "").replace(/\D+/g,"");
-              const nome = (r?.PrimeiroNome ?? "").toString();
+              const tel   = String(r?.TELEFONE || "").replace(/\D+/g,"");
+              const nome  = (r?.PrimeiroNome ?? "").toString();
               const valor = (r?.VALOR_PARCELA ?? "").toString();
-              const vcto  = (r?.VENCIMENTO ?? "").toString(); // já vem DD/MM/YYYY
+              const vcto  = (r?.VENCIMENTO ?? "").toString();
               return { to: tel, vars: [nome, valor, vcto] };
             }).filter(c => c.to);
 
