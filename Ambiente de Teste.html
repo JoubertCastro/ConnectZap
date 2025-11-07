@@ -187,10 +187,10 @@
                         <option value="arc4u">Arc4U — hoje</option>
                         <option value="mercado_pago">Mercado Pago — hoje</option>
                         <option value="serasa">Serasa — hoje</option>
-                      </optgroup>
+                      <!--/optgroup>
                       <optgroup label="Exemplos internos">
                         <option value="estrategia1">estrategia1</option>
-                        <option value="estrategia2">estrategia2</option>
+                        <option value="estrategia2">estrategia2</option-->
                       </optgroup>
                     </select>
                   </div>
@@ -299,21 +299,19 @@
 
         <script>
           // ================== Config de backends ==================
-          // Seu backend principal (envios / agendamentos)
-          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";
-          // Novo backend dedicado às estratégias
-          const ESTRAT_API = "https://consultasic-production.up.railway.app";
+          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";     // envios/agendamentos
+          const ESTRAT_API = "https://consultasic-production.up.railway.app";             // estratégias (seu backend)
 
           // ================== Estado ==================
           const estrategias = {
             estrategia1: [
-              { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
-              { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
-              { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
+              { to: "5561993742606", vars: ["Joubert", "250.23", "13/08/2025"] },
+              { to: "5592991029242", vars: ["Savio", "120.00", "25/09/2025"] },
+              { to: "5561996777300", vars: ["Ayrton", "89.90", "01/10/2025"] },
             ],
             estrategia2: [
-              { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
-              { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+              { to: "5561993742601", vars: ["Joubert", "250.23", "13/08/2025"] },
+              { to: "5561993742602", vars: ["JoubertC", "250.23", "13/08/2025"] },
             ],
           };
 
@@ -662,11 +660,15 @@
             updatePreview();
           }
 
-          // ================== Estratégias ONLINE (cliente) ==================
+          // ================== Estratégias ONLINE (cliente via seu backend) ==================
           async function carregarEstrategiaOnline(fonte){
             const clientToken = (document.getElementById("token").value || "").trim();
             const headers = clientToken ? { "X-Auth-Token": clientToken } : {};
-            const url = `${ESTRAT_API}/api/estrategias/hoje?fonte=${encodeURIComponent(fonte)}`;
+            // AGORA: 3 endpoints dedicados no seu backend
+            // arc4u -> /api/estrategias/arc4u
+            // mercado_pago -> /api/estrategias/mercado_pago
+            // serasa -> /api/estrategias/serasa
+            const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
 
             const res = await fetch(url, { headers });
             if(!res.ok){
@@ -674,14 +676,20 @@
               throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
             }
             const data = await res.json();
-            if(!data.ok) throw new Error(data.erro || "Erro desconhecido");
+            const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            contatos = (data.contatos || []).map(c => ({
-              to: String(c.to || "").replace(/\D+/g,""),
-              vars: Array.isArray(c.vars) ? c.vars.map(v => String(v)) : []
-            })).filter(c => c.to);
+            // Converte formato do backend para {to, vars}
+            // Padrão: vars = [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
+            // (ajuste a ordem se quiser)
+            contatos = rows.map(r => {
+              const tel = String(r?.TELEFONE || "").replace(/\D+/g,"");
+              const nome = (r?.PrimeiroNome ?? "").toString();
+              const valor = (r?.VALOR_PARCELA ?? "").toString();
+              const vcto  = (r?.VENCIMENTO ?? "").toString(); // já vem DD/MM/YYYY
+              return { to: tel, vars: [nome, valor, vcto] };
+            }).filter(c => c.to);
 
-            csvHeaders = [];
+            csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
             document.getElementById('contagemContatos').textContent =
               `✔️ Estratégia "${fonte}" (online) carregada com ${contatos.length} contato(s).`;
 
@@ -700,7 +708,7 @@
               }
               if(estrategias[selected]){
                 contatos = JSON.parse(JSON.stringify(estrategias[selected]));
-                csvHeaders = [];
+                csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
                 document.getElementById('contagemContatos').textContent =
                   `✔️ Estratégia "${selected}" (exemplo) carregada com ${contatos.length} contato(s).`;
                 renderMapUI();
@@ -979,7 +987,6 @@
     });
   });
 
-  // (Reutiliza API_BASE declarado no script acima)
   const PAGE_SIZE = 10;
 
   // ==== State da aba Agendamentos ====
@@ -1169,7 +1176,9 @@
   }
   function closeModal(){ modal.classList.remove("open"); editingId = null; }
   modal.addEventListener("click", (e) => { if(e.target === modal) closeModal(); });
-  document.addEventListener("keydown", (e) => { if(e.key === "Escape" && modal.classList.contains("open")) closeModal(); });
+  document.addEventListener("keydown", (e) => {
+    if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
+  });
 
   function toggleModalDate(){
     const wrap = document.getElementById("mDataWrap");
