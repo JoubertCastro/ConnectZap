@@ -1,915 +1,1278 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Conversas WhatsApp — Supervisor</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <title>Envio de Mensagens WhatsApp — ConnectZap</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* ========= Bolhas de mensagem (ajustadas) ========= */
-    .msg {
-      display: inline-block;
-      max-width: min(70%, 560px);
-      padding: 10px 14px 18px;
-      margin: 6px 0;
-      position: relative;
-      border-radius: 18px;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .10);
-      transition: background .18s ease;
+    :root{
+      --bg:#f5f7fb;--card:#ffffff;--txt:#222;--muted:#6b7280;--primary:#2563eb;--primary-d:#1d4ed8;
+      --success:#16a34a;--warn:#d97706;--danger:#dc2626;--outline:#e5e7eb;--radius:12px;
     }
-
-    @media (max-width: 768px) {
-      .msg {
-        max-width: 86%;
-      }
-    }
-
-    .msg.enviada {
-      align-self: flex-end;
-      background: linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
-      color: #111827;
-    }
-
-    .msg.recebida {
-      align-self: flex-start;
-      background: var(--bubble-in-bg, #fff);
-      border: 1px solid var(--bubble-in-border, #e2e8f0);
-    }
-
-    .msg .hora {
-      position: absolute;
-      right: 8px;
-      bottom: 4px;
-      font-size: 11px;
-      color: #4b5563;
-    }
-
-    /* Caudas dos balões */
-    .msg.enviada::after,
-    .msg.recebida::after {
-      content: "";
-      position: absolute;
-      bottom: 0;
-      width: 14px;
-      height: 14px;
-      clip-path: polygon(0 0, 100% 0, 0 100%);
-    }
-
-    .msg.enviada::after {
-      right: -7px;
-      background: linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
-    }
-
-    .msg.recebida::after {
-      left: -7px;
-      background: var(--bubble-in-bg, #fff);
-      border-left: 1px solid var(--bubble-in-border, #e2e8f0);
-      border-bottom: 1px solid var(--bubble-in-border, #e2e8f0);
-    }
-
-    /* Ações dentro do balão */
-    .msg .actions {
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      display: flex;
-      gap: 6px;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .18s ease;
-    }
-
-    .msg:hover .actions,
-    .msg:focus-within .actions {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .icon-btn {
-      font-size: 14px;
-      color: #64748b;
-      cursor: pointer;
-    }
-
-    .icon-btn:hover {
-      color: #2563eb;
-    }
-
-    /* Mídia */
-    .msg img.thumb {
-      max-width: 280px;
-      height: auto;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      cursor: pointer;
-    }
-
-    /* ========= Cartões de sistema ========= */
-    .msg.system {
-      background: #f8fafc;
-      border: 1px dashed #cbd5e1;
-      color: #0f172a;
-    }
-
-    .msg.system::after {
-      display: none;
-    }
-
-    .sys-title {
-      font-weight: 700;
-      font-size: .9rem;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-    }
-
-    .sys-body {
-      font-size: .9rem;
-      color: #334155;
-    }
-
-    .sys-meta {
-      font-size: .75rem;
-      color: #64748b;
-    }
-
-    .sys-pill {
-      display: inline-block;
-      font-size: .7rem;
-      font-weight: 700;
-      padding: .1rem .4rem;
-      border-radius: 9999px;
-      background: #eef2ff;
-      color: #3730a3;
-    }
-
-    /* Extras */
-    .dia {
-      text-align: center;
-      margin: 12px 0;
-      font-size: 12px;
-      color: #888;
-    }
-
-    .contato-selected {
-      background: #f0f9ff !important;
-    }
-
-    mark {
-      background: #ffef6b;
-      color: #000;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-
-    #digitando {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-
-    /* Bloco de filtros compacto */
-    .filter-card {
-      border: 1px solid #e2e8f0;
-      border-radius: .75rem;
-      background: #fff;
-    }
-
-    .filter-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: .6rem .8rem;
-      font-weight: 700;
-      color: #334155;
-    }
-
-    .chip-btn {
-      padding: .4rem .7rem;
-      font-size: .8rem;
-      border-radius: .6rem;
-      border: 1px solid #e2e8f0;
-      background: #fff;
-      color: #334155;
-      font-weight: 600;
-    }
-
-    .chip-btn.active {
-      background: #1d4ed8;
-      color: #fff;
-      border-color: #1d4ed8;
-    }
-
-    @media (max-width: 768px) {
-      aside {
-        width: 42%;
-      }
-    }
-
-    /* Acessibilidade */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
+    *{box-sizing:border-box}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,"Helvetica Neue",Arial;
+      margin:0;padding:24px;background:var(--bg);color:#222}
+    .container{max-width:1200px;margin:0 auto}
+    .card{background:var(--card);border:1px solid var(--outline);padding:18px;border-radius:var(--radius);
+      box-shadow:0 6px 24px rgba(0,0,0,.04);}
+    h1{margin:0 0 10px;font-size:22px}
+    h2{font-size:16px;margin:18px 0 8px;color:var(--muted);font-weight:600}
+    label{display:block;font-weight:600;margin:10px 0 6px}
+    input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--outline);border-radius:8px;background:#fff;}
+    textarea{resize:vertical;min-height:72px}
+    .row{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;align-items:start}
+    .col-4{grid-column:span 4}.col-6{grid-column:span 6}.col-8{grid-column:span 8}.col-12{grid-column:span 12}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--outline);
+      cursor:pointer;background:var(--primary);color:#fff;font-weight:600;}
+    .btn:hover{background:var(--primary-d)}
+    .btn.secondary{background:#fff;color:#222}.btn.secondary:hover{background:#f8fafc}
+    .btn.success{background:var(--success)}.btn.warn{background:var(--warn)}.btn.danger{background:var(--danger)}
+    #previewArea{background:#f1f5f9;border:1px dashed #cbd5e1;padding:12px;border-radius:10px;white-space:pre-wrap;}
+    #output{background:#0b1220;color:#d1e6ff;padding:12px;border-radius:10px;min-height:140px;font-family:ui-monospace,monospace;
+      white-space:pre-wrap;overflow-y:auto;}
+    .muted{color:var(--muted);font-size:12px}
+    .bar{background:#e5e7eb;border-radius:999px;height:12px;overflow:hidden}
+    .bar>span{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#22c55e);transition:width .3s ease}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:700;border:1px solid #c7d2fe;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .hide{display:none !important}
+    details summary{cursor:pointer}
+    .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
+    /* Tabs & Modal */
+    .modal{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50;}
+    .modal.open{display:flex;}
+    .modal .card{max-height:90vh; overflow:auto;}
+    .tabs{display:flex;gap:8px;margin-bottom:16px}
+    .tab-btn{padding:10px 16px;border-radius:8px;border:1px solid var(--outline);background:#fff;cursor:pointer;font-weight:600}
+    .tab-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:14px}
+    th{background:#f1f5f9;text-transform:uppercase;font-size:12px;color:#64748b}
   </style>
 </head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Envio de Mensagens WhatsApp <span class="pill">ConnectZap</span></h1>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="novo">➕ Novo envio</button>
+        <button class="tab-btn" data-tab="agendamentos">📅 Agendamentos</button>
+      </div>
 
-<body class="h-screen flex bg-gray-100">
-
-  <!-- =========== SIDEBAR =========== -->
-  <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
-    <!-- Filtros -->
-    <div class="p-3 border-b">
-      <div class="filter-card">
-        <div class="filter-title">
-          <span class="summary-label">
-            <span>Filtros</span>
-            <span id="fltResumo" class="text-xs font-normal text-slate-500"></span>
-          </span>
-        </div>
-
-        <div class="p-3 space-y-3">
-          <div class="space-y-1">
-            <label class="text-xs text-gray-500 font-medium">Carteira</label>
-            <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
-              <option value="">— selecione —</option>
-              <option value="*">Todas as contas</option>
-              <option value="828473960349364">ConnectZap</option>
-              <option value="805610009301153">Banco PAN</option>
-              <option value="727586317113885">Recovery PJ</option>
-              <option value="864779140046932">Recovery PF 1</option>
-              <option value="802977069563598">Recovery PF 2</option>
-              <option value="873637622491517">Mercado Pago Cobrança 1</option>
-              <option value="821562937700669">Mercado Pago Cobrança 2</option>
-              <option value="779797401888141">DivZero</option>
-              <option value="829210283602406">Arc4U</option>
-              <option value="713021321904495">Serasa</option>
-              <option value="803535039503723">Mercado Pago Vendas</option>
-            </select>
-          </div>
-
-          <div class="space-y-2">
-            <div class="text-xs text-gray-500 font-medium">Ordenação</div>
-            <div class="flex flex-wrap gap-2">
-              <button class="chip-btn" data-sort="desc">Mais recentes primeiro</button>
-              <button class="chip-btn" data-sort="asc">Mais antigos primeiro</button>
+      <!-- Aba: Novo envio -->
+      <div id="tab-novo" class="tab-content active">
+        <div class="container">
+          <div class="card">
+            <h1>Envio de Mensagens WhatsApp com Template <span class="pill">versão 2025-09-27</span></h1>
+            <div class="muted">
+              Prévia com variáveis, mapeamento, custos e envio via backend.
             </div>
-            <div class="flex gap-2">
-              <button id="btnAtualizar"
-                class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Atualizar
-                fila</button>
-              <input id="searchInput" type="text" placeholder="🔍 filtrar na lista..."
-                class="flex-1 p-2 rounded-md border text-sm" autocomplete="off" />
+
+            <!-- Credenciais -->
+            <h2>Credenciais</h2>
+            <div class="row">
+              <div class="col-6">
+                <label for="token">Token de Acesso</label>
+                <input id="token" placeholder="Cole seu token (opcional para estratégias e templates)" />
+              </div>
+              <div class="col-6">
+                <label for="contaSelect">Conta</label>
+                <select id="contaSelect">
+                  <option value="">-- Selecione a conta --</option>
+                  <option value="connectzap">ConnectZap</option>
+                  <option value="bancopan">Banco PAN</option>
+                  <option value="recoverypj">Recovery PJ</option>
+                  <option value="recoverypf1">Recovery PF 1</option>
+                  <option value="recoverypf2">Recovery PF 2</option>
+                  <option value="mpcobranca1">Mercado Pago Cobrança 1</option>
+                  <option value="mpcobranca2">Mercado Pago Cobrança 2</option>
+                  <option value="divzero">DivZero</option>
+                  <option value="arc4u">Arc4U</option>
+                  <option value="serasa">Serasa</option>
+                  <option value="mpvendas">Mercado Pago Vendas</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label for="wabaId">WhatsApp Business ID</label>
+                <input id="wabaId" readonly />
+              </div>
+              <div class="col-6">
+                <label for="phoneId">Phone Number ID</label>
+                <input id="phoneId" readonly />
+              </div>
+              <div class="col-6">
+                <label for="graphVersion">Versão Graph API</label>
+                <select id="graphVersion">
+                  <option value="v24.0" selected>v24.0</option>
+                  <option value="v23.0">v23.0</option>
+                  <option value="v22.0">v22.0</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
-            Selecione a <b>carteira</b>, escolha a <b>ordenação</b> e clique em <b>Atualizar fila</b>. Mostrando sempre
-            os <b>últimos 2 dias</b>.
-          </div>
-        </div>
-      </div>
-    </div>
+            <!-- Buscar templates -->
+            <div class="row" style="margin-top:12px;align-items:end">
+              <div class="col-6">
+                <button class="btn" id="btnBuscar">🔍 Buscar templates aprovados</button>
+              </div>
+              <div class="col-6">
+                <label for="templateSelect">Template</label>
+                <select id="templateSelect">
+                  <option value="">-- Selecione um template --</option>
+                </select>
+              </div>
+            </div>
 
-    <!-- Lista de contatos -->
-    <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+            <!-- Campos do Template -->
+            <div class="row" style="margin-top:6px;">
+              <div class="col-6">
+                <label for="templateName">Nome do Template</label>
+                <input id="templateName" readonly />
+              </div>
+              <div class="col-3">
+                <label for="templateCategory">Categoria</label>
+                <select id="templateCategory">
+                  <option value="">-- Selecione --</option>
+                  <option value="authentication">Authentication</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="utility">Utility</option>
+                  <option value="service">Service</option>
+                </select>
+              </div>
+              <div class="col-3">
+                <label for="headerFormat">Formato de Header</label>
+                <input id="headerFormat" readonly />
+              </div>
+            </div>
 
-    <div class="p-2 text-xs text-gray-500 border-t">
-      A lista <b>não</b> atualiza automaticamente. Use “Atualizar fila”.
-    </div>
-  </aside>
+            <!-- Configurações do HEADER -->
+            <div class="row" id="headerParams" style="margin-top:6px;">
+              <div id="headerTextWrap" class="col-12 hide">
+                <div class="muted">
+                  Header <b>TEXT</b> com variáveis: mapeie na seção <b>Mapeamento de Variáveis</b>.
+                </div>
+              </div>
+              <div class="col-12 hide" id="mediaLinkWrap">
+                <label for="mediaLink">Link da Mídia do Header (IMAGE/VIDEO/DOCUMENT)</label>
+                <input id="mediaLink" placeholder="https://... (acessível publicamente)" />
+                <div class="muted">Se informado, será enviado como header de mídia do template.</div>
+              </div>
+            </div>
 
-  <!-- =========== MAIN CHAT =========== -->
-  <main class="flex-1 flex flex-col">
-    <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
-      <div class="flex items-center space-x-3 min-w-0">
-        <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
-        <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
-      </div>
-      <div id="rangeResumo" class="text-xs text-gray-500"></div>
-    </div>
+            <!-- Pré-visualização -->
+            <div class="row" style="margin-top:6px;">
+              <div class="col-12">
+                <h2>Pré-visualização</h2>
+                <div id="previewArea">Selecione um template para ver a prévia aqui.</div>
+              </div>
+            </div>
 
-    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
-      <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
-    </div>
-    <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
+            <!-- Contatos + Estratégia + Mapeamento -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Contatos</h2>
+                <div class="grid-2">
+                  <div>
+                    <label for="fileInput">Arquivo (.csv ou .txt)</label>
+                    <input id="fileInput" type="file" accept=".csv,.txt" />
+                  </div>
+                  <div>
+                    <label for="estrategiaSelect">Estratégia (cliente ou exemplo)</label>
+                    <select id="estrategiaSelect">
+                      <option value="">-- Nenhuma --</option>
+                      <optgroup label="Online (cliente)">
+                        <option value="arc4u">Arc4U — hoje</option>
+                        <option value="mercado_pago">Mercado Pago — hoje</option>
+                        <option value="serasa">Serasa — hoje</option>
+                      </optgroup>
+                      <optgroup label="Exemplos internos">
+                        <option value="estrategia1">estrategia1</option>
+                        <option value="estrategia2">estrategia2</option>
+                      </optgroup>
+                    </select>
+                  </div>
+                </div>
+                <div id="contagemContatos" class="muted" style="margin-top:6px;">Nenhum contato ainda.</div>
+              </div>
+              <div class="col-6">
+                <h2>Mapeamento de Variáveis</h2>
+                <div id="mapArea" class="muted">Carregue contatos e selecione um template.</div>
+              </div>
+            </div>
 
-    <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
-      <div class="truncate max-w-[80%]">
-        <span class="font-semibold">Respondendo:</span>
-        <span id="respostaTexto" class="text-gray-600"></span>
-      </div>
-      <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
-    </div>
+            <!-- Custos -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Custo Estimado</h2>
+                <div id="custoEstimado">💵 Custo estimado: —</div>
+                <div id="custoReal">💳 Valor em Reais (com taxa): —</div>
+              </div>
+              <div class="col-6">
+                <label for="taxaConversaoExtra">Acréscimo (%)</label>
+                <input id="taxaConversaoExtra" type="number" min="0" step="0.01" value="6" />
+              </div>
+            </div>
 
-    <div class="p-3 border-t flex space-x-2 bg-white items-center">
-      <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
-      <button onclick="document.getElementById('fileInput').click()"
-        class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
+            <!-- Agendamento e Ritmo de Envio -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <h2>Modo de Envio</h2>
+                <div class="grid-2">
+                  <div>
+                    <label for="modoEnvio">Modo</label>
+                    <select id="modoEnvio">
+                      <option value="imediato" selected>Imediato</option>
+                      <option value="agendar">Agendar</option>
+                    </select>
+                  </div>
+                  <div id="dataHoraWrap" class="hide">
+                    <label for="dataHoraEnvio">Data/Hora (agendamento)</label>
+                    <input id="dataHoraEnvio" type="datetime-local" />
+                  </div>
+                </div>
+                <div class="muted" style="margin-top:6px;">Para backend, o agendamento é processado no servidor.</div>
+              </div>
+              <div class="col-6">
+                <h2>Ritmo / Lotes</h2>
+                <div class="grid-3">
+                  <div>
+                    <label for="tamanhoLote">Tamanho do Lote</label>
+                    <input id="tamanhoLote" type="number" min="1" placeholder="ex.: 50" />
+                  </div>
+                  <div>
+                    <label for="intervaloLote">Intervalo entre Lotes (min)</label>
+                    <input id="intervaloLote" type="number" min="0" value="0" />
+                  </div>
+                  <div>
+                    <label for="intervaloMsg">Intervalo entre Mensagens (s)</label>
+                    <input id="intervaloMsg" type="number" min="0" value="0" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px;">
+              <div class="col-6">
+                <label for="nomeDisparo">Nome do Disparo</label>
+                <input id="nomeDisparo" placeholder="Campanha - Segmento X DD-MM-AAAA" required />
+              </div>
+              <div class="col-6">
+                <label for="grupoTrabalho">Grupo de Trabalho</label>
+                <input id="grupoTrabalho" placeholder="Equipe / Carteira" required />
+              </div>
+            </div>
 
-      <textarea id="textoMensagem" rows="1" class="flex-1 border rounded-md p-2 resize-none"
-        placeholder="Digite uma mensagem..." disabled></textarea>
-      <button id="btnEnviar" onclick="enviarMensagem()"
-        class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
-        disabled>Enviar</button>
-    </div>
-  </main>
+            <!-- Envio -->
+            <div class="row" style="margin-top:16px;align-items:center;">
+              <div class="col-8">
+                <button class="btn success" id="btnEnviar">🚀 Enviar</button>
+                <button class="btn secondary" id="btnPausar">⏸️ Pausar</button>
+                <button class="btn secondary" id="btnRetomar" disabled>▶️ Retomar</button>
+                <button class="btn danger" id="btnCancelar" disabled>🛑 Cancelar</button>
+                <button class="btn warn" id="btnNovoEnvio">🔄 Novo Envio</button>
+              </div>
+              <div class="col-4" style="text-align:right">
+                <div class="bar"><span id="progressBar"></span></div>
+                <div class="muted" id="progressTxt">0/0</div>
+              </div>
+            </div>
 
-  <!-- Modal de imagem -->
-  <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-    <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
-    <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
-  </div>
+            <!-- Logs -->
+            <div class="row" style="margin-top:12px;">
+              <div class="col-12">
+                <h2>Logs</h2>
+              </div>
+              <div class="col-12">
+                <div id="output">Pronto para enviar.</div>
+                <div class="grid-3" style="margin-top:8px;">
+                  <div>✅ Sucesso: <b id="okCount">0</b></div>
+                  <div>❌ Erros: <b id="errCount">0</b></div>
+                  <div><button class="btn secondary" id="btnBaixarLog">⬇️ Baixar log</button></div>
+                </div>
+              </div>
+            </div>
 
-  <script>
-    /* ======= Config/estado ======= */
-    const API_BASE = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, '');
-    const phoneIdMap = {
-      "828473960349364": "ConnectZap",
-      "805610009301153": "Banco PAN",
-      "727586317113885": "Recovery PJ",
-      "864779140046932": "Recovery PF",
-      "802977069563598": "Recovery PF",
-      "873637622491517": "Mercado Pago Cobrança",
-      "821562937700669": "Mercado Pago Cobrança",
-      "779797401888141": "DivZero",
-      "829210283602406": "Arc4U",
-      "713021321904495": "Serasa",
-      "803535039503723": "Mercado Pago Vendas"
-    };
-
-    let contatoSelecionado = null, phoneIdAtual = null;
-    let respostaMsgId = null;
-    let userTyping = false, isModalOpen = false;
-    let sortOrder = "desc"; // 'desc' (mais recentes) | 'asc' (mais antigos)
-
-    /* Mensagens render state */
-    let lastTimestampMs = null;
-    let lastDayRendered = null;
-    let renderedKeys = new Set();
-
-    /* ======= Documento: constantes ======= */
-    const DOC_PREVIEW_MAX = 2 * 1024 * 1024; // 2MB para preview embutido de PDF
-
-    // refs
-    const textarea = document.getElementById("textoMensagem");
-    const btnEnviar = document.getElementById("btnEnviar");
-    const digitando = document.getElementById("digitando");
-    const contatosUL = document.getElementById("contatos");
-    const filtroContaEl = document.getElementById("filtroConta");
-    const btnAtualizar = document.getElementById("btnAtualizar");
-    const searchInput = document.getElementById("searchInput");
-    const hintFiltro = document.getElementById("hintFiltro");
-    const fltResumoEl = document.getElementById("fltResumo");
-    const rangeResumo = document.getElementById("rangeResumo");
-    const sortBtns = [...document.querySelectorAll(".chip-btn[data-sort]")];
-
-    /* ======= UX da textarea ======= */
-    textarea.addEventListener("input", () => {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-      btnEnviar.disabled = textarea.value.trim().length === 0;
-      digitando.style.display = textarea.value.trim() ? "block" : "none";
-    });
-    textarea.addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!btnEnviar.disabled) enviarMensagem(); }
-    });
-
-    /* ======= Ordenação ======= */
-    function setSort(order) {
-      sortOrder = (order === "asc") ? "asc" : "desc";
-      sortBtns.forEach(b => b.classList.toggle("active", b.dataset.sort === sortOrder));
-    }
-    sortBtns.forEach(btn => btn.addEventListener("click", () => { setSort(btn.dataset.sort); }));
-
-    /* ======= Helpers ======= */
-    function pad(n) { return String(n).padStart(2, "0"); }
-    function toYMD(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
-    function gerarCor(nome) { let hash = 0; for (let i = 0; i < String(nome || 'U').length; i++) { hash = String(nome || 'U').charCodeAt(i) + ((hash << 5) - hash); } return `hsl(${hash % 360},70%,60%)`; }
-    function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
-    function isIncoming(m) {
-      const s = (m.status || "").toLowerCase();
-      if (typeof m.from_me === "boolean") return !m.from_me;
-      if (m.direction) return String(m.direction).toLowerCase().startsWith("in");
-      if (["in", "received", "incoming"].includes(s)) return true;
-      if (["out", "sent", "delivered", "read", "outgoing"].includes(s)) return false;
-      return s === "in";
-    }
-    function bytesToHuman(n) { if (!n && n !== 0) return ""; const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, s = n; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++; } return `${s.toFixed(s >= 10 || i === 0 ? 0 : 1)} ${u[i]}`; }
-    function isWithinLastTwoDays(iso) {
-      const d = new Date(iso);
-      const today = new Date();
-      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-      return d.toDateString() === today.toDateString() || d.toDateString() === yesterday.toDateString();
-    }
-    function updateResumoLabels() {
-      const today = new Date();
-      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
-      fltResumoEl.textContent = `(carteira: ${filtroContaEl.value ? (filtroContaEl.value === "*" ? "todas" : "selecionada") : "—"} • últimos 2 dias: ${toYMD(yesterday)} → ${toYMD(today)})`;
-      rangeResumo.textContent = `(ÚLTIMOS 2 DIAS • ${toYMD(yesterday)} → ${toYMD(today)})`;
-    }
-    updateResumoLabels();
-
-    /* ======= Contatos: busca local ======= */
-    searchInput.addEventListener("input", () => filtrarContatos(searchInput.value));
-    function filtrarContatos(q) {
-      q = (q || "").toLowerCase().trim();
-      document.querySelectorAll("#contatos li").forEach(li => {
-        const hay = (li.dataset.search || li.textContent).toLowerCase();
-        li.style.display = hay.includes(q) ? "flex" : "none";
-      });
-    }
-
-    /* ======= Carregar contatos (manual) ======= */
-    btnAtualizar.addEventListener("click", carregarContatos);
-
-    async function carregarContatos() {
-      if (!filtroContaEl.value) { alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
-      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Carregando…</li>`;
-      try {
-        const r = await fetch(`${API_BASE}/api/conversas/contatos`, { cache: "no-store" });
-        if (!r.ok) throw new Error("Falha ao buscar contatos");
-        let itens = await r.json();
-
-        // filtra carteira
-        const carteirafiltro = filtroContaEl.value;
-        if (carteirafiltro && carteirafiltro !== "*") {
-          itens = itens.filter(c => String(c.phone_id) === String(carteirafiltro));
-        }
-
-        // filtra últimos 2 dias (hoje e ontem)
-        itens = itens.filter(c => c.data_hora && isWithinLastTwoDays(c.data_hora));
-
-        // ordenação
-        itens.sort((a, b) => {
-          const da = new Date(a.data_hora).getTime();
-          const db = new Date(b.data_hora).getTime();
-          return sortOrder === "asc" ? (da - db) : (db - da);
-        });
-
-        renderContatos(itens);
-        hintFiltro.classList.add("hidden");
-        updateResumoLabels();
-      } catch (e) {
-        console.error(e);
-        contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
-      }
-    }
-
-    function renderContatos(lista) {
-      contatosUL.innerHTML = "";
-      if (!Array.isArray(lista) || !lista.length) {
-        contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato nos últimos 2 dias.</li>`;
-        return;
-      }
-      const frag = document.createDocumentFragment();
-      lista.forEach(c => {
-        const nome = c.nome_exibicao || c.remetente;
-        const hora = c.data_hora ? new Date(c.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
-
-        const li = document.createElement("li");
-        li.className = "flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
-        li.dataset.remetente = (c.remetente || "").toLowerCase();
-        li.dataset.search = `${(nome || "").toLowerCase()} ${(c.remetente || "").toLowerCase()}`;
-
-        li.innerHTML = `
-      <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
-           style="background:${gerarCor(nome)};color:white;">
-        ${(nome || c.remetente || "U").charAt(0).toUpperCase()}
-      </div>
-      <div class="flex-1 min-w-0">
-        <div class="font-bold truncate">${escapeHtml(nome)}</div>
-        <span class="sr-only">${escapeHtml(c.remetente || "")}</span>
-      </div>
-      <div class="text-xs text-gray-400 pl-2">${hora}</div>
-    `;
-        li.onclick = () => abrirConversaFromElement(c, li);
-        frag.appendChild(li);
-      });
-      contatosUL.appendChild(frag);
-    }
-
-    /* ======= Abrir conversa ======= */
-    function abrirConversaFromElement(c, el) {
-      document.querySelectorAll("#contatos li").forEach(li => li.classList.remove("contato-selected"));
-      el.classList.add("contato-selected");
-      abrirConversa(c);
-    }
-    async function abrirConversa(c) {
-      contatoSelecionado = c.remetente; phoneIdAtual = c.phone_id;
-
-      // LIMPA chat imediatamente para evitar confusão com conversa anterior
-      const chatEl = document.getElementById("chat");
-      chatEl.innerHTML = ""; // <<< limpeza imediata
-      lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
-
-      document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
-      document.getElementById("subInfo").innerText = c.phone_id ? `conta: ${phoneIdMap[c.phone_id] || c.phone_id}` : "";
-      textarea.disabled = false; textarea.focus(); btnEnviar.disabled = true;
-
-      // força ciclo imediato apenas para mensagens
-      await refreshLoop("abrir-conversa");
-    }
-
-    /* ======= Mensagens (render) ======= */
-    async function renderMensagens(msgs, incremental = true) {
-      if (!contatoSelecionado) return;
-      const chat = document.getElementById("chat");
-      if (!Array.isArray(msgs)) return;
-
-      msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
-
-      if (!incremental) {
-        chat.innerHTML = "";
-        lastTimestampMs = null;
-        lastDayRendered = null;
-        renderedKeys.clear();
-      }
-
-      const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
-
-      msgs.forEach((m) => {
-        const tMs = new Date(m.data_hora).getTime();
-        const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
-        if (renderedKeys.has(key)) return;
-        if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
-
-        const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
-        if (!lastDayRendered || lastDayRendered !== dia) {
-          const sep = document.createElement("div");
-          sep.className = "dia";
-          sep.innerText = `— ${dia} —`;
-          chat.appendChild(sep);
-          lastDayRendered = dia;
-        }
-
-        const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
-        const div = document.createElement("div");
-        const incoming = isIncoming(m);
-        div.className = `msg ${incoming ? "recebida" : "enviada"}`;
-
-        if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
-          div.innerHTML = `
-        <div class="text-gray-600 italic">[imagem recebida]</div>
-        <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
-        <span class="hora">${hora}</span>
-      `;
-          const btn = div.querySelector(".btn-olhinho");
-          if (!m.msg_id) {
-            btn.disabled = true; btn.innerText = "Imagem indisponível";
-          } else {
-            btn.onclick = async () => {
-              btn.disabled = true; btn.innerText = "⏳ Carregando...";
-              try {
-                const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
-                const j = await r.json();
-                if (j.ok && j.data_uri) {
-                  const img = document.createElement("img");
-                  img.src = j.data_uri; img.alt = "Imagem recebida";
-                  img.className = "thumb mt-2";
-                  img.onclick = () => abrirModalImagem(j.data_uri);
-                  div.insertBefore(img, btn); btn.remove();
-                } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-              } catch (e) { console.error("Erro imagem:", e); btn.disabled = false; btn.innerText = "👁 Ver imagem"; alert("Erro ao carregar imagem"); }
-            };
-          }
-        }
-        else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
-          div.innerHTML = `
-        <div class="text-gray-600 italic">[áudio recebido]</div>
-        <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
-        <span class="hora">${hora}</span>
-      `;
-          const btn = div.querySelector(".btn-audio");
-          if (!m.msg_id) { btn.disabled = true; btn.innerText = "Áudio indisponível"; }
-          else {
-            btn.onclick = async () => {
-              btn.disabled = true; btn.innerText = "⏳ Carregando...";
-              try {
-                const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
-                const j = await r.json();
-                if (j.ok && j.data_uri) {
-                  const audio = document.createElement("audio");
-                  audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2";
-                  div.insertBefore(audio, btn); btn.remove();
-                } else { throw new Error(j.erro || "Resposta inválida do backend"); }
-              } catch (e) { console.error("Erro áudio:", e); btn.disabled = false; btn.innerText = "▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
-            };
-          }
-        }
-        else if (m.tipo === "document" || m.mensagem_final === "[document]") {
-          div.innerHTML = `
-        <div class="text-gray-600 italic">[documento recebido]</div>
-        <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
-        <span class="hora">${hora}</span>
-      `;
-          const btn = div.querySelector(".btn-doc");
-          if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
-          else { btn.onclick = () => carregarDocumento(div, btn, m.msg_id); }
-        }
-        else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
-          const lines = m.mensagem_final.split("\n");
-          const filename = (lines[0] || "").replace("📎 PDF:", "").trim() || "Arquivo";
-          const link = (lines[1] || "").replace("🔗", "").trim();
-          div.innerHTML = `
-        <div class="flex items-start gap-2">
-          <div class="text-xl leading-none">📄</div>
-          <div class="min-w-0">
-            <div class="font-semibold">${escapeHtml(filename)}</div>
-            ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
           </div>
         </div>
-        <span class="hora">${hora}</span>
-      `;
-        }
-        else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
-          const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
-          const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
-          const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
-          wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
-          const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
-          if (m.msg_id) {
-            (async () => {
-              try {
-                const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
-                const j = await r.json();
-                if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
-              } catch (e) { console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }
-            })();
-          } else { label.textContent = "emoji indisponível"; }
-        }
-        else if (m.tipo === "system" || m.mensagem_final === "[system]") {
-          div.classList.add("system");
-          div.innerHTML = `
-        <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
-        <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
-        <div class="sys-meta mt-1"></div>
-        <span class="hora">${hora}</span>
-      `;
-          if (!m.msg_id) {
-            div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
-            const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
-          } else {
-            (async () => {
-              try {
-                const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
-                const j = await r.json();
-                const pill = div.querySelector(".sys-pill");
-                const bodyEl = div.querySelector(".sys-body");
-                const metaEl = div.querySelector(".sys-meta");
 
-                if (!j.ok) { if (pill) pill.textContent = "erro"; bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento."; return; }
-                if (pill) pill.textContent = j.type || "system";
-                if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
-                  bodyEl.innerHTML = `O cliente alterou o número:<br>
-              <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
-              <span class="mx-1">→</span>
-              <span class="font-semibold">${escapeHtml(j.wa_id)}</span>`;
-                } else {
-                  bodyEl.textContent = j.body || "Evento de sistema recebido.";
+        <script>
+          // ================== Config de backends ==================
+          // Seu backend principal (envios / agendamentos)
+          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";
+          // Novo backend dedicado às estratégias
+          const ESTRAT_API = "https://consultasic-production.up.railway.app";
+
+          // ================== Estado ==================
+          const estrategias = {
+            estrategia1: [
+              { to: "5561993742606", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "00191117200000369860000001559984036163546617", "000201010212..."] },
+              { to: "5592991029242", vars: ["Savio", "1/1", "120.00", "25.09.2025", "237933812...", "000201010212..."] },
+              { to: "5561996777300", vars: ["Ayrton", "2/3", "89.90", "01.10.2025", "03399111...", "000201010212..."] },
+            ],
+            estrategia2: [
+              { to: "5561993742601", vars: ["Joubert", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+              { to: "5561993742602", vars: ["JoubertC", "6/6", "250.23", "13.08.2025", "0019...", "000201..."] },
+            ],
+          };
+
+          let contatos = [];              // [{ to, vars[] }]
+          let csvHeaders = [];
+          let custoEmDolar = 0;
+          let mapping = { body: [], headerText: [], urlButtons: {} };
+          let tmpl = { name:"", category:"", components:[], bodyText:"", bodyVars:0, headerType:null, headerText:"", headerVars:0, urlButtons:[] };
+          let flags = { paused:false, cancelled:false };
+
+          // ================== Utils ==================
+          const $ = (sel) => document.querySelector(sel);
+          const byId = (id) => document.getElementById(id);
+
+          function log(line){
+            const out = byId('output');
+            out.textContent += (out.textContent ? "\n" : "") + line;
+            out.scrollTop = out.scrollHeight;
+          }
+          function setProgress(done, total){
+            const pct = total > 0 ? (done / total) * 100 : 0;
+            byId('progressBar').style.width = pct.toFixed(1) + '%';
+            byId('progressTxt').textContent = `${done}/${total}`;
+          }
+          function countPlaceholders(text){
+            if(!text) return 0;
+            const matches = text.match(/\{\{\d+\}\}/g);
+            return matches ? new Set(matches).size : 0;
+          }
+          function substitutePlaceholders(text, values){
+            if(!text) return '';
+            return text.replace(/\{\{(\d+)\}\}/g, (_, n) => {
+              const idx = parseInt(n,10) - 1;
+              return values[idx] != null ? String(values[idx]) : `{{${n}}}`;
+            });
+          }
+          function parseCSV(text){
+            const delim = text.includes(';') && !text.includes(',') ? ';' : ',';
+            const lines = text.replace(/\r\n?/g,'\n').split('\n').filter(l => l.trim().length>0);
+            const rows = [];
+            for(const line of lines){
+              const row = [];
+              let cur = '', inQ = false;
+              for(let i=0;i<line.length;i++){
+                const ch = line[i];
+                if(ch === '"'){
+                  if(inQ && line[i+1] === '"'){ cur += '"'; i++; }
+                  else { inQ = !inQ; }
+                }else if(ch === delim && !inQ){
+                  row.push(cur); cur='';
+                }else{
+                  cur += ch;
                 }
-                const src = j.from || j.old_wa_id || "";
-                const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
-                metaEl.textContent = `${src ? "Origem: " + src : ""}${pid}`;
-              } catch (e) { console.error("Erro system:", e); const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro"; div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento."; }
+              }
+              row.push(cur);
+              rows.push(row.map(c => c.trim()));
+            }
+            return rows;
+          }
+          function ensureNumber(v, fallback=0){
+            const n = Number(v);
+            return Number.isFinite(n) ? n : fallback;
+          }
+          function escapeHtml(str=''){
+            return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+          }
+
+          // ================== UI Helpers ==================
+          function renderSelect(id, varIndex, current){
+            let opts = '';
+            if(csvHeaders.length>0){
+              csvHeaders.forEach((h, idx) => {
+                const sel = idx === current ? 'selected' : '';
+                opts += `<option value="${idx}" ${sel}>${idx+1} — ${escapeHtml(h)}</option>`;
+              });
+            }else{
+              const maxCols = Math.max(1, ...(contatos.map(c => c.vars.length)));
+              for(let idx=0; idx<maxCols; idx++){
+                const sel = idx === current ? 'selected' : '';
+                opts += `<option value="${idx}" ${sel}>${idx+1}</option>`;
+              }
+            }
+            return `<label for="${id}">{{${varIndex+1}}} ⟶ coluna</label><select id="${id}">${opts}</select>`;
+          }
+
+          function renderMapUI(){
+            const area = byId('mapArea');
+            const hasTemplate = !!tmpl.name;
+            const hasContacts = contatos.length > 0;
+
+            if(!hasTemplate || !hasContacts){
+              area.innerHTML = '<span class="muted">Carregue contatos e selecione um template para configurar o mapeamento.</span>';
+              updatePreview();
+              return;
+            }
+
+            const headerPart = (() => {
+              if(!tmpl.headerType) return '';
+              if(tmpl.headerType === 'TEXT' && tmpl.headerVars > 0){
+                let selects = '';
+                for(let i=0;i<tmpl.headerVars;i++){
+                  selects += renderSelect(`map-header-${i}`, i, mapping.headerText[i]);
+                }
+                return `<h3>Header TEXT — variáveis</h3>${selects}`;
+              }
+              if(['IMAGE','VIDEO','DOCUMENT'].includes(tmpl.headerType)){
+                return '<div class="muted">Header de mídia usa a URL informada em "Link da Mídia do Header".</div>';
+              }
+              return '';
             })();
+
+            let bodySelects = '';
+            if(tmpl.bodyVars > 0){
+              bodySelects += '<h3>Body — variáveis</h3>';
+              for(let i=0;i<tmpl.bodyVars;i++){
+                bodySelects += renderSelect(`map-body-${i}`, i, mapping.body[i]);
+              }
+            }else{
+              bodySelects += '<div class="muted">Body sem variáveis.</div>';
+            }
+
+            let buttonsPart = '';
+            if(tmpl.urlButtons.length > 0){
+              buttonsPart += '<h3>Botões URL — variáveis</h3>';
+              tmpl.urlButtons.forEach(btn => {
+                if(btn.hasVar){
+                  buttonsPart += `<div style="margin:6px 0 10px"><b>Botão #${btn.index+1}</b> — URL base: <span class="kbd">${btn.url}</span><br/>` +
+                    renderSelect(`map-urlbtn-${btn.index}-0`, 0, mapping.urlButtons[btn.index]?.[0]) + '</div>';
+                }
+              });
+            }
+
+            const sample = contatos[0] || { to:'', vars:[] };
+            const bodyPreviewVals = (mapping.body || []).map(ci => ci != null ? sample.vars[ci] : '');
+            const bodyPrev = substitutePlaceholders(tmpl.bodyText, bodyPreviewVals);
+
+            area.innerHTML = `
+              ${headerPart}
+              ${bodySelects}
+              ${buttonsPart}
+              <div style="margin-top:10px">
+                <div class="muted">Prévia com o <b>primeiro contato</b>:</div>
+                <div class="card" style="padding:10px;border:1px dashed #cbd5e1;">
+                  ${bodyPrev.replace(/\n/g,'<br/>')}
+                </div>
+              </div>
+            `;
+
+            if(tmpl.headerType === 'TEXT'){
+              for(let i=0;i<tmpl.headerVars;i++){
+                byId(`map-header-${i}`)?.addEventListener('change', (e) => {
+                  mapping.headerText[i] = ensureNumber(e.target.value, 0);
+                  updatePreview();
+                });
+              }
+            }
+            for(let i=0;i<tmpl.bodyVars;i++){
+              byId(`map-body-${i}`)?.addEventListener('change', (e) => {
+                mapping.body[i] = ensureNumber(e.target.value, 0);
+                renderMapUI();
+                updatePreview();
+              });
+            }
+            tmpl.urlButtons.forEach(btn => {
+              if(btn.hasVar){
+                byId(`map-urlbtn-${btn.index}-0`)?.addEventListener('change', (e) => {
+                  mapping.urlButtons[btn.index] = [ensureNumber(e.target.value, 0)];
+                });
+              }
+            });
+
+            updatePreview();
           }
-        }
-        else {
-          div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
-        }
 
-        // Ação de Responder (apenas mensagens do cliente)
-        if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
-          const actions = document.createElement("div");
-          actions.className = "actions";
-          const replyBtn = document.createElement("button");
-          replyBtn.className = "icon-btn";
-          replyBtn.title = "Responder";
-          replyBtn.textContent = "↩";
-          replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
-          actions.appendChild(replyBtn);
-          div.appendChild(actions);
-        }
+          // ================== Custos ==================
+          async function calcularCusto(){
+            const categoria = byId('templateCategory').value;
+            const qtd = contatos.length;
+            if(!categoria || !qtd){
+              byId('custoEstimado').textContent = '💵 Custo estimado: —';
+              byId('custoReal').textContent = '💳 Valor em Reais (com taxa): —';
+              return;
+            }
+            const price = (categoria === 'authentication' || categoria === 'utility') ? 0.0068 : (categoria === 'marketing' ? 0.0625 : 0);
+            custoEmDolar = qtd * price;
+            byId('custoEstimado').textContent = `💵 Custo estimado: $${custoEmDolar.toFixed(4)}`;
 
-        document.getElementById("chat").appendChild(div);
-        renderedKeys.add(key);
-        if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
-      });
-
-      if (isNearBottom) document.getElementById("chat").scrollTo({ top: document.getElementById("chat").scrollHeight, behavior: "smooth" });
-    }
-
-    /* ======= Documento (carregar) ======= */
-    async function carregarDocumento(div, btn, msg_id) {
-      btn.disabled = true; btn.textContent = "⏳ Carregando…";
-      try {
-        const r = await fetch(`${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}`);
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.erro || "Falha ao obter documento");
-
-        const filename = j.filename || "arquivo";
-        const mime = j.mime_type || "application/octet-stream";
-        const size = j.size_bytes ?? null;
-
-        const box = document.createElement("div");
-        box.className = "mt-2 space-y-1";
-
-        if (mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)) {
-          const preview = document.createElement("embed");
-          preview.src = j.data_uri; preview.type = mime; preview.className = "w-[260px] h-[200px] rounded border";
-          box.appendChild(preview);
-
-          const meta = document.createElement("div");
-          meta.className = "text-xs text-slate-600";
-          const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
-          meta.innerHTML = `<div class="font-semibold truncate">${escapeHtml(filename)}</div>
-                        <div>${size ? bytesToHuman(size) : ""}</div>
-                        <a href="${link}" target="_blank" class="text-blue-600 underline">Abrir/baixar</a>`;
-          box.appendChild(meta);
-        } else {
-          const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
-          const row = document.createElement("div");
-          row.className = "flex items-start gap-2";
-          row.innerHTML = `
-        <div class="text-xl leading-none">📎</div>
-        <div class="min-w-0">
-          <div class="font-semibold truncate">${escapeHtml(filename)}</div>
-          <div class="text-xs text-slate-600">${escapeHtml(mime)} ${size ? ("• " + bytesToHuman(size)) : ""}</div>
-          <a href="${link}" target="_blank" class="text-blue-600 underline break-all">Baixar documento</a>
-        </div>`;
-          box.appendChild(row);
-        }
-
-        div.insertBefore(box, btn);
-        btn.remove();
-      } catch (e) {
-        console.error(e);
-        alert("Erro ao carregar documento");
-        btn.disabled = false; btn.textContent = "📎 Ver documento";
-      }
-    }
-
-    /* ======= Responder / Cancelar ======= */
-    function responderMensagem(msgId, conteudo) {
-      respostaMsgId = msgId || null;
-      document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0, 50);
-      document.getElementById("respostaPreview").classList.remove("hidden");
-      textarea.focus();
-    }
-    function cancelarResposta() {
-      respostaMsgId = null;
-      document.getElementById("respostaPreview").classList.add("hidden");
-      document.getElementById("respostaTexto").innerText = "";
-    }
-
-    /* ======= Enviar texto ======= */
-    async function enviarMensagem() {
-      const texto = textarea.value.trim();
-      if (!texto || !contatoSelecionado) return;
-      userTyping = true; btnEnviar.disabled = true;
-      try {
-        const body = { texto, phone_id: phoneIdAtual, msg_id: respostaMsgId || null };
-        const res = await fetch(`${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-        });
-        const json = await res.json();
-        if (json.ok) {
-          textarea.value = ""; textarea.style.height = "auto";
-          cancelarResposta();
-          // refresh imediato (mensagens) após enviar
-          await refreshLoop("enviar");
-        } else { alert("Erro ao enviar: " + (json.erro || JSON.stringify(json))); }
-      } catch (err) { console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network."); }
-      finally { userTyping = false; btnEnviar.disabled = textarea.value.trim().length === 0; }
-    }
-
-    /* ======= Enviar PDF ======= */
-    async function enviarPDF(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      if (!contatoSelecionado || !phoneIdAtual) { alert("Selecione uma conversa antes de enviar PDF"); event.target.value = ""; return; }
-      if (file.type !== "application/pdf") { alert("Somente arquivos PDF são permitidos"); event.target.value = ""; return; }
-
-      try {
-        const res = await fetch(`${API_BASE}/api/upload/pdf`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ filename: file.name })
-        });
-        const json = await res.json();
-        if (!json.ok) { alert("Erro ao gerar URL: " + json.erro); return; }
-
-        const put = await fetch(json.upload_url, { method: "PUT", headers: { "Content-Type": "application/pdf" }, body: file });
-        if (!put.ok) { alert("Falha no upload"); return; }
-
-        const body = { phone_id: phoneIdAtual, file_url: json.file_url, original_filename: file.name };
-        const sendRes = await fetch(`${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
-        });
-        const sendJson = await sendRes.json();
-        if (sendJson.ok) {
-          await refreshLoop("enviar-pdf");
-        } else { alert("Erro ao enviar PDF: " + (sendJson.erro || JSON.stringify(sendJson))); }
-      } catch (err) {
-        console.error("Erro ao enviar PDF", err); alert("Erro ao enviar PDF");
-      } finally { event.target.value = ""; }
-    }
-
-    /* ======= Modal imagem ======= */
-    const imageModal = document.getElementById("imageModal");
-    const modalImg = document.getElementById("modalImg");
-    const closeModal = document.getElementById("closeModal");
-    function abrirModalImagem(src) { isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
-    closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
-    imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
-
-    /* ======= Loop de atualização (apenas conversa selecionada) ======= */
-    const CADENCE = { active: 10000, hidden: 60000 }; // 10s ativo; 60s aba oculta
-    const BACKOFF_MAX = 120000;
-    let failureStreak = 0;
-    let refreshTimer = null;
-    let refreshAbort = null;
-    let isRefreshing = false;
-
-    // calcula próximo delay
-    function computeNextDelay() {
-      if (failureStreak > 0) return Math.min(BACKOFF_MAX, CADENCE.active * Math.pow(2, failureStreak));
-      if (document.hidden) return CADENCE.hidden;
-      // somente se houver conversa selecionada, mantemos 10s; caso contrário não reagendamos
-      return contatoSelecionado ? CADENCE.active : null;
-    }
-    function scheduleRefresh(delay = computeNextDelay()) {
-      clearTimeout(refreshTimer);
-      if (delay == null) return; // nada agendado sem conversa selecionada
-      refreshTimer = setTimeout(() => refreshLoop("auto"), delay);
-    }
-
-    // fetch JSON simples
-    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
-      const own = new AbortController();
-      const t = setTimeout(() => own.abort("timeout"), timeoutMs);
-      const comp = new AbortController();
-      const forward = (reason) => () => comp.abort(reason);
-      own.signal.addEventListener("abort", forward("timeout"), { once: true });
-      if (signal) signal.addEventListener("abort", forward("parent"), { once: true });
-
-      try {
-        const r = await fetch(url, { signal: comp.signal, cache: "no-store" });
-        return await r.json();
-      } finally { clearTimeout(t); }
-    }
-
-    async function refreshLoop(reason = "manual") {
-      // pausa se modal aberto ou digitando
-      const pauseMsgs = userTyping || isModalOpen;
-
-      // single-flight: garante que o próximo ciclo só inicia após o término deste
-      if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
-      isRefreshing = true;
-      refreshAbort = new AbortController();
-      const { signal } = refreshAbort;
-
-      try {
-        // somente mensagens
-        if (contatoSelecionado && !pauseMsgs) {
-          const url = `${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}${phoneIdAtual ? `?phone_id=${encodeURIComponent(phoneIdAtual)}` : ""}`;
-          const data = await fetchJSON(url, { signal });
-          if (Array.isArray(data)) {
-            await renderMensagens(data, /*incremental*/ true);
+            try{
+              const res = await fetch('https://open.er-api.com/v6/latest/USD');
+              const data = await res.json();
+              const brl = data?.rates?.BRL ?? 5.0;
+              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+              const final = custoEmDolar * brl * taxa;
+              byId('custoReal').textContent = `💳 Valor em Reais (com taxa): R$${final.toFixed(2)}`;
+            }catch(e){
+              const brl = 5.0;
+              const taxa = 1 + (ensureNumber(byId('taxaConversaoExtra').value, 6) / 100);
+              const final = custoEmDolar * brl * taxa;
+              byId('custoReal').textContent = `💳 Valor em Reais (com taxa – câmbio offline): R$${final.toFixed(2)}`;
+            }
           }
-        }
 
-        failureStreak = 0;
-      } catch (e) {
-        if (String(e) !== "AbortError" && String(e) !== "superseded") {
-          failureStreak = Math.min(failureStreak + 1, 10);
-          console.warn("Refresh falhou:", e);
-        }
-      } finally {
-        isRefreshing = false;
-        // agenda o próximo ciclo SÓ depois que o atual terminou (requisitado)
-        scheduleRefresh();
-      }
+          // ================== Pré-visualização ==================
+          function updatePreview(){
+            if(!tmpl.name){ byId('previewArea').textContent = '—'; return; }
+
+            const body = tmpl.bodyText || '';
+            let values = [];
+
+            const compBody = (tmpl.components || []).find(c => c.type === 'BODY');
+            const exemploBody = compBody?.example?.body_text?.[0];
+            if(Array.isArray(exemploBody) && exemploBody.length){
+              values = exemploBody;
+            }else if(contatos.length && tmpl.bodyVars > 0){
+              const sample = contatos[0];
+              values = (mapping.body || []).map(ci => sample.vars[ci] ?? '');
+            }
+
+            const bodyPreview = values.length ? substitutePlaceholders(body, values) : body;
+
+            let headerPreview = '';
+            if(tmpl.headerType === 'TEXT'){
+              const headerVals = [];
+              if(tmpl.headerVars > 0 && contatos.length){
+                const s = contatos[0];
+                for(let i=0;i<tmpl.headerVars;i++) headerVals.push(s.vars[mapping.headerText[i] ?? i] ?? '');
+              }
+              headerPreview = substitutePlaceholders(tmpl.headerText || '', headerVals);
+            }
+
+            const parts = [];
+            parts.push('📄 Pré-visualização:');
+            if(headerPreview){ parts.push(`*${headerPreview}*\n`); }
+            parts.push(bodyPreview);
+
+            if(tmpl.urlButtons?.length){
+              const btns = tmpl.urlButtons.map((b, i) => {
+                if(!b.hasVar) return `• Botão ${i+1}: URL fixa`;
+                const colIdx = mapping.urlButtons[i]?.[0];
+                const sampleVal = (contatos[0]?.vars || [])[colIdx ?? 0] ?? '{{1}}';
+                const final = (b.url || '').replace(/\{\{1\}\}/g, sampleVal);
+                return `• Botão ${i+1}: ${final}`;
+              }).join('\n');
+              if(btns) parts.push('\n[BOTÕES]\n' + btns);
+            }
+
+            byId('previewArea').textContent = parts.join('\n\n');
+          }
+
+          // ================== Templates ==================
+          byId('btnBuscar').addEventListener('click', buscarTemplates);
+          async function buscarTemplates(){
+            const token = byId('token').value.trim();
+            const wabaId = byId('wabaId').value.trim();
+            const ver = byId('graphVersion').value;
+            if(!token || !wabaId){ alert('Informe token e WABA ID.'); return; }
+
+            const select = byId('templateSelect');
+            select.innerHTML = '<option value="">Carregando...</option>';
+
+            const urlBase = `https://graph.facebook.com/${ver}/${encodeURIComponent(wabaId)}/message_templates?limit=100&status=APPROVED`;
+            const all = [];
+            let next = urlBase;
+            try{
+              while(next){
+                const r = await fetch(next, { headers:{ Authorization:`Bearer ${token}` }});
+                const j = await r.json();
+                if(Array.isArray(j.data)) all.push(...j.data);
+                next = j?.paging?.next || null;
+              }
+            }catch(e){
+              alert('Erro ao buscar templates: ' + e.message);
+              select.innerHTML = '<option value="">-- Erro ao buscar --</option>';
+              return;
+            }
+
+            if(all.length === 0){
+              select.innerHTML = '<option value="">-- Nenhum template aprovado encontrado --</option>';
+              return;
+            }
+
+            select.innerHTML = '<option value="">-- Selecione um template --</option>';
+            all.sort((a,b) => a.name.localeCompare(b.name)).forEach(t => {
+              const opt = document.createElement('option');
+              opt.value = JSON.stringify(t);
+              opt.textContent = `${t.name} · ${t.category}`;
+              select.appendChild(opt);
+            });
+          }
+
+          byId('templateSelect').addEventListener('change', preencherTemplateInfo);
+          function preencherTemplateInfo(){
+            const val = byId('templateSelect').value;
+            if(!val) return;
+            const t = JSON.parse(val);
+
+            tmpl.name = t.name;
+            tmpl.category = t.category || '';
+            tmpl.components = t.components || [];
+            byId('templateName').value = tmpl.name;
+            byId('templateCategory').value = tmpl.category || '';
+
+            const header = tmpl.components.find(c => c.type === 'HEADER');
+            const body = tmpl.components.find(c => c.type === 'BODY');
+            const buttons = tmpl.components.find(c => c.type === 'BUTTONS');
+
+            tmpl.headerType = null;
+            tmpl.headerText = '';
+            tmpl.headerVars = 0;
+            byId('headerFormat').value = '';
+            byId('headerTextWrap').classList.add('hide');
+            byId('mediaLinkWrap').classList.add('hide');
+
+            if(header){
+              const fmt = header.format;
+              tmpl.headerType = fmt;
+              byId('headerFormat').value = fmt || '';
+              if(fmt === 'TEXT'){
+                tmpl.headerText = header.text || '';
+                tmpl.headerVars = countPlaceholders(tmpl.headerText);
+                byId('headerTextWrap').classList.remove('hide');
+              }else if(['IMAGE','VIDEO','DOCUMENT'].includes(fmt)){
+                byId('mediaLinkWrap').classList.remove('hide');
+              }
+            }
+
+            tmpl.bodyText = body?.text || '';
+            tmpl.bodyVars = countPlaceholders(tmpl.bodyText);
+
+            tmpl.urlButtons = [];
+            if(buttons && Array.isArray(buttons.buttons)){
+              buttons.buttons.forEach((b, idx) => {
+                if(b.type === 'URL'){
+                  const hasVar = (b.url || '').includes('{{');
+                  tmpl.urlButtons.push({ index: idx, url: b.url || '', hasVar });
+                }
+              });
+            }
+
+            mapping.body = Array.from({length: tmpl.bodyVars}, (_,i)=> i);
+            mapping.headerText = Array.from({length: tmpl.headerVars}, (_,i)=> i);
+            mapping.urlButtons = {};
+
+            renderMapUI();
+            calcularCusto();
+            updatePreview();
+          }
+
+          // ================== Estratégias ONLINE (cliente) ==================
+          async function carregarEstrategiaOnline(fonte){
+            const clientToken = (document.getElementById("token").value || "").trim();
+            const headers = clientToken ? { "X-Auth-Token": clientToken } : {};
+            const url = `${ESTRAT_API}/api/estrategias/hoje?fonte=${encodeURIComponent(fonte)}`;
+
+            const res = await fetch(url, { headers });
+            if(!res.ok){
+              const msg = await res.text();
+              throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
+            }
+            const data = await res.json();
+            if(!data.ok) throw new Error(data.erro || "Erro desconhecido");
+
+            contatos = (data.contatos || []).map(c => ({
+              to: String(c.to || "").replace(/\D+/g,""),
+              vars: Array.isArray(c.vars) ? c.vars.map(v => String(v)) : []
+            })).filter(c => c.to);
+
+            csvHeaders = [];
+            document.getElementById('contagemContatos').textContent =
+              `✔️ Estratégia "${fonte}" (online) carregada com ${contatos.length} contato(s).`;
+
+            renderMapUI();
+            calcularCusto();
+          }
+
+          // ================== Contatos (arquivo e exemplos) ==================
+          byId('estrategiaSelect').addEventListener('change', async function(){
+            const selected = this.value;
+            try{
+              if(selected === "arc4u" || selected === "mercado_pago" || selected === "serasa"){
+                document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
+                await carregarEstrategiaOnline(selected);
+                return;
+              }
+              if(estrategias[selected]){
+                contatos = JSON.parse(JSON.stringify(estrategias[selected]));
+                csvHeaders = [];
+                document.getElementById('contagemContatos').textContent =
+                  `✔️ Estratégia "${selected}" (exemplo) carregada com ${contatos.length} contato(s).`;
+                renderMapUI();
+                calcularCusto();
+              }else{
+                contatos = [];
+                csvHeaders = [];
+                document.getElementById('contagemContatos').textContent = 'Nenhum contato ainda.';
+                renderMapUI();
+                calcularCusto();
+              }
+            }catch(e){
+              console.error(e);
+              document.getElementById('contagemContatos').textContent = `❌ ${e.message}`;
+            }
+          });
+
+          byId('fileInput').addEventListener('change', function(){
+            const file = this.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const rows = parseCSV(e.target.result);
+              if(rows.length === 0) return;
+
+              const head = rows[0].map(c => (c||'').toLowerCase());
+              const hasHeader = head.some(c => c.includes('telefone') || c === 'to' || c.includes('phone'));
+
+              const dataRows = hasHeader ? rows.slice(1) : rows;
+              csvHeaders = hasHeader ? rows[0] : (dataRows[0]?.map((_,i)=>`coluna_${i+1}`) || []);
+
+              contatos = dataRows.map(r => ({
+                to: (r[0] || '').replace(/\D+/g,''),
+                vars: r.slice(1),
+              })).filter(c => c.to);
+
+              document.getElementById('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
+              renderMapUI();
+              calcularCusto();
+            };
+            reader.readAsText(file);
+          });
+
+          byId('taxaConversaoExtra').addEventListener('change', calcularCusto);
+          byId('templateCategory').addEventListener('change', calcularCusto);
+
+          // ================== Agendamento UI ==================
+          byId('modoEnvio').addEventListener('change', () => {
+            const isAgendar = byId('modoEnvio').value === 'agendar';
+            byId('dataHoraWrap').classList.toggle('hide', !isAgendar);
+          });
+
+          // ================== Envio via BACKEND ==================
+          async function onEnviarClick(){
+            if(contatos.length === 0){
+              alert('Nenhum contato carregado.');
+              return;
+            }
+
+            const payload = {
+              token: byId("token").value.trim(),
+              phone_id: byId("phoneId").value.trim(),
+              waba_id: byId("wabaId").value.trim(),
+              nome_disparo: byId("nomeDisparo").value.trim(),
+              grupo_trabalho: byId("grupoTrabalho").value.trim(),
+              modo_envio: byId("modoEnvio").value,
+              data_hora_agendamento: byId("dataHoraEnvio").value || null,
+              intervalo_msg: Number(byId("intervaloMsg").value || 0),
+              tamanho_lote: Number(byId("tamanhoLote").value || 0),
+              intervalo_lote: Number(byId("intervaloLote").value || 0),
+              template: {
+                name: tmpl.name,
+                language: "pt_BR",
+                headerType: tmpl.headerType,
+                bodyText: tmpl.bodyText,
+                bodyVars: tmpl.bodyVars,
+                headerVars: tmpl.headerVars,
+                urlButtons: tmpl.urlButtons,
+                mapping: mapping,
+                mediaLink: byId("mediaLink").value.trim()
+              },
+              contatos: contatos.map(c => ({
+                telefone: c.to,
+                conteudo: c.vars.join(",")
+              }))
+            };
+
+            try {
+              const res = await fetch(`${API_BASE}/api/envios`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json();
+              if(data.ok){
+                log(`✔️ Disparo "${payload.nome_disparo}" cadastrado com sucesso (ID ${data.id}).`);
+              }else{
+                log("❌ Erro ao salvar disparo: " + (data.erro || JSON.stringify(data)));
+              }
+            } catch(e) {
+              log("❌ Falha de rede ao salvar disparo: " + e.message);
+            }
+          }
+          document.getElementById("btnEnviar").addEventListener("click", onEnviarClick);
+
+          // Pausa/retomar/cancelar (apenas UI)
+          byId('btnPausar').addEventListener('click', () => {
+            flags.paused = true; byId('btnRetomar').disabled = false; log('⏸️ Pausa solicitada (se aplicável ao backend).');
+          });
+          byId('btnRetomar').addEventListener('click', () => {
+            flags.paused = false; byId('btnRetomar').disabled = true; log('▶️ Retomar solicitado (se aplicável ao backend).');
+          });
+          byId('btnCancelar').addEventListener('click', () => {
+            flags.cancelled = true; log('🛑 Cancelamento solicitado (se aplicável ao backend).');
+          });
+
+          // Novo envio (reset leve)
+          byId('btnNovoEnvio').addEventListener('click', () => {
+            contatos = [];
+            csvHeaders = [];
+            mapping = { body:[], headerText:[], urlButtons:{} };
+            flags = { paused:false, cancelled:false };
+            byId('output').textContent = 'Pronto para novo envio.';
+            byId('okCount').textContent = '0';
+            byId('errCount').textContent = '0';
+            byId('progressBar').style.width = '0%';
+            byId('progressTxt').textContent = '0/0';
+            byId('contagemContatos').textContent = 'Nenhum contato ainda.';
+            renderMapUI();
+            calcularCusto();
+            log('🔄 Novo envio iniciado — mantenha suas credenciais se for buscar templates.');
+          });
+
+          // IDs por conta
+          const contas = {
+            connectzap:   { phone: "828473960349364", waba: "1478379640276127" },
+            bancopan:     { phone: "805610009301153", waba: "25205080369078050" },
+            recoverypj:   { phone: "727586317113885", waba: "844006574616797" },
+            recoverypf1:  { phone: "864779140046932", waba: "1341565711046522" },
+            recoverypf2:  { phone: "802977069563598", waba: "825347669829173" },
+            mpcobranca1:  { phone: "873637622491517", waba: "1462086308422656" },
+            mpcobranca2:  { phone: "821562937700669", waba: "1989071868573988" },
+            divzero:      { phone: "779797401888141", waba: "1714740535849713" },
+            arc4u:        { phone: "829210283602406", waba: "757728786687884" },
+            serasa:       { phone: "713021321904495", waba: "803987045361450" },
+            mpvendas:     { phone: "803535039503723", waba: "760293050103603" }
+          };
+          document.getElementById("contaSelect").addEventListener("change", function() {
+            const conta = contas[this.value];
+            document.getElementById("phoneId").value = conta?.phone || "";
+            document.getElementById("wabaId").value  = conta?.waba  || "";
+          });
+
+          // Baixar log
+          byId('btnBaixarLog').addEventListener('click', () => {
+            const blob = new Blob([byId('output').textContent], { type:'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `log-whatsapp-${Date.now()}.txt`;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=> URL.revokeObjectURL(url), 500);
+          });
+        </script>
+      </div>
+
+      <!-- Aba: Agendamentos -->
+      <div id="tab-agendamentos" class="tab-content">
+        <div class="row" style="align-items:end">
+          <div class="col-4">
+            <h2>📅 Gerenciar Agendamentos</h2>
+          </div>
+          <div class="col-8" style="text-align:right;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+            <input id="filtroBusca" placeholder="Buscar por nome ou grupo..." />
+            <select id="filtroModo">
+              <option value="">Modo: todos</option>
+              <option value="imediato">Imediato</option>
+              <option value="agendar">Agendado</option>
+            </select>
+            <select id="filtroStatus">
+              <option value="">Status: todos</option>
+              <option value="agendado">Agendado</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="pausado">Pausado</option>
+              <option value="concluido">Concluído</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <button class="btn secondary" id="btnAtualizarAg">⟳ Atualizar</button>
+          </div>
+        </div>
+
+        <!-- Totais -->
+        <div id="agTotals" class="row" style="margin-top:8px">
+          <div class="col-12 muted">—</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:20%">Nome</th>
+                <th style="width:14%">Grupo</th>
+                <th style="width:16%">Data/Hora</th>
+                <th style="width:12%">Modo</th>
+                <th style="width:18%">Progresso</th>
+                <th style="width:10%">Status</th>
+                <th style="width:10%">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAgendamentos">
+              <tr><td colspan="7" class="muted">Carregando agendamentos...</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Paginação simples -->
+          <div id="agPagination" style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+            <button class="btn secondary" id="agPrev">◀</button>
+            <span class="muted" id="agPageInfo">Página 1/1</span>
+            <button class="btn secondary" id="agNext">▶</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de edição -->
+      <div id="agModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="agModalTitle">
+        <div class="card" style="width:520px;max-width:95%;position:relative">
+          <h2 id="agModalTitle">✏️ Editar envio</h2>
+          <div class="row">
+            <div class="col-12">
+              <label>Nome</label>
+              <input id="mNome" />
+            </div>
+            <div class="col-12">
+              <label>Grupo</label>
+              <input id="mGrupo" />
+            </div>
+            <div class="col-6">
+              <label>Modo</label>
+              <select id="mModo">
+                <option value="imediato">Imediato</option>
+                <option value="agendar">Agendar</option>
+              </select>
+            </div>
+            <div class="col-6" id="mDataWrap">
+              <label>Data/Hora (agendamento)</label>
+              <input id="mDataHora" type="datetime-local" />
+            </div>
+            <div class="col-4">
+              <label>Tamanho do Lote</label>
+              <input id="mTam" type="number" min="1" />
+            </div>
+            <div class="col-4">
+              <label>Intervalo Lote (min)</label>
+              <input id="mIntLote" type="number" min="0" />
+            </div>
+            <div class="col-4">
+              <label>Intervalo Msg (s)</label>
+              <input id="mIntMsg" type="number" min="0" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+            <button class="btn secondary" id="mCancelar">Cancelar</button>
+            <button class="btn success" id="mSalvar">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+<script>
+  // ==== Tabs ====
+  document.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-"+btn.dataset.tab).classList.add("active");
+      if(btn.dataset.tab==="agendamentos") carregarAgendamentos(true);
+    });
+  });
+
+  // (Reutiliza API_BASE declarado no script acima)
+  const PAGE_SIZE = 10;
+
+  // ==== State da aba Agendamentos ====
+  let agRaw = [];
+  let agFiltered = [];
+  let agPage = 1;
+
+  // ==== Helpers ====
+  const fmtBadge = (text, kind) =>
+    `<span class="pill" style="${kind==='ok'?'background:#ecfdf5;border-color:#bbf7d0;color:#065f46':kind==='warn'?'background:#fff7ed;border-color:#fed7aa;color:#9a3412':kind==='err'?'background:#fef2f2;border-color:#fecaca;color:#991b1b':'background:#eef2ff;border-color:#c7d2fe;color:#3730a3'}">${text}</span>`;
+
+  const pad2 = n => String(n).padStart(2,"0");
+  function toLocalISO(dtStr){
+    if(!dtStr) return "";
+    const d = new Date(dtStr);
+    const y = d.getFullYear(), m = pad2(d.getMonth()+1), day = pad2(d.getDate());
+    const hh = pad2(d.getHours()), mm = pad2(d.getMinutes());
+    return `${y}-${m}-${day}T${hh}:${mm}`;
+  }
+  function fmtDateTime(dtStr){
+    if(!dtStr) return "—";
+    const d = new Date(dtStr);
+    return d.toLocaleString("pt-BR", { dateStyle:"short", timeStyle:"short" });
+  }
+  function progressBar(done, total){
+    const pct = total>0 ? Math.round((done/total)*100) : 0;
+    return `
+      <div class="bar" title="${pct}%"><span style="width:${pct}%"></span></div>
+      <div class="muted">${done}/${total}</div>
+    `;
+  }
+  function computeDone(e){
+    const t = e.totais||{};
+    return (t.enviados||0) + (t.erros||0) + (t.cancelados||0);
+  }
+  function statusBadge(s){
+    switch(s){
+      case "agendado": return fmtBadge("Agendado");
+      case "em_andamento": return fmtBadge("Em andamento","warn");
+      case "pausado": return fmtBadge("Pausado","warn");
+      case "concluido": return fmtBadge("Concluído","ok");
+      case "cancelado": return fmtBadge("Cancelado","err");
+      default: return fmtBadge(s || "—");
     }
+  }
+  function renderTotals(list){
+    const box = document.getElementById("agTotals");
+    if(!list.length){ box.innerHTML = `<div class="col-12 muted">Nenhum agendamento.</div>`; return; }
+    const acc = { total:0, agendado:0, em_andamento:0, pausado:0, concluido:0, cancelado:0 };
+    list.forEach(e=>{ acc.total++; acc[e.status_geral] = (acc[e.status_geral]||0)+1; });
+    box.innerHTML = `
+      <div class="col-12" style="display:flex;gap:10px;flex-wrap:wrap">
+        <span class="muted">Total: <b>${acc.total}</b></span>
+        ${fmtBadge(`Agendados: ${acc.agendado}`)}
+        ${fmtBadge(`Em andamento: ${acc.em_andamento}`,"warn")}
+        ${fmtBadge(`Pausados: ${acc.pausado}`,"warn")}
+        ${fmtBadge(`Concluídos: ${acc.concluido}`,"ok")}
+        ${fmtBadge(`Cancelados: ${acc.cancelado}`,"err")}
+      </div>
+    `;
+  }
 
-    /* ======= Visibilidade ======= */
-    document.addEventListener("visibilitychange", () => {
-      if (!document.hidden) { scheduleRefresh(1000); } else { clearTimeout(refreshTimer); }
+  // ==== Filtros + Paginação ====
+  function applyFilters(){
+    const q = (document.getElementById("filtroBusca").value||"").toLowerCase();
+    const modo = document.getElementById("filtroModo").value;
+    const stat = document.getElementById("filtroStatus").value;
+
+    agFiltered = agRaw.filter(e=>{
+      const nameHit = (e.nome_disparo||"").toLowerCase().includes(q) || (e.grupo_trabalho||"").toLowerCase().includes(q);
+      const modoHit = !modo || e.modo_envio===modo;
+      const statHit = !stat || e.status_geral===stat;
+      return nameHit && modoHit && statHit;
     });
 
-    /* ======= Inicial ======= */
-    setSort("desc"); // padrão: mais recentes primeiro
-  </script>
-</body>
+    agPage = 1;
+    renderTable();
+  }
+  function pageSlice(){
+    const start = (agPage-1)*PAGE_SIZE;
+    return agFiltered.slice(start, start+PAGE_SIZE);
+  }
+  function renderPagination(){
+    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
+    document.getElementById("agPageInfo").textContent = `Página ${agPage}/${totalPages}`;
+    document.getElementById("agPrev").disabled = agPage<=1;
+    document.getElementById("agNext").disabled = agPage>=totalPages;
+  }
+  document.getElementById("agPrev").addEventListener("click", ()=>{ if(agPage>1){ agPage--; renderTable(); } });
+  document.getElementById("agNext").addEventListener("click", ()=>{
+    const totalPages = Math.max(1, Math.ceil(agFiltered.length / PAGE_SIZE));
+    if(agPage<totalPages){ agPage++; renderTable(); }
+  });
 
+  // ==== Render da Tabela ====
+  function renderTable(){
+    const tbody = document.getElementById("tbodyAgendamentos");
+    tbody.innerHTML = "";
+    renderTotals(agFiltered);
+
+    const rows = pageSlice();
+    if(!rows.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Nenhum agendamento com os filtros atuais.</td></tr>`;
+      renderPagination();
+      return;
+    }
+
+    rows.forEach(e=>{
+      const total = e.totais?.total || 0;
+      const done = computeDone(e);
+      const prog = progressBar(done, total);
+
+      const buttons = [];
+      buttons.push(`<button title="Editar" onclick="editarEnvio(${e.id})">✏️</button>`);
+      buttons.push(`<button title="Excluir" onclick="excluirEnvio(${e.id})">🗑️</button>`);
+      if(e.status_geral==="agendado" || e.status_geral==="em_andamento"){
+        buttons.push(`<button title="Pausar" onclick="pausarEnvio(${e.id})">⏸️</button>`);
+      }
+      if(e.status_geral==="pausado"){
+        buttons.push(`<button title="Retomar" onclick="retomarEnvio(${e.id})">▶️</button>`);
+      }
+      if(e.status_geral!=="concluido" && e.status_geral!=="cancelado"){
+        buttons.push(`<button title="Cancelar" onclick="cancelarEnvio(${e.id})">🛑</button>`);
+      }
+
+      const modoBadge = e.modo_envio==="agendar" ? fmtBadge("Agendado") : fmtBadge("Imediato","ok");
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><b>${e.nome_disparo||"-"}</b></td>
+        <td>${e.grupo_trabalho||"-"}</td>
+        <td>${fmtDateTime(e.data_hora_agendamento)}</td>
+        <td>${modoBadge}</td>
+        <td>${prog}</td>
+        <td>${statusBadge(e.status_geral)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">${buttons.join("")}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    renderPagination();
+  }
+
+  // ==== Carregar da API ====
+  async function carregarAgendamentos(force=false){
+    const tbody=document.getElementById("tbodyAgendamentos");
+    if(force){ tbody.innerHTML=`<tr><td colspan="7" class="muted">⏳ Buscando...</td></tr>`; }
+    try{
+      const params = new URLSearchParams();
+      const modo = document.getElementById("filtroModo").value;
+      const stat = document.getElementById("filtroStatus").value;
+      if(modo) params.set("modo_envio", modo);
+      if(stat) params.set("status", stat);
+
+      const res = await fetch(`${API_BASE}/api/envios?${params.toString()}`);
+      const data = await res.json();
+
+      agRaw = Array.isArray(data) ? data : [];
+      applyFilters();
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML=`<tr><td colspan="7" class="muted">Erro ao carregar agendamentos</td></tr>`;
+    }
+  }
+
+  // ==== Listeners de filtro e atualizar ====
+  document.getElementById("filtroBusca").addEventListener("input", ()=> applyFilters());
+  document.getElementById("filtroModo").addEventListener("change", ()=> carregarAgendamentos(true));
+  document.getElementById("filtroStatus").addEventListener("change", ()=> carregarAgendamentos(true));
+  document.getElementById("btnAtualizarAg").addEventListener("click", ()=> carregarAgendamentos(true));
+
+  // ==== Modal de edição ====
+  const modal = document.getElementById("agModal");
+  let editingId = null;
+
+  function openModal(envio){
+    editingId = envio.id;
+    document.getElementById("mNome").value = envio.nome_disparo || "";
+    document.getElementById("mGrupo").value = envio.grupo_trabalho || ""
+    document.getElementById("mModo").value = envio.modo_envio || "imediato";
+    document.getElementById("mDataHora").value = envio.data_hora_agendamento ? toLocalISO(envio.data_hora_agendamento) : "";
+    document.getElementById("mTam").value = envio.tamanho_lote ?? "";
+    document.getElementById("mIntLote").value = envio.intervalo_lote ?? "";
+    document.getElementById("mIntMsg").value = envio.intervalo_msg ?? "";
+    toggleModalDate();
+    modal.classList.add("open");
+  }
+  function closeModal(){ modal.classList.remove("open"); editingId = null; }
+  modal.addEventListener("click", (e) => { if(e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => { if(e.key === "Escape" && modal.classList.contains("open")) closeModal(); });
+
+  function toggleModalDate(){
+    const wrap = document.getElementById("mDataWrap");
+    wrap.classList.toggle("hide", document.getElementById("mModo").value!=="agendar");
+  }
+  document.getElementById("mModo").addEventListener("change", toggleModalDate);
+  document.getElementById("mCancelar").addEventListener("click", closeModal);
+
+  document.getElementById("mSalvar").addEventListener("click", async ()=>{
+    if(!editingId) return;
+    const body = {
+      nome_disparo: document.getElementById("mNome").value.trim(),
+      grupo_trabalho: document.getElementById("mGrupo").value.trim(),
+      modo_envio: document.getElementById("mModo").value,
+      data_hora_agendamento: document.getElementById("mModo").value==="agendar" ? document.getElementById("mDataHora").value : null,
+      tamanho_lote: Number(document.getElementById("mTam").value||0) || null,
+      intervalo_lote: Number(document.getElementById("mIntLote").value||0) || null,
+      intervalo_msg: Number(document.getElementById("mIntMsg").value||0) || null,
+    };
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${editingId}`, {
+        method:"PUT", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body)
+      });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao salvar"); return; }
+      closeModal();
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao salvar edição");
+      console.error(e);
+    }
+  });
+
+  // ==== Ações globais ====
+  window.editarEnvio = (id)=>{
+    const e = agRaw.find(x=>x.id===id);
+    if(!e){ alert("Envio não encontrado"); return; }
+    openModal(e);
+  };
+  window.excluirEnvio = async (id)=>{
+    if(!confirm("Excluir este envio? Essa ação é irreversível.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}`, { method:"DELETE" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao excluir"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao excluir");
+      console.error(e);
+    }
+  };
+  window.pausarEnvio = async (id)=>{
+    if(!confirm("Pausar envio? Itens pendentes irão para 'pausado'.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/pause`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao pausar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao pausar");
+      console.error(e);
+    }
+  };
+  window.retomarEnvio = async (id)=>{
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/resume`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao retomar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao retomar");
+      console.error(e);
+    }
+  };
+  window.cancelarEnvio = async (id)=>{
+    if(!confirm("Cancelar envio? Pendentes/pausados serão marcados como 'cancelado'.")) return;
+    try{
+      const res = await fetch(`${API_BASE}/api/envios/${id}/cancel`, { method:"PATCH" });
+      const j = await res.json();
+      if(!res.ok || j?.ok===false){ alert(j?.erro || "Erro ao cancelar"); return; }
+      await carregarAgendamentos(true);
+    }catch(e){
+      alert("Erro ao cancelar");
+      console.error(e);
+    }
+  };
+
+  // Auto-refresh leve a cada 30s quando a aba estiver ativa
+  let agInterval = null;
+  function startAgAutoRefresh(){
+    stopAgAutoRefresh();
+    agInterval = setInterval(()=> {
+      const isActive = document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos';
+      if(isActive) carregarAgendamentos();
+    }, 30000);
+  }
+  function stopAgAutoRefresh(){ if(agInterval) clearInterval(agInterval); }
+  startAgAutoRefresh();
+
+  // Primeira carga se a aba já estiver ativa
+  if(document.querySelector('.tab-btn.active')?.dataset?.tab === 'agendamentos'){
+    carregarAgendamentos(true);
+  }
+</script>
+</body>
 </html>
