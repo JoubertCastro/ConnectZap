@@ -74,7 +74,7 @@
             <h2>Credenciais</h2>
             <div class="row">
               <div class="col-6">
-                <label for="token">Token de Acesso (apenas para ENVIOS)</label>
+                <label for="token">Token de Acesso</label>
                 <input id="token" placeholder="Cole seu token" />
               </div>
               <div class="col-6">
@@ -187,7 +187,7 @@
                         <option value="mercado_pago">Mercado Pago — Venc hoje</option>
                         <option value="serasa">Serasa — Venc hoje</option>
                       </optgroup>
-                      <optgroup label="Exemplos internos">
+                      <optgroup label="Realizar teste">
                         <option value="estrategia1">Teste Karen</option>
                         <option value="estrategia2">Teste Josimar e Larissa</option>
                         <option value="estrategia3">Teste Matheus Ribeiro</option>
@@ -302,9 +302,6 @@
           // ================== Config de backends ==================
           const API_BASE   = "https://whatsapp-webhook-production-9a27.up.railway.app"; // envios/agendamentos
           const ESTRAT_API = "https://consultasic-production.up.railway.app";           // estratégias (seu backend)
-
-          // Token do BACKEND para carregar estratégias (NÃO é o token digitado na UI)
-          const ESTRAT_BACKEND_TOKEN = "token_maquina_mis_1_ajfaiufhurfnj298547648781349u583498913094u9";
 
           // ================== Estado ==================
           const estrategias = {
@@ -569,7 +566,7 @@
             byId('previewArea').textContent = parts.join('\n\n');
           }
 
-          // ================== Templates ==================
+          // ================== Templates (Graph API) ==================
           byId('btnBuscar').addEventListener('click', buscarTemplates);
           async function buscarTemplates(){
             const token = byId('token').value.trim();
@@ -668,14 +665,16 @@
             updatePreview();
           }
 
-          // ================== Estratégias ONLINE (sempre com token do backend) ==================
+          // ================== Estratégias ONLINE (sem token do front) ==================
           async function carregarEstrategiaOnline(fonte){
-            const headers = ESTRAT_BACKEND_TOKEN
-              ? { "Authorization": `Bearer ${ESTRAT_BACKEND_TOKEN}` }
-              : {};
-
+            // Sem headers de auth: backend usará LEAL_TOKEN como fallback seguro
             const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
-            const res = await fetch(url, { headers });
+            const res = await fetch(url, {
+              method: "GET",
+              mode: "cors",
+              credentials: "omit",     // não envia cookies; evita qualquer dado sensível
+              cache: "no-store"        // garante dado fresco
+            });
             if(!res.ok){
               const msg = await res.text();
               throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
@@ -694,7 +693,7 @@
 
             csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
             document.getElementById('contagemContatos').textContent =
-              `✔️ Estratégia "${fonte}" (online) carregada com ${contatos.length} contato(s).`;
+              `✔️ Estratégia "${fonte}" (consulta no sic) carregada com ${contatos.length} contato(s).`;
 
             renderMapUI();
             calcularCusto();
@@ -713,7 +712,7 @@
                 contatos = JSON.parse(JSON.stringify(estrategias[selected]));
                 csvHeaders = ["PrimeiroNome","VALOR_PARCELA","VENCIMENTO"];
                 document.getElementById('contagemContatos').textContent =
-                  `✔️ Estratégia "${selected}" (exemplo) carregada com ${contatos.length} contato(s).`;
+                  `✔️ Estratégia "${selected}" (teste) carregada com ${contatos.length} contato(s).`;
                 renderMapUI();
                 calcularCusto();
               }else{
@@ -772,7 +771,7 @@
             }
 
             const payload = {
-              token: byId("token").value.trim(),
+              token: byId("token").value.trim(),    // para Graph/WhatsApp
               phone_id: byId("phoneId").value.trim(),
               waba_id: byId("wabaId").value.trim(),
               nome_disparo: byId("nomeDisparo").value.trim(),
