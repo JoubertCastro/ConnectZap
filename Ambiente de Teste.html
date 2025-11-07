@@ -39,7 +39,6 @@
     .hide{display:none !important}
     details summary{cursor:pointer}
     .kbd{background:#e5e7eb;border:1px solid #cbd5e1;padding:1px 6px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px;}
-    /* Tabs & Modal */
     .modal{position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50;}
     .modal.open{display:flex;}
     .modal .card{max-height:90vh; overflow:auto;}
@@ -75,8 +74,8 @@
             <h2>Credenciais</h2>
             <div class="row">
               <div class="col-6">
-                <label for="token">Token de Acesso</label>
-                <input id="token" placeholder="Cole seu token (opcional para estratégias e templates)" />
+                <label for="token">Token de Acesso (apenas para ENVIOS e busca de templates no Graph)</label>
+                <input id="token" placeholder="Cole seu token" />
               </div>
               <div class="col-6">
                 <label for="contaSelect">Conta</label>
@@ -180,17 +179,19 @@
                     <input id="fileInput" type="file" accept=".csv,.txt" />
                   </div>
                   <div>
-                    <label for="estrategiaSelect">Estratégia (cliente ou exemplo)</label>
+                    <label for="estrategiaSelect">Estratégia pré cadastrada</label>
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
-                      <optgroup label="Online (cliente)">
-                        <option value="arc4u">Arc4U — hoje</option>
-                        <option value="mercado_pago">Mercado Pago — hoje</option>
-                        <option value="serasa">Serasa — hoje</option>
-                      <!--/optgroup>
+                      <optgroup label="Consulta no SIC">
+                        <option value="arc4u">Arc4U — Venc hoje</option>
+                        <option value="mercado_pago">Mercado Pago — Venc hoje</option>
+                        <option value="serasa">Serasa — Venc hoje</option>
+                      </optgroup>
                       <optgroup label="Exemplos internos">
-                        <option value="estrategia1">estrategia1</option>
-                        <option value="estrategia2">estrategia2</option-->
+                        <option value="estrategia1">Teste Karen</option>
+                        <option value="estrategia2">Teste Josimar e Larissa</option>
+                        <option value="estrategia3">Teste Matheus Ribeiro</option>
+                        <option value="estrategia4">Teste Hellen</option>
                       </optgroup>
                     </select>
                   </div>
@@ -299,19 +300,23 @@
 
         <script>
           // ================== Config de backends ==================
-          const API_BASE = "https://whatsapp-webhook-production-9a27.up.railway.app";     // envios/agendamentos
-          const ESTRAT_API = "https://consultasic-production.up.railway.app";             // estratégias (seu backend)
+          const API_BASE   = "https://whatsapp-webhook-production-9a27.up.railway.app"; // envios/agendamentos
+          const ESTRAT_API = "https://consultasic-production.up.railway.app";           // estratégias (seu backend)
 
           // ================== Estado ==================
           const estrategias = {
             estrategia1: [
-              { to: "5561993742606", vars: ["Joubert", "250.23", "13/08/2025"] },
-              { to: "5592991029242", vars: ["Savio", "120.00", "25/09/2025"] },
-              { to: "5561996777300", vars: ["Ayrton", "89.90", "01/10/2025"] },
+              { to: "5561982263659", vars: ["Karen", "100.00", "01/01/2025"] },
             ],
             estrategia2: [
-              { to: "5561993742601", vars: ["Joubert", "250.23", "13/08/2025"] },
-              { to: "5561993742602", vars: ["JoubertC", "250.23", "13/08/2025"] },
+              { to: "5561993242214", vars: ["Larissa", "100.00", "01/01/2025"] },
+              { to: "5561986092009", vars: ["Josimar", "100.00", "01/01/2025"] },
+            ],
+            estrategia3: [
+              { to: "5561999260399", vars: ["Matheus", "100.00", "01/01/2025"] },
+            ],
+            estrategia4: [
+              { to: "5561994013534", vars: ["Hellen", "100.00", "01/01/2025"] },
             ],
           };
 
@@ -561,7 +566,7 @@
             byId('previewArea').textContent = parts.join('\n\n');
           }
 
-          // ================== Templates ==================
+          // ================== Templates (Graph API) ==================
           byId('btnBuscar').addEventListener('click', buscarTemplates);
           async function buscarTemplates(){
             const token = byId('token').value.trim();
@@ -660,17 +665,16 @@
             updatePreview();
           }
 
-          // ================== Estratégias ONLINE (cliente via seu backend) ==================
+          // ================== Estratégias ONLINE (sem token do front) ==================
           async function carregarEstrategiaOnline(fonte){
-            const clientToken = (document.getElementById("token").value || "").trim();
-            const headers = clientToken ? { "X-Auth-Token": clientToken } : {};
-            // AGORA: 3 endpoints dedicados no seu backend
-            // arc4u -> /api/estrategias/arc4u
-            // mercado_pago -> /api/estrategias/mercado_pago
-            // serasa -> /api/estrategias/serasa
+            // Sem headers de auth: backend usará LEAL_TOKEN como fallback seguro
             const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
-
-            const res = await fetch(url, { headers });
+            const res = await fetch(url, {
+              method: "GET",
+              mode: "cors",
+              credentials: "omit",     // não envia cookies; evita qualquer dado sensível
+              cache: "no-store"        // garante dado fresco
+            });
             if(!res.ok){
               const msg = await res.text();
               throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
@@ -678,14 +682,12 @@
             const data = await res.json();
             const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            // Converte formato do backend para {to, vars}
-            // Padrão: vars = [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
-            // (ajuste a ordem se quiser)
+            // Converte para {to, vars} — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
             contatos = rows.map(r => {
-              const tel = String(r?.TELEFONE || "").replace(/\D+/g,"");
-              const nome = (r?.PrimeiroNome ?? "").toString();
+              const tel   = String(r?.TELEFONE || "").replace(/\D+/g,"");
+              const nome  = (r?.PrimeiroNome ?? "").toString();
               const valor = (r?.VALOR_PARCELA ?? "").toString();
-              const vcto  = (r?.VENCIMENTO ?? "").toString(); // já vem DD/MM/YYYY
+              const vcto  = (r?.VENCIMENTO ?? "").toString();
               return { to: tel, vars: [nome, valor, vcto] };
             }).filter(c => c.to);
 
@@ -769,7 +771,7 @@
             }
 
             const payload = {
-              token: byId("token").value.trim(),
+              token: byId("token").value.trim(),    // para Graph/WhatsApp
               phone_id: byId("phoneId").value.trim(),
               waba_id: byId("wabaId").value.trim(),
               nome_disparo: byId("nomeDisparo").value.trim(),
