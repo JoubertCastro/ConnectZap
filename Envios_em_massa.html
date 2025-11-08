@@ -184,8 +184,10 @@
                       <option value="">-- Nenhuma --</option>
                       <optgroup label="Consulta no SIC">
                         <option value="arc4u">Arc4U — Venc hoje</option>
-                        <option value="mercado_pago">Mercado Pago — Venc hoje</option>
                         <option value="serasa">Serasa — Venc hoje</option>
+                        <option value="mercado_pago_2">Mercado Pago(2) — Venc hoje</option>
+                        <option value="mercado_pago_4">Mercado Pago(4) — Venc hoje</option>
+                        <option value="mercado_pago_9">Mercado Pago(9) — Venc hoje</option>
                       </optgroup>
                       <optgroup label="Realizar teste">
                         <option value="estrategia1">Teste Karen</option>
@@ -703,7 +705,7 @@
           byId('estrategiaSelect').addEventListener('change', async function(){
             const selected = this.value;
             try{
-              if(selected === "arc4u" || selected === "mercado_pago" || selected === "serasa"){
+              if(selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa"){
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
