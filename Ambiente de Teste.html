@@ -2,1186 +2,943 @@
 <html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard — ConnectZap</title>
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ConnectZap — Supervisão</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --ok: #16a34a;
+      --warn: #d97706;
+      --err: #dc2626
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px
+    }
+
+    .kpi {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      background: #fff;
+      padding: 14px
+    }
+
+    .pill {
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: #f3f4f6;
+      font-size: 12px
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-right: 6px
+    }
+
+    .dot.online {
+      background: #16a34a
+    }
+
+    .dot.offline {
+      background: #9ca3af
+    }
+
+    .btn {
+      padding: 10px 14px;
+      border-radius: 10px
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff
+    }
+
+    .btn-muted {
+      background: #f3f4f6
+    }
+
+    details>summary {
+      cursor: pointer;
+      list-style: none
+    }
+
+    details>summary::-webkit-details-marker {
+      display: none
+    }
+
+    .summary-row {
+      display: flex;
+      align-items: center;
+      gap: .5rem
+    }
+
+    details.card summary {
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: -8px;
+      margin-bottom: 8px;
+      transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
+    }
+
+    details.card:hover summary {
+      background: #f9fafb;
+    }
+
+    details.card[open] summary {
+      background: #eef2ff;
+      box-shadow: 0 0 0 2px #6366f1 inset;
+    }
+
+    details.card summary:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px #2563eb inset;
+    }
+  </style>
 </head>
 
-<body class="bg-slate-50 text-slate-800">
-  <header class="bg-blue-600 text-white py-4">
-    <div class="max-w-7xl mx-auto px-4">
-      <h1 class="text-xl sm:text-2xl font-semibold">📊 Dashboard — ConnectZap</h1>
+<body class="bg-gray-100 min-h-screen">
+  <header class="bg-white border-b sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div class="flex items-center gap-3">
+        <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
+        <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
+        <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
+          <option value="">Todas</option>
+        </select>
+        <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada 10s</span>
+      </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-    <!-- Filtros -->
-    <section class="bg-white rounded-xl shadow-sm border p-4">
-      <div class="flex flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-sm text-slate-500 mr-1">Período:</span>
+  <main class="max-w-6xl mx-auto p-4 space-y-6">
+    <!-- KPIs -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Agentes online</div>
+        <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
+        <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Conversas em andamento</div>
+        <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
+        <div class="text-xs text-gray-500 mt-2">Somatório dos tickets dos agentes online</div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Pendentes na fila (24hrs)</div>
+        <div id="kpiPendentesFila" class="text-3xl font-bold mt-1">—</div>
+        <div id="kpiPendentesPorCarteira" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+      </div>
+      <div class="kpi">
+        <div class="text-gray-500 text-sm">Última atualização</div>
+        <div id="kpiAtualizado" class="text-lg font-semibold mt-1">—</div>
+        <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
+      </div>
+    </section>
 
-          <!-- chips de período (AJUSTE: classe chip) -->
-          <button
-            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
-            data-range="hoje">Hoje</button>
-          <button
-            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
-            data-range="7d">Últimos 7 dias</button>
-          <button
-            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
-            data-range="30d">Últimos 30 dias</button>
-          <button
-            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
-            data-range="mes">Mês atual</button>
-          <button
-            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
-            data-range="custom">Personalizado</button>
+    <!-- Cadastrar/Editar -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <details class="card">
+        <summary class="summary-row">
+          <span class="font-bold text-lg">Cadastrar agente</span>
+          <span class="pill">formulário</span>
+        </summary>
+        <div class="mt-3">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div>
+              <label class="text-sm text-gray-700">Código (SIC)</label>
+              <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123" />
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-sm text-gray-700">Nome completo</label>
+              <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome" />
+            </div>
+            <div>
+              <label class="text-sm text-gray-700">Carteira</label>
+              <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
+            </div>
+            <div>
+              <label class="text-sm text-gray-700">Origem BD</label>
+              <select id="cadOrigem" class="w-full border rounded-md p-2">
+                <option value="">Selecione</option>
+                <option>Bd4</option>
+                <option>Bd5</option>
+                <option>Bd7</option>
+                <option>Bd8</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex gap-2 mt-4">
+            <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
+            <div id="cadMsg" class="text-sm hidden"></div>
+          </div>
         </div>
+      </details>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div>
-            <label class="text-sm text-slate-500">Início</label>
-            <input id="start" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
-          <div>
-            <label class="text-sm text-slate-500">Fim</label>
-            <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
-
-          <!-- Filtros EXTRAS (Atendimentos + Hora a hora + Resumo) -->
-          <div id="fltCarteira" class="hidden">
-            <label class="text-sm text-slate-500">Carteira</label>
-            <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
-              <option value="">Todas</option>
-            </select>
-          </div>
-          <div id="fltAgentes" class="hidden">
-            <label class="text-sm text-slate-500">Agentes</label>
-            <div class="relative">
-              <button id="btnAgentes" type="button"
-                class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
-                <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20"
-                  fill="currentColor">
-                  <path fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                    clip-rule="evenodd" />
-                </svg>
-              </button>
-              <!-- dropdown -->
-              <div id="panelAgentes" class="hidden absolute z-20 mt-2 w-80 bg-white border rounded-lg shadow-lg p-2">
-                <div class="flex items-center gap-2 mb-2">
-                  <input id="agSearch" type="text" placeholder="Buscar agente..."
-                    class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="agSelectAll"
-                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="agClear"
-                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
-                </div>
-                <div id="agList" class="max-h-56 overflow-y-auto space-y-1"></div>
-              </div>
+      <details class="card">
+        <summary class="summary-row">
+          <span class="font-bold text-lg">Buscar e editar agente</span>
+          <span class="pill">edição</span>
+        </summary>
+        <div class="mt-3">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label class="text-sm text-gray-700">Código (SIC)</label>
+              <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2"
+                placeholder="Ex: 123" />
+            </div>
+            <div class="flex items-end">
+              <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
+            </div>
+            <div class="flex items-end">
+              <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
             </div>
           </div>
 
-          <!-- botões -->
+          <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <div>
+                <span class="text-xs text-gray-500 block">Código</span>
+                <span id="edCodigo" class="font-medium">—</span>
+              </div>
+              <div class="md:col-span-2">
+                <span class="text-xs text-gray-500 block">Nome</span>
+                <span id="edNome" class="font-medium">—</span>
+              </div>
+              <div>
+                <label class="text-sm text-gray-700">Carteira</label>
+                <select id="edCarteira" class="w-full border rounded-md p-2"></select>
+              </div>
+              <div>
+                <span class="text-xs text-gray-500 block">Origem BD</span>
+                <span id="edOrigem" class="font-medium">—</span>
+              </div>
+            </div>
+            <div class="flex gap-2 mt-3">
+              <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+              <div id="editMsg" class="text-sm hidden"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- Agentes online -->
+    <section class="card">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-lg">Agentes online agora</h2>
+        <span class="pill"><span class="dot online"></span> Online</span>
+      </div>
+
+      <div class="overflow-auto border rounded-lg mt-3">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="text-left px-3 py-2">Código</th>
+              <th class="text-left px-3 py-2">Nome</th>
+              <th class="text-left px-3 py-2">Carteira</th>
+              <th class="text-left px-3 py-2">Desde</th>
+              <th class="text-left px-3 py-2">Tickets ativos</th>
+              <th class="text-left px-3 py-2">Inatividade</th>
+              <th class="text-left px-3 py-2">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyOnline"></tbody>
+        </table>
+      </div>
+      <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
+    </section>
+
+    <!-- Limite de tickets -->
+    <details class="card">
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Configurar limite de tickets em andamento</span>
+        <span class="pill">por carteira</span>
+      </summary>
+      <div class="mt-3 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">Carteira</label>
+            <select id="tlCarteira" class="w-full border rounded-md p-2"></select>
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Máximo por operador (0 = sem limite)</label>
+            <input id="tlLimit" type="number" min="0" max="50" value="0" class="w-full border rounded-md p-2">
+          </div>
           <div class="flex items-end gap-2">
-            <button id="btnClearDates"
-              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
-            <button id="btnAplicar"
-              class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
+            <button id="btnSalvarTicketsLimit" class="btn btn-primary w-full">Salvar limite</button>
+            <button id="btnResetTicketsLimit" class="btn btn-muted w-full">Zerar</button>
           </div>
+        </div>
 
-          <!-- Filtro EXCLUSIVO da aba Mensagens -->
-          <div id="fltNomeDisparo" class="md:col-span-2">
-            <label class="text-sm text-slate-500">Nome do disparo</label>
-            <input id="q" type="text" placeholder="Buscar..."
-              class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
-          </div>
+        <div class="text-xs text-gray-500">
+          Observação: o limite é aplicado <b>por carteira</b> no momento do “Pegar Próxima”. Se o agente já tiver
+          atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna uma mensagem para o Agente.
+        </div>
 
-          <!-- Filtro EXCLUSIVO da aba Hora a hora -->
-          <div id="fltMotivo" class="hidden md:col-span-2">
-            <label class="text-sm text-slate-500">Motivo de conclusão</label>
-            <div class="relative">
-              <button id="btnMotivos" type="button"
-                class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
-                <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20"
-                  fill="currentColor">
-                  <path fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                    clip-rule="evenodd" />
-                </svg>
-              </button>
-              <!-- dropdown -->
-              <div id="panelMotivos"
-                class="hidden absolute z-20 mt-2 w-[28rem] bg-white border rounded-lg shadow-lg p-2">
-                <div class="flex items-center gap-2 mb-2">
-                  <input id="motSearch" type="text" placeholder="Buscar motivo..."
-                    class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="motSelectAll"
-                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="motClear"
-                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
-                </div>
-                <div id="motList" class="max-h-56 overflow-y-auto space-y-1"></div>
-              </div>
-            </div>
-          </div>
-
+        <div>
+          <div class="text-sm text-gray-700 mb-2">Carteiras configuradas:</div>
+          <div id="tlChips" class="flex flex-wrap gap-2"></div>
+          <div id="tlMsg" class="text-sm text-gray-600 mt-2"></div>
         </div>
       </div>
-    </section>
+    </details>
 
-    <!-- Abas -->
-    <section class="bg-white rounded-xl shadow-sm border">
-      <div class="p-3">
-        <div class="inline-flex bg-slate-100 rounded-xl p-1">
-          <button class="seg-btn seg-active" data-tab="mensagens">
-            <span>✉️</span><span>Mensagens</span>
-          </button>
-          <button class="seg-btn" data-tab="atendimentos">
-            <span>🎧</span><span>Atendimentos</span>
-          </button>
-          <button class="seg-btn" data-tab="hora_hora">
-            <span>⏱️</span><span>Hora a hora</span>
-          </button>
-          <button class="seg-btn" data-tab="resumo">
-            <span>📑</span><span>Resumo</span>
-          </button>
-        </div>
-      </div>
+    <!-- ====== NOVO BLOCO: Textos padrão (novo/editar/apagar) ====== -->
+    <details class="card">
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Gerenciar textos padrão</span>
+        <span class="pill">novo/editar/apagar</span>
+      </summary>
 
-      <!-- Aba: Mensagens -->
-      <div id="tab-mensagens" class="p-4 space-y-6">
-        <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="balloon">
-            <div class="balloon-label">Total</div>
-            <div id="k_total" class="balloon-value">—</div>
+      <div class="mt-3 space-y-6">
+        <!-- NOVO TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">Chave (única)</label>
+            <input id="txChaveNovo" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
           </div>
-          <div class="balloon">
-            <div class="balloon-label">Enviados</div>
-            <div id="k_env" class="balloon-value">—</div>
+          <div class="md:col-span-2">
+            <label class="text-sm text-gray-700">Texto</label>
+            <textarea id="txConteudoNovo" rows="4" class="w-full border rounded-md p-2" placeholder="Conteúdo do texto padrão"></textarea>
           </div>
-          <div class="balloon">
-            <div class="balloon-label">Entregues</div>
-            <div id="k_ent" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Lidos</div>
-            <div id="k_lido" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Delivery rate</div>
-            <div id="k_dr" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">Read rate</div>
-            <div id="k_rr" class="balloon-value">—</div>
+          <div class="md:col-span-3 flex gap-2">
+            <button id="btnNovoTexto" class="btn btn-primary">Salvar novo texto</button>
+            <div id="txNovoMsg" class="text-sm hidden"></div>
           </div>
         </div>
 
-        <div class="space-y-2">
-          <div class="text-sm text-slate-500">Entregues x Lidos por disparo</div>
-          <div class="h-72"><canvas id="chartMensagens" class="w-full h-full"></canvas></div>
-          <div id="chartMensagensEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
-        </div>
+        <hr class="border-gray-200">
 
-        <div class="overflow-hidden rounded-xl border">
-          <div class="overflow-x-auto">
-            <table class="min-w-full">
-              <thead class="bg-slate-50 sticky top-0">
-                <tr>
-                  <th class="th">Disparo</th>
-                  <th class="th">Grupo</th>
-                  <th class="th">Data</th>
-                  <th class="th text-right">Total</th>
-                  <th class="th text-right">Entregues</th>
-                  <th class="th text-right">Lidos</th>
-                </tr>
-              </thead>
-              <tbody id="tbodyMensagens" class="bg-white"></tbody>
-            </table>
+        <!-- EDITAR TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">ID (opcional)</label>
+            <input id="txIdEdit" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
+            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
           </div>
-          <div id="tblEmpty" class="p-3 text-sm text-slate-500 hidden">Nenhum envio encontrado.</div>
-        </div>
-      </div>
-
-      <!-- Aba: Atendimentos -->
-      <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
-        <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="balloon">
-            <div class="balloon-label">Em atendimento</div>
-            <div id="a_em" class="balloon-value">—</div>
+          <div>
+            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
+            <input id="txChaveEdit" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
           </div>
-          <div class="balloon">
-            <div class="balloon-label">Concluídos</div>
-            <div id="a_conc" class="balloon-value">—</div>
+          <div>
+            <label class="text-sm text-gray-700">Novo texto</label>
+            <textarea id="txConteudoEdit" rows="4" class="w-full border rounded-md p-2" placeholder="Conteúdo atualizado"></textarea>
           </div>
-          <div class="balloon">
-            <div class="balloon-label">TMA</div>
-            <div id="a_tma" class="balloon-value">—</div>
-          </div>
-          <div class="balloon">
-            <div class="balloon-label">1ª resposta</div>
-            <div id="a_tmr" class="balloon-value">—</div>
+          <div class="md:col-span-3 flex gap-2">
+            <button id="btnEditarTexto" class="btn btn-primary">Aplicar edição</button>
+            <div id="txEditarMsg" class="text-sm hidden"></div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Motivos de conclusão</div>
-            <div class="h-72"><canvas id="chartMotivos" class="w-full h-full"></canvas></div>
-            <div id="chartMotivosEmpty" class="text-sm text-slate-500 hidden">Sem dados de motivos.</div>
-          </div>
+        <hr class="border-gray-200">
 
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Séries diárias — In / Out / Concluídos</div>
-            <div class="h-72"><canvas id="chartSeries" class="w-full h-full"></canvas></div>
-            <div id="chartSeriesEmpty" class="text-sm text-slate-500 hidden">Sem séries no período.</div>
+        <!-- APAGAR TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">ID (opcional)</label>
+            <input id="txIdDelete" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
+            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
+            <input id="txChaveDelete" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
+          </div>
+          <div class="flex items-end">
+            <button id="btnApagarTexto" class="btn btn-muted w-full">Apagar texto</button>
+          </div>
+          <div class="md:col-span-3">
+            <div id="txApagarMsg" class="text-sm hidden"></div>
           </div>
         </div>
       </div>
+    </details>
+    <!-- ====== FIM NOVO BLOCO ====== -->
 
-      <!-- Aba: Hora a hora -->
-      <div id="tab-hora_hora" class="p-4 space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Concluídos por hora (0–23)</div>
-            <div class="h-72"><canvas id="chartHHConc" class="w-full h-full"></canvas></div>
-            <div id="hhConcEmpty" class="text-sm text-slate-500 hidden">Sem dados de concluídos.</div>
-          </div>
-          <div class="space-y-2">
-            <div class="text-sm text-slate-500">Inbound por hora (0–23)</div>
-            <div class="h-72"><canvas id="chartHHIn" class="w-full h-full"></canvas></div>
-            <div id="hhInEmpty" class="text-sm text-slate-500 hidden">Sem dados de inbound.</div>
-          </div>
+    <!-- Logout automático -->
+    <details class="card">
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Logout automático por carteira</span>
+        <span class="pill">agendamento</span>
+      </summary>
+      <div class="mt-3 space-y-3">
+        <div class="flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm">
+            <input id="lgEnabled" type="checkbox" class="w-4 h-4">
+            Ativar logout automático
+          </label>
+          <label class="text-sm text-gray-700">Horário (HH:MM)
+            <input id="lgTime" type="time" value="18:00" class="border rounded-md p-2 ml-2">
+          </label>
+        </div>
+        <div>
+          <div class="text-sm text-gray-700 mb-1">Carteiras para logout:</div>
+          <div id="lgCarteiras" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnSalvarLogout" class="btn btn-primary">Salvar configuração</button>
+          <button id="btnForcarLogout" class="btn btn-muted">Forçar logout agora</button>
+          <span id="lgMsg" class="text-sm text-gray-600"></span>
         </div>
       </div>
-
-      <!-- Aba: Resumo (carteira -> agentes) -->
-      <div id="tab-resumo" class="p-4 space-y-4 hidden">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-slate-600">Resumo por carteira. Clique para expandir e ver os agentes.</div>
-        </div>
-        <div id="resumoList" class="space-y-2"></div>
-        <div id="resumoEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
-      </div>
-
-    </section>
-
-    <!-- Avisos -->
-    <div id="alert" class="hidden rounded-lg border border-amber-300 bg-amber-50 text-amber-800 p-3 text-sm"></div>
+    </details>
   </main>
 
-  <style>
-    .seg-btn {
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: .5rem .75rem;
-      border-radius: .75rem;
-      font-weight: 600;
-      color: #334155;
-      transition: all .15s;
-    }
-
-    .seg-btn:hover {
-      background: #fff;
-    }
-
-    .seg-active {
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
-      color: #1d4ed8
-    }
-
-    .balloon {
-      background: linear-gradient(180deg, #ffffff, #f8fafc);
-      border: 1px solid #e2e8f0;
-      border-radius: 9999px;
-      padding: 14px 18px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-      text-align: center;
-    }
-
-    .balloon-label {
-      font-size: .7rem;
-      letter-spacing: .05em;
-      text-transform: uppercase;
-      color: #64748b;
-    }
-
-    .balloon-value {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-top: 2px;
-    }
-
-    .th {
-      padding: .5rem .75rem;
-      text-align: left;
-      font-size: .75rem;
-      font-weight: 700;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      color: #64748b;
-    }
-
-    td {
-      padding: .5rem .75rem;
-      border-top: 1px solid #eef2f7;
-    }
-
-    .chip {
-      transition: background-color .15s, border-color .15s, color .15s;
-    }
-
-    .chip--active {
-      background: #2563eb;
-      color: #fff;
-      border-color: #2563eb;
-    }
-
-    .chip:focus-visible {
-      outline: 2px solid rgba(37, 99, 235, .35);
-      outline-offset: 2px;
-    }
-
-    .acc {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      background: #fff;
-      overflow: hidden
-    }
-
-    .acc-header {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      width: 100%;
-      text-align: left;
-      padding: .75rem 1rem;
-    }
-
-    .acc-grid {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(80px, auto));
-      gap: .5rem;
-      align-items: center;
-      flex: none;
-    }
-
-    .acc-k {
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .chev {
-      transition: transform .15s ease;
-    }
-
-    .rot-90 {
-      transform: rotate(90deg);
-    }
-
-    .acc-body {
-      border-top: 1px solid #eef2f7;
-      padding: .5rem 1rem .75rem 1rem;
-    }
-
-    .mini-th {
-      font-size: .7rem;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: .05em;
-    }
-
-    .acc-name {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  </style>
-
   <script>
-    // ===== CONFIG =====
-    const API_BASE = "https://dashboard-production-4c05.up.railway.app";
-    const phoneIdMap = {
-      "828473960349364": "ConnectZap",
-      "805610009301153": "Banco PAN",
-      "727586317113885": "Recovery PJ",
-      "864779140046932": "Recovery PF",
-      "802977069563598": "Recovery PF",
-      "873637622491517": "Mercado Pago Cobrança",
-      "821562937700669": "Mercado Pago Cobrança",
-      "779797401888141": "DivZero",
-      "829210283602406": "Arc4U",
-      "713021321904495": "Serasa",
-      "803535039503723": "Mercado Pago Vendas"
-    };
+    /* === Bases de API === */
+    const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes + textos
+    const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
 
-    // ===== DOM =====
-    const startEl = document.getElementById("start");
-    const endEl = document.getElementById("end");
-    const qEl = document.getElementById("q");
+    /* === Carteiras === */
+    const CARTEIRAS = [
+      "ConnectZap", "Banco PAN", "Recovery PJ", "Recovery PF",
+      "Mercado Pago Cobrança", "DivZero", "Arc4U", "Serasa", "Mercado Pago Vendas"
+    ];
 
-    const fltCarteira = document.getElementById("fltCarteira");
-    const fltAgentes = document.getElementById("fltAgentes");
-    const fltNomeDisparo = document.getElementById("fltNomeDisparo");
-    const fltMotivo = document.getElementById("fltMotivo");
-
-    const cartEl = document.getElementById("carteira");
-    const btnAplicar = document.getElementById("btnAplicar");
-    const btnClearDates = document.getElementById("btnClearDates");
-
-    const alertEl = document.getElementById("alert");
-    const chips = [...document.querySelectorAll("[data-range]")];
-
-    // tabs
-    const segBtns = [...document.querySelectorAll(".seg-btn")];
-    const tabMensagens = document.getElementById("tab-mensagens");
-    const tabAtend = document.getElementById("tab-atendimentos");
-    const tabHoraHora = document.getElementById("tab-hora_hora");
-    const tabResumo = document.getElementById("tab-resumo");
-
-    // KPIs Mensagens
-    const k_total = document.getElementById("k_total");
-    const k_env = document.getElementById("k_env");
-    const k_ent = document.getElementById("k_ent");
-    const k_lido = document.getElementById("k_lido");
-    const k_dr = document.getElementById("k_dr");
-    const k_rr = document.getElementById("k_rr");
-
-    // Tabela
-    const tbodyMensagens = document.getElementById("tbodyMensagens");
-    const tblEmpty = document.getElementById("tblEmpty");
-
-    // Charts
-    let chartMensagens, chartMotivos, chartSeries;
-    let chartHHConc, chartHHIn;
-    const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
-    const chartMotivosEmpty = document.getElementById("chartMotivosEmpty");
-    const chartSeriesEmpty = document.getElementById("chartSeriesEmpty");
-    const hhConcEmpty = document.getElementById("hhConcEmpty");
-    const hhInEmpty = document.getElementById("hhInEmpty");
-
-    // KPIs Atend
-    const a_em = document.getElementById("a_em");
-    const a_conc = document.getElementById("a_conc");
-    const a_tma = document.getElementById("a_tma");
-    const a_tmr = document.getElementById("a_tmr");
-
-    // ===== Multi-select Agentes =====
-    const btnAgentes = document.getElementById("btnAgentes");
-    const panelAgentes = document.getElementById("panelAgentes");
-    const agSearch = document.getElementById("agSearch");
-    const agSelectAll = document.getElementById("agSelectAll");
-    const agClear = document.getElementById("agClear");
-    const agList = document.getElementById("agList");
-
-    let agentsAll = [];
-    const selectedAgents = new Set();
-
-    function togglePanelAgentes(show) {
-      panelAgentes.classList.toggle("hidden", !show);
+    /* === Helpers === */
+    function showMsg(el, text, type = "ok") { el.classList.remove("hidden"); el.textContent = text; el.style.color = (type === "ok" ? "var(--ok)" : type === "warn" ? "var(--warn)" : "var(--err)"); }
+    function hideMsg(el) { el.classList.add("hidden"); el.textContent = ""; el.style.color = ""; }
+    function fmt(dt) { try { return new Date(dt).toLocaleString("pt-BR"); } catch { return dt || "—"; } }
+    function fillSelect(sel, vals, includeEmpty = true) {
+      sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
+      vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
     }
-    btnAgentes?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelAgentes(panelAgentes.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if (panelAgentes && !panelAgentes.contains(e.target) && !btnAgentes?.contains(e.target)) {
-        togglePanelAgentes(false);
+    function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
+
+    // >>> NOVOS helpers para inatividade
+    function parseTempoInativo(v) {
+      if (v == null) return null;
+      if (typeof v === 'number' && isFinite(v)) return v;
+      if (typeof v === 'string' && /^\d{1,2}:\d{2}:\d{2}$/.test(v)) {
+        const [h, m, s] = v.split(':').map(n => parseInt(n, 10));
+        return (h * 3600) + (m * 60) + s;
       }
-    });
-
-    function renderAgentesList(filter = "") {
-      if (!agList) return;
-      agList.innerHTML = "";
-      const term = filter.trim().toLowerCase();
-      const data = agentsAll.filter(a => (a.nome || "").toLowerCase().includes(term));
-      if (!data.length) {
-        agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
-        return;
-      }
-      data.forEach(a => {
-        const id = `ag_${a.codigo_do_agente}`;
-        const row = document.createElement("label");
-        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
-        row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked" : ""}>
-          <span class="text-sm">${a.nome || ("Agente " + a.codigo_do_agente)}</span>
-        `;
-        row.querySelector("input").addEventListener("change", (ev) => {
-          const v = String(ev.target.value);
-          if (ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
-          updateAgentesButtonLabel();
-        });
-        agList.appendChild(row);
-      });
+      return null;
     }
-    function updateAgentesButtonLabel() {
-      if (!btnAgentes) return;
-      const n = selectedAgents.size;
-      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n > 1 ? "s" : ""}` : "Todos";
+    function fmtDuracao(seg) {
+      if (seg == null) return '—';
+      const h = Math.floor(seg / 3600);
+      const m = Math.floor((seg % 3600) / 60);
+      const s = Math.floor(seg % 60);
+      const hh = h.toString().padStart(2, '0');
+      const mm = m.toString().padStart(2, '0');
+      const ss = s.toString().padStart(2, '0');
+      return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
     }
-    agSearch?.addEventListener("input", () => renderAgentesList(agSearch.value));
-    agSelectAll?.addEventListener("click", () => {
-      agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
-      renderAgentesList(agSearch?.value || "");
-      updateAgentesButtonLabel();
-    });
-    agClear?.addEventListener("click", () => {
-      selectedAgents.clear();
-      renderAgentesList(agSearch?.value || "");
-      updateAgentesButtonLabel();
-    });
+    // <<< FIM helpers inatividade
 
-    // ===== Multi-select Motivos =====
-    const btnMotivos = document.getElementById("btnMotivos");
-    const panelMotivos = document.getElementById("panelMotivos");
-    const motSearch = document.getElementById("motSearch");
-    const motSelectAll = document.getElementById("motSelectAll");
-    const motClear = document.getElementById("motClear");
-    const motList = document.getElementById("motList");
+    /* === Estados === */
+    let filtroCarteira = "";
+    let ultimoOnline = [];
+    let mapaTicketsAtivos = {};
+    let pendentesCarteiraAgg = [];
+    let lastSig = { online: "", contagem: "", pendentes: "" };
 
-    let motivosAll = [];
-    const selectedMotivos = new Set();
+    /* === Init UI === */
+    (function initUI() {
+      fillSelect(document.getElementById("filtroGlobalCarteira"), CARTEIRAS);
+      const cadCarteira = document.getElementById("cadCarteira");
+      cadCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
+      const edCarteira = document.getElementById("edCarteira");
+      fillSelect(edCarteira, CARTEIRAS, false);
 
-    function togglePanelMotivos(show) {
-      panelMotivos.classList.toggle("hidden", !show);
-    }
-    btnMotivos?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelMotivos(panelMotivos.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if (panelMotivos && !panelMotivos.contains(e.target) && !btnMotivos?.contains(e.target)) {
-        togglePanelMotivos(false);
-      }
-    });
+      // logout checkboxes
+      const wrap = document.getElementById("lgCarteiras");
+      wrap.innerHTML = CARTEIRAS.map(c => `
+    <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
+      <input type="checkbox" class="lg-check" value="${c}"> ${c}
+    </label>
+  `).join("");
 
-    function renderMotivosList(filter = "") {
-      if (!motList) return;
-      motList.innerHTML = "";
-      const term = filter.trim().toLowerCase();
-      const data = motivosAll.filter(m => (m || "").toLowerCase().includes(term));
-      if (!data.length) {
-        motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>';
-        return;
-      }
-      data.forEach(m => {
-        const id = `mot_${m.replace(/\s+/g, '_')}`;
-        const row = document.createElement("label");
-        row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
-        row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}">
-          <span class="text-sm">${m}</span>
-        `;
-        const chk = row.querySelector("input");
-        chk.checked = selectedMotivos.has(m);
-        chk.addEventListener("change", (ev) => {
-          if (ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
-          updateMotivosButtonLabel();
-        });
-        motList.appendChild(row);
-      });
-    }
-    function updateMotivosButtonLabel() {
-      if (!btnMotivos) return;
-      const n = selectedMotivos.size;
-      btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n > 1 ? "s" : ""}` : "Todos";
-    }
-    motSearch?.addEventListener("input", () => renderMotivosList(motSearch.value));
-    motSelectAll?.addEventListener("click", () => {
-      motivosAll.forEach(m => selectedMotivos.add(m));
-      renderMotivosList(motSearch?.value || "");
-      updateMotivosButtonLabel();
-    });
-    motClear?.addEventListener("click", () => {
-      selectedMotivos.clear();
-      renderMotivosList(motSearch?.value || "");
-      updateMotivosButtonLabel();
-    });
+      // bloco limites
+      const tlCarteira = document.getElementById("tlCarteira");
+      tlCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
 
-    // ===== Utils =====
-    function setAlert(msg) { alertEl.textContent = msg || ""; alertEl.classList.toggle("hidden", !msg); }
-    function toPct(part, total) { if (!total) return "—"; return ((part / total) * 100).toFixed(1) + "%"; }
-    function fmtDurSec(s) {
-      if (s == null) return "—";
-      const m = Math.floor(s / 60), sec = s % 60;
-      if (m >= 60) { const h = Math.floor(m / 60), mm = m % 60; return `${h}h ${mm}m`; }
-      return `${m}m ${sec}s`;
-    }
-    function selectedAgentesCSV() { return [...selectedAgents].join(","); }
-    function selectedMotivosCSV() { return [...selectedMotivos].join(","); }
-    const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + "h");
+      // carregar config de logout (se houver)
+      fetch(`${API_BASE}/supervisao/logout-config`).then(r => r.json()).then(cfg => {
+        document.getElementById("lgEnabled").checked = !!cfg.enabled;
+        document.getElementById("lgTime").value = (cfg.time || "18:00").slice(0, 5);
+        const set = new Set(cfg.carteiras || []);
+        document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
+      }).catch(() => { });
 
-    function getActiveTab() {
-      return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
-    }
-
-    function buildParams(tab) {
-      const p = new URLSearchParams();
-      if (startEl.value) p.set("start", startEl.value);
-      if (endEl.value) p.set("end", endEl.value);
-
-      if (tab === "mensagens") {
-        if (qEl.value) p.set("q", qEl.value.trim());
-      } else if (tab === "atendimentos" || tab === "hora_hora" || tab === "resumo") {
-        if (cartEl.value) p.set("phone_id", cartEl.value);
-        const ags = selectedAgentesCSV();
-        if (ags && tab !== "resumo") p.set("agentes", ags);
-        if (tab === "hora_hora") {
-          const m = selectedMotivosCSV();
-          if (m) p.set("motivo", m);
-        }
-      }
-      p.set("tab", tab);
-      return p.toString();
-    }
-
-    function savePermalink() {
-      const tab = getActiveTab();
-      const qs = buildParams(tab);
-      const url = location.origin + location.pathname + (qs ? "?" + qs : "");
-      history.replaceState(null, "", url);
-    }
-
-    let pendingAgents = null;
-    let pendingMotivos = null;
-
-    function readFromQS() {
-      const u = new URL(location.href);
-      const tabQS = u.searchParams.get("tab");
-      if (tabQS === "atendimentos" || tabQS === "hora_hora" || tabQS === "resumo") {
-        segBtns.forEach(x => x.classList.remove("seg-active"));
-        segBtns.find(b => b.dataset.tab === tabQS)?.classList.add("seg-active");
-        tabMensagens.classList.toggle("hidden", tabQS !== "mensagens");
-        tabAtend.classList.toggle("hidden", tabQS !== "atendimentos");
-        tabHoraHora.classList.toggle("hidden", tabQS !== "hora_hora");
-        tabResumo.classList.toggle("hidden", tabQS !== "resumo");
-        toggleFiltersForTab(tabQS);
-      }
-
-      startEl.value = u.searchParams.get("start") || startEl.value;
-      endEl.value = u.searchParams.get("end") || endEl.value;
-
-      qEl.value = u.searchParams.get("q") || "";
-
-      const phone = u.searchParams.get("phone_id") || "";
-      if (phone) cartEl.value = phone;
-      const agentesQS = u.searchParams.get("agentes");
-      if (agentesQS) pendingAgents = agentesQS.split(",").map(String);
-
-      const motivosQS = u.searchParams.get("motivo");
-      if (motivosQS) pendingMotivos = motivosQS.split(",");
-    }
-
-    // AJUSTE: destacar chip ativo via classe dedicada
-    function highlightChip(ch) {
-      document.querySelectorAll(".chip").forEach(x => x.classList.remove("chip--active"));
-      if (ch) ch.classList.add("chip--active");
-    }
-    const chipsElems = document.querySelectorAll(".chip");
-    chipsElems.forEach(ch => ch.addEventListener("click", () => {
-      const k = ch.dataset.range;
-      if (k !== "custom") setQuickRange(k);
-      highlightChip(ch);
-    }));
-
-    function setQuickRange(kind) {
-      const now = new Date();
-      const pad = n => String(n).padStart(2, "0");
-      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-      let a = new Date(), b = new Date();
-      if (kind === "hoje") { /* a=b hoje */ }
-      if (kind === "7d") { a.setDate(now.getDate() - 6); }
-      if (kind === "30d") { a.setDate(now.getDate() - 29); }
-      if (kind === "mes") { a = new Date(now.getFullYear(), now.getMonth(), 1); }
-      startEl.value = toISO(a); endEl.value = toISO(b);
-    }
-
-    // Toggle filtros conforme aba
-    function toggleFiltersForTab(tab) {
-      const isMsg = tab === "mensagens";
-      const isHora = tab === "hora_hora";
-      const isRes = tab === "resumo";
-      fltNomeDisparo.classList.toggle("hidden", !isMsg);
-      fltCarteira.classList.toggle("hidden", isMsg ? true : false);
-      fltAgentes.classList.toggle("hidden", isMsg || isRes);
-      fltMotivo.classList.toggle("hidden", !isHora);
-    }
-
-    // ===== Data loaders (existentes) =====
-    async function loadAgentes() {
-      const selPhone = cartEl.value || "";
-      const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
-      const res = await fetch(url);
-      const data = await res.json();
-      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente " + a.codigo_do_agente) }));
-      selectedAgents.clear();
-      if (pendingAgents && pendingAgents.length) {
-        pendingAgents.forEach(v => selectedAgents.add(String(v)));
-        pendingAgents = null;
-      }
-      agSearch && (agSearch.value = "");
-      renderAgentesList("");
-      updateAgentesButtonLabel();
-    }
-    async function loadMotivosOptions() {
-      const qsAt = buildParams("atendimentos");
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qsAt}`);
-      if (!res.ok) throw new Error("Falha ao carregar motivos");
-      const dados = await res.json();
-      motivosAll = [...new Set(dados.map(d => d.motivo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
-      if (pendingMotivos && pendingMotivos.length) {
-        selectedMotivos.clear();
-        pendingMotivos.forEach(m => {
-          const hit = motivosAll.find(x => x.toLowerCase() === m.toLowerCase());
-          if (hit) selectedMotivos.add(hit);
-        });
-        pendingMotivos = null;
-      }
-      motSearch && (motSearch.value = "");
-      renderMotivosList("");
-      updateMotivosButtonLabel();
-    }
-    async function loadResumoMensagens(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
-      if (!res.ok) throw new Error("Falha no resumo (mensagens)");
-      return res.json();
-    }
-    async function loadEnvios(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
-      if (!res.ok) throw new Error("Falha nos envios");
-      return res.json();
-    }
-    async function loadAtendResumo(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
-      if (!res.ok) throw new Error("Falha no resumo (atendimentos)");
-      return res.json();
-    }
-    async function loadAtendMotivos(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
-      if (!res.ok) throw new Error("Falha nos motivos");
-      return res.json();
-    }
-    async function loadAtendSeries(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
-      if (!res.ok) throw new Error("Falha nas séries");
-      return res.json();
-    }
-    async function loadHoraHora(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`);
-      if (!res.ok) throw new Error("Falha no hora a hora");
-      return res.json();
-    }
-    // Resumo
-    async function loadExtratoMotivos(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/extrato_motivos?${qs}`);
-      if (!res.ok) throw new Error("Falha no extrato de motivos");
-      return res.json();
-    }
-
-    // ===== Render =====
-    async function renderMensagens() {
-      const qs = buildParams("mensagens");
-      savePermalink();
-
-      try {
-        setAlert("");
-        k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
-        const r = await loadResumoMensagens(qs);
-        const total = r.total || 0, env = r.enviados || 0, ent = r.entregues || 0, lido = r.lidos || 0;
-        k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
-        k_dr.textContent = toPct(ent, env || total);
-        k_rr.textContent = toPct(lido, ent || total);
-      } catch (e) { setAlert(e.message); }
-
-      try {
-        tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
-        const data = await loadEnvios(qs);
-        tbodyMensagens.innerHTML = "";
-        tblEmpty.classList.toggle("hidden", data.length > 0);
-
-        const labels = [], entregues = [], lidos = [];
-        data.forEach(e => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${e.nome_disparo || "-"}</td>
-            <td>${e.grupo_trabalho || "-"}</td>
-            <td>${e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "-"}</td>
-            <td class="text-right">${e.total || 0}</td>
-            <td class="text-right">${e.entregues || 0}</td>
-            <td class="text-right">${e.lidos || 0}</td>`;
-          tbodyMensagens.appendChild(tr);
-          labels.push(e.nome_disparo || "(sem nome)");
-          entregues.push(e.entregues || 0);
-          lidos.push(e.lidos || 0);
-        });
-
-        if (chartMensagens) { chartMensagens.destroy(); chartMensagens = null; }
-        document.getElementById("chartMensagens").classList.remove("hidden");
-        chartMensagensEmpty.classList.add("hidden");
-
-        if (labels.length === 0) {
-          document.getElementById("chartMensagens").classList.add("hidden");
-          chartMensagensEmpty.classList.remove("hidden");
-        } else {
-          const ctx = document.getElementById("chartMensagens").getContext("2d");
-          chartMensagens = new Chart(ctx, {
-            type: "bar",
-            data: {
-              labels,
-              datasets: [
-                { label: "Entregues", data: entregues, backgroundColor: "#3b82f6", stack: "s" },
-                { label: "Lidos", data: lidos, backgroundColor: "#10b981", stack: "s" }
-              ]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              resizeDelay: 200,
-              plugins: { legend: { position: "top" } },
-              scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
-            }
-          });
-        }
-      } catch (e) { setAlert(e.message); }
-    }
-
-    async function renderAtend() {
-      const qs = buildParams("atendimentos");
-      savePermalink();
-
-      try {
-        a_em.textContent = a_conc.textContent = a_tma.textContent = a_tmr.textContent = "…";
-        const r = await loadAtendResumo(qs);
-        a_em.textContent = r.em_atendimento ?? 0;
-        a_conc.textContent = r.concluidos ?? 0;
-        a_tma.textContent = fmtDurSec(r.tma_segundos);
-        a_tmr.textContent = fmtDurSec(r.tmr_segundos);
-      } catch (e) { setAlert("Aba Atendimentos — " + e.message); }
-
-      try {
-        const dados = await loadAtendMotivos(qs);
-        if (chartMotivos) { chartMotivos.destroy(); chartMotivos = null; }
-        document.getElementById("chartMotivos").classList.remove("hidden");
-        chartMotivosEmpty.classList.add("hidden");
-
-        if (!dados.length) {
-          document.getElementById("chartMotivos").classList.add("hidden");
-          chartMotivosEmpty.classList.remove("hidden");
-        } else {
-          chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
-            type: "pie",
-            data: { labels: dados.map(d => d.motivo), datasets: [{ data: dados.map(d => d.qtd) }] },
-            options: { responsive: true, maintainAspectRatio: false, resizeDelay: 200 }
-          });
-        }
-      } catch (e) { setAlert("Motivos — " + e.message); }
-
-      try {
-        const s = await loadAtendSeries(qs);
-
-        const map = {};
-        (s.mensagens || []).forEach(r => {
-          const k = r.dia;
-          map[k] = map[k] || { in: 0, out: 0, conc: 0 };
-          map[k].in = r.inbound;
-          map[k].out = r.outbound;
-        });
-        (s.concluidos || []).forEach(r => {
-          const k = r.dia;
-          map[k] = map[k] || { in: 0, out: 0, conc: 0 };
-          map[k].conc = r.concluidos;
-        });
-
-        function diaToTS(d) {
-          if (!d) return 0;
-          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-            const [y, m, day] = d.split("-").map(Number);
-            return Date.UTC(y, m - 1, day);
-          }
-          if (/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)) {
-            const [day, mon, year] = d.split("/");
-            const y = year ? Number(year) : new Date().getFullYear();
-            return Date.UTC(Number(y), Number(mon) - 1, Number(day));
-          }
-          const t = Date.parse(d);
-          return isNaN(t) ? 0 : t;
-        }
-
-        const rows = Object.keys(map)
-          .map(k => ({ dia: k, ts: diaToTS(k), ...map[k] }))
-          .sort((a, b) => a.ts - b.ts);
-
-        const dias = rows.map(r => r.dia);
-        const inb = rows.map(r => r.in);
-        const outb = rows.map(r => r.out);
-        const conc = rows.map(r => r.conc);
-
-        if (chartSeries) { chartSeries.destroy(); chartSeries = null; }
-        document.getElementById("chartSeries").classList.remove("hidden");
-        chartSeriesEmpty.classList.add("hidden");
-
-        if (!dias.length) {
-          document.getElementById("chartSeries").classList.add("hidden");
-          chartSeriesEmpty.classList.remove("hidden");
-        } else {
-          chartSeries = new Chart(document.getElementById("chartSeries").getContext("2d"), {
-            type: "line",
-            data: {
-              labels: dias,
-              datasets: [
-                { label: "Inbound", data: inb, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.15)", fill: true, tension: .3 },
-                { label: "Outbound", data: outb, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.15)", fill: true, tension: .3 },
-                { label: "Concluídos", data: conc, borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,.15)", fill: true, tension: .3 }
-              ]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false, resizeDelay: 200,
-              plugins: { legend: { position: "top" } },
-              scales: { y: { beginAtZero: true } }
-            }
-          });
-        }
-      } catch (e) { setAlert("Séries — " + e.message); }
-    }
-
-    // ===== Resumo =====
-    const resumoList = document.getElementById("resumoList");
-    const resumoEmpty = document.getElementById("resumoEmpty");
-
-    function formatNum(n) { return Number(n || 0).toLocaleString("pt-BR"); }
-
-    function aggByCarteira(rows) {
-      const map = new Map();
-      rows.forEach(r => {
-        const key = r.carteira || "(Sem carteira)";
-        const cur = map.get(key) || {
-          carteira: key,
-          atendimentos: 0,
-          cliente_ficou_inativo: 0,
-          duvidas_gerais: 0,
-          solicitou_2a_via_de_boleto: 0,
-          recusou_a_proposta: 0,
-          realizou_negociacao: 0,
-          agentes: []
-        };
-        cur.atendimentos += Number(r.atendimentos || 0);
-        cur.cliente_ficou_inativo += Number(r.cliente_ficou_inativo || 0);
-        cur.duvidas_gerais += Number(r.duvidas_gerais || 0);
-        cur.solicitou_2a_via_de_boleto += Number(r.solicitou_2a_via_de_boleto || 0);
-        cur.recusou_a_proposta += Number(r.recusou_a_proposta || 0);
-        cur.realizou_negociacao += Number(r.realizou_negociacao || 0);
-        cur.agentes.push({
-          codigo_do_agente: r.codigo_do_agente,
-          nome_agente: r.nome_agente,
-          atendimentos: r.atendimentos,
-          cliente_ficou_inativo: r.cliente_ficou_inativo,
-          duvidas_gerais: r.duvidas_gerais,
-          solicitou_2a_via_de_boleto: r.solicitou_2a_via_de_boleto,
-          recusou_a_proposta: r.recusou_a_proposta,
-          realizou_negociacao: r.realizou_negociacao,
-        });
-        map.set(key, cur);
-      });
-      return Array.from(map.values()).sort((a, b) => b.atendimentos - a.atendimentos);
-    }
-
-    function carteiraRowTemplate(c) {
-      const total = c.atendimentos || 0;
-      const pct = (x) => total ? ((x / total) * 100).toFixed(1) + "%" : "—";
-      return `
-        <div class="acc" data-carteira="${c.carteira}">
-          <button class="acc-header hover:bg-slate-50" title="${c.carteira}">
-            <svg class="w-4 h-4 text-slate-500 chev" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-            <div class="flex-1 font-semibold acc-name">${c.carteira}</div><!-- AJUSTE: sem quebra, com ellipsis -->
-            <div class="acc-grid text-sm">
-              <div class="acc-k"><span class="text-slate-500">Atend.</span> <span class="font-semibold">${formatNum(total)}</span></div>
-              <div class="acc-k"><span class="text-slate-500">Inativo</span> <span class="font-semibold">${formatNum(c.cliente_ficou_inativo)}</span> <span class="text-slate-500">(${pct(c.cliente_ficou_inativo)})</span></div>
-              <div class="acc-k"><span class="text-slate-500">Dúvidas</span> <span class="font-semibold">${formatNum(c.duvidas_gerais)}</span> <span class="text-slate-500">(${pct(c.duvidas_gerais)})</span></div>
-              <div class="acc-k"><span class="text-slate-500">2ª via</span> <span class="font-semibold">${formatNum(c.solicitou_2a_via_de_boleto)}</span> <span class="text-slate-500">(${pct(c.solicitou_2a_via_de_boleto)})</span></div>
-              <div class="acc-k"><span class="text-slate-500">Recusou</span> <span class="font-semibold">${formatNum(c.recusou_a_proposta)}</span> <span class="text-slate-500">(${pct(c.recusou_a_proposta)})</span></div>
-              <div class="acc-k"><span class="text-slate-500">Negoc.</span> <span class="font-semibold">${formatNum(c.realizou_negociacao)}</span> <span class="text-slate-500">(${pct(c.realizou_negociacao)})</span></div>
-            </div>
-          </button>
-          <div class="acc-body hidden">
-            <div class="overflow-x-auto">
-              <table class="min-w-full text-sm">
-                <thead>
-                  <tr>
-                    <th class="mini-th text-left">Código</th>
-                    <th class="mini-th text-left">Agente</th>
-                    <th class="mini-th text-right">Atend.</th>
-                    <th class="mini-th text-right">Inativo</th>
-                    <th class="mini-th text-right">Dúvidas</th>
-                    <th class="mini-th text-right">2ª via</th>
-                    <th class="mini-th text-right">Recusou</th>
-                    <th class="mini-th text-right">Negoc.</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </div>
-        </div>`;
-    }
-
-    function renderResumoRows(groups) {
-      resumoList.innerHTML = "";
-      if (!groups.length) { resumoEmpty.classList.remove("hidden"); return; }
-      resumoEmpty.classList.add("hidden");
-      const frag = document.createDocumentFragment();
-      groups.forEach(c => {
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = carteiraRowTemplate(c);
-        const acc = wrapper.firstElementChild;
-        const header = acc.querySelector(".acc-header");
-        const body = acc.querySelector(".acc-body");
-        const chev = acc.querySelector(".chev");
-        header.addEventListener("click", () => {
-          const open = body.classList.contains("hidden");
-          document.querySelectorAll("#resumoList .acc-body").forEach(el => el.classList.add("hidden"));
-          document.querySelectorAll("#resumoList .chev").forEach(el => el.classList.remove("rot-90"));
-          if (open) {
-            body.classList.remove("hidden");
-            chev.classList.add("rot-90");
-            fillAgentesTable(body.querySelector("tbody"), c.agentes);
-          }
-        });
-        frag.appendChild(acc);
-      });
-      resumoList.appendChild(frag);
-    }
-
-    function fillAgentesTable(tbody, agentes) {
-      tbody.innerHTML = "";
-      const rows = [...agentes].sort((a, b) => b.atendimentos - a.atendimentos);
-      rows.forEach(a => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="py-1.5 pr-2">${a.codigo_do_agente ?? "-"}</td>
-          <td class="py-1.5 pr-2">${a.nome_agente ?? "-"}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.atendimentos)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.cliente_ficou_inativo)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.duvidas_gerais)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.solicitou_2a_via_de_boleto)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.recusou_a_proposta)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.realizou_negociacao)}</td>`;
-        tbody.appendChild(tr);
-      });
-    }
-
-    async function renderResumo() {
-      const qs = buildParams("resumo");
-      savePermalink();
-      setAlert("");
-      try {
-        const data = await loadExtratoMotivos(qs);
-        const rows = data.map(r => ({
-          codigo_do_agente: r.codigo_do_agente ?? r[0],
-          nome_agente: r.nome_agente ?? r[1],
-          carteira: r.carteira ?? r[2],
-          atendimentos: Number(r.atendimentos ?? r[3] ?? 0),
-          cliente_ficou_inativo: Number(r.cliente_ficou_inativo ?? r[4] ?? 0),
-          duvidas_gerais: Number(r.duvidas_gerais ?? r[5] ?? 0),
-          solicitou_2a_via_de_boleto: Number((r.solicitou_2ª_via_de_boleto ?? r.solicitou_2a_via_de_boleto) ?? r[6] ?? 0),
-          recusou_a_proposta: Number(r.recusou_a_proposta ?? r[7] ?? 0),
-          realizou_negociacao: Number(r.realizou_negociacao ?? r[8] ?? 0),
-        }));
-        const groups = aggByCarteira(rows);
-        window.__lastResumo = groups;
-        renderResumoRows(groups);
-      } catch (e) {
-        setAlert("Resumo — " + e.message);
-        resumoList.innerHTML = "";
-        resumoEmpty.classList.remove("hidden");
-      }
-    }
-
-    async function render() {
-      const tab = getActiveTab();
-      if (tab === "mensagens") await renderMensagens();
-      else if (tab === "atendimentos") {
-        if (cartEl.value && !agentsAll.length) await loadAgentes();
-        await renderAtend();
-      } else if (tab === "hora_hora") {
-        if (cartEl.value && !agentsAll.length) await loadAgentes();
-        await loadMotivosOptions();
-        await renderHoraHora();
-      } else { // resumo
-        await renderResumo();
-      }
-    }
-
-    // ===== Eventos =====
-    segBtns.forEach(btn => btn.addEventListener("click", async () => {
-      segBtns.forEach(x => x.classList.remove("seg-active"));
-      btn.classList.add("seg-active");
-      const tab = btn.dataset.tab;
-      tabMensagens.classList.toggle("hidden", tab !== "mensagens");
-      tabAtend.classList.toggle("hidden", tab !== "atendimentos");
-      tabHoraHora.classList.toggle("hidden", tab !== "hora_hora");
-      tabResumo.classList.toggle("hidden", tab !== "resumo");
-      toggleFiltersForTab(tab);
-      if ((tab === "atendimentos" || tab === "hora_hora") && cartEl.value) {
-        await loadAgentes();
-      }
-      if (tab === "hora_hora") {
-        await loadMotivosOptions();
-      }
-      render();
-    }));
-
-    // preencher carteiras
-    (function fillCarteiras() {
-      const frag = document.createDocumentFragment();
-      Object.keys(phoneIdMap).forEach(id => {
-        const opt = document.createElement("option");
-        opt.value = id; opt.textContent = phoneIdMap[id];
-        frag.appendChild(opt);
-      });
-      document.getElementById("carteira").appendChild(frag);
+      // carrega chips + valor inicial do limite (se carteira já estiver selecionada)
+      carregarTicketsLimitList();
     })();
 
-    // mudanças de carteira
-    document.getElementById("carteira").addEventListener("change", async () => {
-      const tab = getActiveTab();
-      if (tab !== "mensagens") {
-        await loadAgentes();
-        if (tab === "hora_hora") await loadMotivosOptions();
-      }
-      if (tab === "resumo") {
-        await renderResumo();
-      }
-    });
+    /* === Ciclo de atualização estável (1 requisição em voo) === */
+    const REFRESH_MS = 10000;
+    let refreshTimer = null;
+    let refreshAbort = null;
+    let isRefreshing = false;
 
-    // Limpar datas
-    btnClearDates.addEventListener("click", () => {
-      startEl.value = ""; endEl.value = "";
-      document.querySelectorAll(".chip").forEach(x => x.classList.remove("chip--active"));
-    });
-
-    // Aplicar
-    btnAplicar.addEventListener("click", render);
-
-    // ===== Init =====
-    function initDefaults(){
-      setQuickRange("hoje");
-      const chipHoje = document.querySelector('.chip[data-range="hoje"]');
-      highlightChip(chipHoje);
+    function scheduleRefresh(delay = REFRESH_MS) {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
     }
 
-    initDefaults();
-    readFromQS();
-    toggleFiltersForTab(getActiveTab());
-    render();
+    // fetch JSON com timeout e abort composto
+    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
+      const own = new AbortController();
+      const t = setTimeout(() => own.abort("timeout"), timeoutMs);
+
+      // compor sinais (parent + timeout)
+      let finalSignal = own.signal;
+      if (signal) {
+        const comp = new AbortController();
+        signal.addEventListener("abort", () => comp.abort("parent"), { once: true });
+        own.signal.addEventListener("abort", () => comp.abort("timeout"), { once: true });
+        finalSignal = comp.signal;
+      }
+
+      try {
+        const r = await fetch(url, { signal: finalSignal });
+        return await r.json();
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    async function carregarTudo(reason = "manual") {
+      if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
+      isRefreshing = true;
+      refreshAbort = new AbortController();
+      const { signal } = refreshAbort;
+
+      const kpiMsg = document.getElementById("kpiMsg");
+      kpiMsg.textContent = reason === "auto" ? "Atualizando…" : "Atualizando (forçado)…";
+
+      try {
+        const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
+        const urlCnt = filtroCarteira ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}` : `${CONV_API}/api/tickets/contagem_por_agente`;
+        const urlPend = `${API_BASE}/fila/pendentes_por_carteira`;
+
+        const [lista, contagem, pend] = await Promise.allSettled([
+          fetchJSON(urlOnline, { signal }),
+          fetchJSON(urlCnt, { signal }),
+          fetchJSON(urlPend, { signal })
+        ]);
+
+        // ONLINE
+        if (lista.status === "fulfilled" && Array.isArray(lista.value)) {
+          const sigOnline = sig(lista.value);
+          if (sigOnline !== lastSig.online) {
+            lastSig.online = sigOnline;
+            ultimoOnline = lista.value;
+
+            const porCarteira = {};
+            ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
+
+            document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
+            const wrap = document.getElementById("kpiOnlineCarteiras");
+            wrap.innerHTML = "";
+            Object.entries(porCarteira).forEach(([car, qt]) => {
+              const span = document.createElement("span");
+              span.className = "pill";
+              span.textContent = `${car}: ${qt}`;
+              wrap.appendChild(span);
+            });
+          }
+        }
+
+        // CONTAGEM 
+        if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
+          const sigCont = sig(contagem.value.mapa);
+          if (sigCont !== lastSig.contagem) {
+            lastSig.contagem = sigCont;
+            mapaTicketsAtivos = contagem.value.mapa;
+          }
+          const totalTickets = ultimoOnline.reduce((s, a) => {
+            const key = `${a.codigo_do_agente}-${a.carteira}`;
+            const val = mapaTicketsAtivos[key];
+
+            const qtd = (typeof val === 'object' && val)
+              ? (val.qtd ?? 0)
+              : (Number(val) || 0);
+            return s + qtd;
+          }, 0);
+          document.getElementById("kpiEmAndamento").textContent = totalTickets;
+        }
+
+        // PENDENTES
+        if (pend.status === "fulfilled" && Array.isArray(pend.value)) {
+          const sigPend = sig(pend.value);
+          if (sigPend !== lastSig.pendentes) {
+            lastSig.pendentes = sigPend;
+            pendentesCarteiraAgg = pend.value; // 
+          }
+
+          const norm = s => (s || "")
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .trim()
+            .toLowerCase();
+
+          const filtroN = norm(filtroCarteira);
+          const filtrados = pendentesCarteiraAgg.filter(x => !filtroN || norm(x.carteira) === filtroN);
+
+          const totalPend = filtrados.reduce((s, x) => s + (Number(x.total) || 0), 0);
+          document.getElementById("kpiPendentesFila").textContent = totalPend;
+
+          const chips = document.getElementById("kpiPendentesPorCarteira");
+          chips.innerHTML = "";
+          filtrados.forEach(({ carteira, total }) => {
+            const span = document.createElement("span");
+            span.className = "pill";
+            span.textContent = `${carteira}: ${total}`;
+            chips.appendChild(span);
+          });
+        }
+
+        // Render tabela
+        renderOnlineTable();
+
+        document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
+        kpiMsg.textContent = "OK";
+      } catch (e) {
+        if (String(e) !== "AbortError" && String(e) !== "superseded") {
+          kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
+        }
+      } finally {
+        isRefreshing = false;
+        scheduleRefresh();
+      }
+    }
+
+    function renderOnlineTable() {
+      const tbody = document.getElementById("tbodyOnline");
+      tbody.innerHTML = "";
+      const filtrados = ultimoOnline;
+
+      filtrados.forEach(a => {
+        const tr = document.createElement("tr");
+        const key = `${a.codigo_do_agente}-${a.carteira}`;
+        const val = mapaTicketsAtivos[key];
+
+        const tickets = (typeof val === 'object' && val) ? (val.qtd ?? 0) : (mapaTicketsAtivos[key] ?? 0);
+
+        let tempoSeg = null;
+        if (val && typeof val === 'object') {
+          tempoSeg = parseTempoInativo(val.tempo_inativo_seconds ?? val.tempo_inativo ?? null);
+        }
+
+        const critico = (tempoSeg != null && tempoSeg >= 3600); // 1h+
+
+        tr.className = "border-b";
+        if (critico) tr.classList.add("bg-amber-50");
+
+        tr.innerHTML = `
+      <td class="px-3 py-2">${a.codigo_do_agente}</td>
+      <td class="px-3 py-2">${a.nome || "-"}</td>
+      <td class="px-3 py-2">${a.carteira}</td>
+      <td class="px-3 py-2">${fmt(a.data_hora)}</td>
+      <td class="px-3 py-2">${tickets}</td>
+      <td class="px-3 py-2 ${critico ? 'text-amber-700 font-medium' : 'text-gray-600'}">
+        ${tempoSeg != null ? fmtDuracao(tempoSeg) : '—'}
+        ${critico ? '<span class="ml-2 inline-block px-2 py-[2px] text-[11px] rounded-full bg-amber-200 text-amber-900">1h+</span>' : ''}
+      </td>
+      <td class="px-3 py-2">
+        <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
+          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
+      </td>
+    `;
+        tbody.appendChild(tr);
+      });
+
+      const msg = document.getElementById("onlineMsg");
+      msg.textContent = filtrados.length ? "" : (filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.");
+    }
+
+    async function forcarOffline(codigo, carteira) {
+      if (!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
+      try {
+        const r = await fetch(`${API_BASE}/fila/offline`, {
+          method: "DELETE", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: codigo, carteira })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao forçar offline");
+        carregarTudo("acao");
+      } catch (e) { alert(e.message || "Erro ao forçar offline"); }
+    }
+
+    /* === Cadastro de agente === */
+    document.getElementById("btnCadastrar").onclick = async () => {
+      const msg = document.getElementById("cadMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("cadCodigo").value);
+      const nome = (document.getElementById("cadNome").value || "").trim();
+      const carteira = document.getElementById("cadCarteira").value;
+      const origem = document.getElementById("cadOrigem").value;
+
+      if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
+      if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
+      if (!carteira) return showMsg(msg, "Selecione a carteira.", "warn");
+      if (!origem) return showMsg(msg, "Selecione a origem BD.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
+        showMsg(msg, "Agente cadastrado com sucesso.", "ok");
+
+        document.getElementById("cadCodigo").value = "";
+        document.getElementById("cadNome").value = "";
+        document.getElementById("cadCarteira").value = "";
+        document.getElementById("cadOrigem").value = "";
+
+        carregarTudo("acao");
+      } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
+    };
+
+    /* === Buscar/editar agente === */
+    document.getElementById("btnBuscar").onclick = async () => {
+      const cod = Number(document.getElementById("buscaCodigo").value);
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      if (!cod || !Number.isInteger(cod)) return showMsg(msg, "Informe um código inteiro válido.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${cod}`);
+        const j = await r.json();
+        if (!j.ok) {
+          showMsg(msg, j.erro || "Não encontrado.", "warn");
+          document.getElementById("editBox").classList.add("hidden");
+          return;
+        }
+        const ag = j.agente;
+        document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
+        document.getElementById("edNome").textContent = ag.nome;
+        document.getElementById("edCarteira").value = ag.carteira;
+        document.getElementById("edOrigem").textContent = ag.origem_bd;
+        document.getElementById("editBox").classList.remove("hidden");
+      } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
+    };
+    document.getElementById("btnLimparBusca").onclick = () => {
+      document.getElementById("buscaCodigo").value = "";
+      document.getElementById("editBox").classList.add("hidden");
+      hideMsg(document.getElementById("editMsg"));
+    };
+    document.getElementById("btnSalvarEdicao").onclick = async () => {
+      const msg = document.getElementById("editMsg"); hideMsg(msg);
+      const codigo = Number(document.getElementById("edCodigo").textContent);
+      const nova = document.getElementById("edCarteira").value;
+      if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteira: nova })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
+        showMsg(msg, "Carteira atualizada.", "ok");
+        carregarTudo("acao");
+      } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
+    };
+
+    /* === Limite de tickets por carteira === */
+    async function carregarTicketsLimitList() {
+      try {
+        const list = await fetch(`${CONV_API}/api/supervisao/tickets-limit`).then(r => r.json());
+        renderTicketsLimitChips(Array.isArray(list) ? list : []);
+      } catch {
+        renderTicketsLimitChips([]);
+      }
+    }
+    function renderTicketsLimitChips(items) {
+      const wrap = document.getElementById("tlChips");
+      wrap.innerHTML = "";
+      if (!items.length) {
+        wrap.innerHTML = `<span class="text-xs text-gray-500">Nenhuma carteira configurada — limite padrão 0 (sem restrição).</span>`;
+        return;
+      }
+      items.forEach(({ carteira, limit_per_agent }) => {
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = `${carteira}: ${limit_per_agent}`;
+        wrap.appendChild(span);
+      });
+    }
+    async function carregarTicketsLimitValor(carteira) {
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { document.getElementById("tlLimit").value = 0; return; }
+      tlMsg.textContent = "Carregando...";
+      try {
+        const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(carteira)}`).then(r => r.json());
+        document.getElementById("tlLimit").value = Number(j.limit_per_agent || 0);
+        tlMsg.textContent = "";
+      } catch (e) { tlMsg.textContent = "Falha ao carregar valor."; }
+    }
+    async function salvarTicketsLimit(limit, carteira) {
+      const tlMsg = document.getElementById("tlMsg");
+      tlMsg.textContent = "Salvando...";
+      try {
+        const r = await fetch(`${CONV_API}/api/supervisao/tickets-limit`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteira, limit_per_agent: Number(limit || 0) })
+        });
+        const j = await r.json();
+        tlMsg.textContent = j.ok ? "Limite salvo." : (j.erro || "Erro ao salvar.");
+        await carregarTicketsLimitList();
+      } catch (e) { tlMsg.textContent = "Erro de rede ao salvar."; }
+    }
+
+    document.getElementById("tlCarteira").addEventListener("change", (e) => {
+      const car = e.target.value || "";
+      carregarTicketsLimitValor(car);
+    });
+    document.getElementById("btnSalvarTicketsLimit").onclick = async () => {
+      const carteira = document.getElementById("tlCarteira").value;
+      const v = Number(document.getElementById("tlLimit").value || 0);
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
+      if (!Number.isInteger(v) || v < 0 || v > 50) { tlMsg.textContent = "Informe um valor entre 0 e 50."; return; }
+      await salvarTicketsLimit(v, carteira);
+    };
+    document.getElementById("btnResetTicketsLimit").onclick = async () => {
+      const carteira = document.getElementById("tlCarteira").value;
+      const tlMsg = document.getElementById("tlMsg");
+      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
+      document.getElementById("tlLimit").value = 0;
+      await salvarTicketsLimit(0, carteira);
+    };
+
+    /* === NOVO: Ações de textos padrão === */
+    function buildIdOrChavePayload(idVal, chaveVal) {
+      const payload = {};
+      const id = Number(idVal);
+      const chave = (chaveVal || "").trim();
+      if (Number.isInteger(id) && id > 0) payload.id = id;
+      if (chave) payload.chave = chave;
+      return payload;
+    }
+
+    // Novo texto
+    document.getElementById("btnNovoTexto").onclick = async () => {
+      const msg = document.getElementById("txNovoMsg"); hideMsg(msg);
+      const chave = (document.getElementById("txChaveNovo").value || "").trim();
+      const texto = (document.getElementById("txConteudoNovo").value || "").trim();
+
+      if (!chave) return showMsg(msg, "Informe a chave (única) do texto.", "warn");
+      if (!texto) return showMsg(msg, "Informe o conteúdo do texto.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/textos/novo_texto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chave, texto })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao salvar novo texto.", "err");
+        showMsg(msg, "Texto cadastrado com sucesso.", "ok");
+        document.getElementById("txChaveNovo").value = "";
+        document.getElementById("txConteudoNovo").value = "";
+      } catch (e) { showMsg(msg, "Erro de rede ao salvar texto.", "err"); }
+    };
+
+    // Editar texto
+    document.getElementById("btnEditarTexto").onclick = async () => {
+      const msg = document.getElementById("txEditarMsg"); hideMsg(msg);
+      const idVal = document.getElementById("txIdEdit").value;
+      const chaveVal = document.getElementById("txChaveEdit").value;
+      const texto = (document.getElementById("txConteudoEdit").value || "").trim();
+
+      if (!texto) return showMsg(msg, "Informe o novo conteúdo.", "warn");
+      const base = buildIdOrChavePayload(idVal, chaveVal);
+      if (!base.id && !base.chave) return showMsg(msg, "Informe ID ou Chave para localizar o registro.", "warn");
+
+      try {
+        const r = await fetch(`${API_BASE}/textos/editar_texto`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...base, texto })
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao editar texto.", "err");
+        showMsg(msg, "Texto atualizado com sucesso.", "ok");
+        document.getElementById("txIdEdit").value = "";
+        document.getElementById("txChaveEdit").value = "";
+        document.getElementById("txConteudoEdit").value = "";
+      } catch (e) { showMsg(msg, "Erro de rede ao editar texto.", "err"); }
+    };
+
+    // Apagar texto
+    document.getElementById("btnApagarTexto").onclick = async () => {
+      const msg = document.getElementById("txApagarMsg"); hideMsg(msg);
+      const idVal = document.getElementById("txIdDelete").value;
+      const chaveVal = document.getElementById("txChaveDelete").value;
+
+      const base = buildIdOrChavePayload(idVal, chaveVal);
+      if (!base.id && !base.chave) return showMsg(msg, "Informe ID ou Chave para apagar.", "warn");
+
+      if (!confirm(`Confirmar exclusão do texto (${base.id ? 'ID ' + base.id : 'chave ' + base.chave})?`)) return;
+
+      try {
+        const r = await fetch(`${API_BASE}/textos/apagar_texto`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(base)
+        });
+        const j = await r.json();
+        if (!j.ok) return showMsg(msg, j.erro || "Erro ao apagar texto.", "err");
+        showMsg(msg, "Texto apagado com sucesso.", "ok");
+        document.getElementById("txIdDelete").value = "";
+        document.getElementById("txChaveDelete").value = "";
+      } catch (e) { showMsg(msg, "Erro de rede ao apagar texto.", "err"); }
+    };
+
+    /* === Logout automático === */
+    document.getElementById("btnSalvarLogout").onclick = async () => {
+      const lgMsg = document.getElementById("lgMsg");
+      const enabled = document.getElementById("lgEnabled").checked;
+      const time = document.getElementById("lgTime").value || "18:00";
+      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
+      lgMsg.textContent = "Salvando...";
+      try {
+        const r = await fetch(`${API_BASE}/supervisao/logout-config`, {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled, time, carteiras })
+        });
+        const j = await r.json();
+        lgMsg.textContent = j.ok ? "Configuração salva." : (j.erro || "Erro ao salvar.");
+      } catch (e) { lgMsg.textContent = "Erro de rede ao salvar."; }
+    };
+    document.getElementById("btnForcarLogout").onclick = async () => {
+      const lgMsg = document.getElementById("lgMsg");
+      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
+      if (!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
+      if (!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
+      lgMsg.textContent = "Executando...";
+      try {
+        const r = await fetch(`${API_BASE}/fila/forcar_logout`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ carteiras })
+        });
+        const j = await r.json();
+        lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
+        carregarTudo("acao");
+      } catch (e) { lgMsg.textContent = "Erro de rede ao forçar logout."; }
+    };
+
+    /* === Eventos globais === */
+    document.getElementById("filtroGlobalCarteira").addEventListener("change", (e) => {
+      filtroCarteira = e.target.value || "";
+      carregarTudo("filtro");
+    });
+
+    /* === Start === */
+    carregarTudo("primeiro");
   </script>
 </body>
 
