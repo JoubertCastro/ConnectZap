@@ -1172,14 +1172,12 @@
     btnAplicar.addEventListener("click", render);
 
     // ===== Init =====
-    function initDefaults() {
-      const now = new Date(); const pad = n => String(n).padStart(2, "0");
-      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-      const b = new Date(); const a = new Date(); a.setDate(b.getDate() - 6);
-      startEl.value = toISO(a); endEl.value = toISO(b);
-      const chiphj = document.querySelector('.chip[data-range="hoje"]');
-      highlightChip(chiphj);
+    function initDefaults(){
+      setQuickRange("hoje");
+      const chipHoje = document.querySelector('.chip[data-range="hoje"]');
+      highlightChip(chipHoje);
     }
+
     initDefaults();
     readFromQS();
     toggleFiltersForTab(getActiveTab());
