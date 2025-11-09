@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard — ConnectZap</title>
@@ -7,6 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body class="bg-slate-50 text-slate-800">
   <header class="bg-blue-600 text-white py-4">
     <div class="max-w-7xl mx-auto px-4">
@@ -21,17 +23,22 @@
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm text-slate-500 mr-1">Período:</span>
 
-          <!-- chips de período -->
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="hoje">Hoje</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="7d">Últimos 7 dias</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="30d">Últimos 30 dias</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="mes">Mês atual</button>
-          <button class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  data-range="custom">Personalizado</button>
+          <!-- chips de período (AJUSTE: classe chip) -->
+          <button
+            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
+            data-range="hoje">Hoje</button>
+          <button
+            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
+            data-range="7d">Últimos 7 dias</button>
+          <button
+            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
+            data-range="30d">Últimos 30 dias</button>
+          <button
+            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
+            data-range="mes">Mês atual</button>
+          <button
+            class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
+            data-range="custom">Personalizado</button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -44,7 +51,7 @@
             <input id="end" type="date" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
 
-          <!-- Filtros EXTRAS (Atendimentos + Hora a hora) -->
+          <!-- Filtros EXTRAS (Atendimentos + Hora a hora + Resumo) -->
           <div id="fltCarteira" class="hidden">
             <label class="text-sm text-slate-500">Carteira</label>
             <select id="carteira" class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white">
@@ -55,18 +62,24 @@
             <label class="text-sm text-slate-500">Agentes</label>
             <div class="relative">
               <button id="btnAgentes" type="button"
-                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
+                class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
                 <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                    clip-rule="evenodd" />
                 </svg>
               </button>
               <!-- dropdown -->
               <div id="panelAgentes" class="hidden absolute z-20 mt-2 w-80 bg-white border rounded-lg shadow-lg p-2">
                 <div class="flex items-center gap-2 mb-2">
-                  <input id="agSearch" type="text" placeholder="Buscar agente..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="agSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="agClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
+                  <input id="agSearch" type="text" placeholder="Buscar agente..."
+                    class="flex-1 px-2 py-1.5 border rounded-md text-sm">
+                  <button id="agSelectAll"
+                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
+                  <button id="agClear"
+                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
                 </div>
                 <div id="agList" class="max-h-56 overflow-y-auto space-y-1"></div>
               </div>
@@ -75,14 +88,17 @@
 
           <!-- botões -->
           <div class="flex items-end gap-2">
-            <button id="btnClearDates" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
-            <button id="btnAplicar" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
+            <button id="btnClearDates"
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Limpar datas</button>
+            <button id="btnAplicar"
+              class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-medium">Aplicar</button>
           </div>
 
           <!-- Filtro EXCLUSIVO da aba Mensagens -->
           <div id="fltNomeDisparo" class="md:col-span-2">
             <label class="text-sm text-slate-500">Nome do disparo</label>
-            <input id="q" type="text" placeholder="Buscar..." class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
+            <input id="q" type="text" placeholder="Buscar..."
+              class="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white" />
           </div>
 
           <!-- Filtro EXCLUSIVO da aba Hora a hora -->
@@ -90,18 +106,25 @@
             <label class="text-sm text-slate-500">Motivo de conclusão</label>
             <div class="relative">
               <button id="btnMotivos" type="button"
-                      class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
+                class="w-full justify-between px-3 py-2 rounded-lg border border-slate-300 bg-white flex items-center gap-2">
                 <span class="truncate">Todos</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd"/>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" viewBox="0 0 20 20"
+                  fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                    clip-rule="evenodd" />
                 </svg>
               </button>
               <!-- dropdown -->
-              <div id="panelMotivos" class="hidden absolute z-20 mt-2 w-[28rem] bg-white border rounded-lg shadow-lg p-2">
+              <div id="panelMotivos"
+                class="hidden absolute z-20 mt-2 w-[28rem] bg-white border rounded-lg shadow-lg p-2">
                 <div class="flex items-center gap-2 mb-2">
-                  <input id="motSearch" type="text" placeholder="Buscar motivo..." class="flex-1 px-2 py-1.5 border rounded-md text-sm">
-                  <button id="motSelectAll" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
-                  <button id="motClear" class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
+                  <input id="motSearch" type="text" placeholder="Buscar motivo..."
+                    class="flex-1 px-2 py-1.5 border rounded-md text-sm">
+                  <button id="motSelectAll"
+                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Selecionar todos</button>
+                  <button id="motClear"
+                    class="text-xs px-2 py-1 rounded-md border bg-white hover:bg-slate-50">Limpar</button>
                 </div>
                 <div id="motList" class="max-h-56 overflow-y-auto space-y-1"></div>
               </div>
@@ -122,9 +145,11 @@
           <button class="seg-btn" data-tab="atendimentos">
             <span>🎧</span><span>Atendimentos</span>
           </button>
-          <!-- NOVO botão -->
           <button class="seg-btn" data-tab="hora_hora">
             <span>⏱️</span><span>Hora a hora</span>
+          </button>
+          <button class="seg-btn" data-tab="resumo">
+            <span>📑</span><span>Resumo</span>
           </button>
         </div>
       </div>
@@ -132,12 +157,30 @@
       <!-- Aba: Mensagens -->
       <div id="tab-mensagens" class="p-4 space-y-6">
         <div id="cards-mensagens" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div class="balloon"><div class="balloon-label">Total</div><div id="k_total" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Enviados</div><div id="k_env" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Entregues</div><div id="k_ent" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Lidos</div><div id="k_lido" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Delivery rate</div><div id="k_dr" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Read rate</div><div id="k_rr" class="balloon-value">—</div></div>
+          <div class="balloon">
+            <div class="balloon-label">Total</div>
+            <div id="k_total" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Enviados</div>
+            <div id="k_env" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Entregues</div>
+            <div id="k_ent" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Lidos</div>
+            <div id="k_lido" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Delivery rate</div>
+            <div id="k_dr" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Read rate</div>
+            <div id="k_rr" class="balloon-value">—</div>
+          </div>
         </div>
 
         <div class="space-y-2">
@@ -169,10 +212,22 @@
       <!-- Aba: Atendimentos -->
       <div id="tab-atendimentos" class="p-4 space-y-6 hidden">
         <div id="cards-atend" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div class="balloon"><div class="balloon-label">Em atendimento</div><div id="a_em" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">Concluídos</div><div id="a_conc" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">TMA</div><div id="a_tma" class="balloon-value">—</div></div>
-          <div class="balloon"><div class="balloon-label">1ª resposta</div><div id="a_tmr" class="balloon-value">—</div></div>
+          <div class="balloon">
+            <div class="balloon-label">Em atendimento</div>
+            <div id="a_em" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">Concluídos</div>
+            <div id="a_conc" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">TMA</div>
+            <div id="a_tma" class="balloon-value">—</div>
+          </div>
+          <div class="balloon">
+            <div class="balloon-label">1ª resposta</div>
+            <div id="a_tmr" class="balloon-value">—</div>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -190,7 +245,7 @@
         </div>
       </div>
 
-      <!-- NOVA Aba: Hora a hora -->
+      <!-- Aba: Hora a hora -->
       <div id="tab-hora_hora" class="p-4 space-y-6 hidden">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="space-y-2">
@@ -206,6 +261,19 @@
         </div>
       </div>
 
+      <!-- Aba: Resumo (carteira -> agentes) -->
+      <div id="tab-resumo" class="p-4 space-y-4 hidden">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-600">Resumo por carteira. Clique para expandir e ver os agentes.</div>
+          <div>
+            <button id="btnExportResumo" class="px-3 py-2 rounded-lg border border-slate-300 text-sm">Exportar
+              CSV</button>
+          </div>
+        </div>
+        <div id="resumoList" class="space-y-2"></div>
+        <div id="resumoEmpty" class="text-sm text-slate-500 hidden">Sem dados para o período/filtros.</div>
+      </div>
+
     </section>
 
     <!-- Avisos -->
@@ -213,25 +281,133 @@
   </main>
 
   <style>
-    .seg-btn{
-      display:flex; align-items:center; gap:.5rem;
-      padding:.5rem .75rem; border-radius:.75rem;
-      font-weight:600; color:#334155; transition:all .15s;
+    .seg-btn {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .5rem .75rem;
+      border-radius: .75rem;
+      font-weight: 600;
+      color: #334155;
+      transition: all .15s;
     }
-    .seg-btn:hover{ background:#fff; }
-    .seg-active{ background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.06); color:#1d4ed8 }
-    .balloon{
-      background: linear-gradient(180deg,#ffffff, #f8fafc);
+
+    .seg-btn:hover {
+      background: #fff;
+    }
+
+    .seg-active {
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+      color: #1d4ed8
+    }
+
+    .balloon {
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
       border: 1px solid #e2e8f0;
       border-radius: 9999px;
       padding: 14px 18px;
-      box-shadow: 0 1px 2px rgba(0,0,0,.05);
-      text-align:center;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+      text-align: center;
     }
-    .balloon-label{ font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; color:#64748b; }
-    .balloon-value{ font-size:1.75rem; font-weight:700; margin-top:2px; }
-    .th{ padding:.5rem .75rem; text-align:left; font-size:.75rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:#64748b; }
-    td{ padding:.5rem .75rem; border-top:1px solid #eef2f7; }
+
+    .balloon-label {
+      font-size: .7rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .balloon-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
+    .th {
+      padding: .5rem .75rem;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    td {
+      padding: .5rem .75rem;
+      border-top: 1px solid #eef2f7;
+    }
+
+    .chip {
+      transition: background-color .15s, border-color .15s, color .15s;
+    }
+
+    .chip--active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
+    .chip:focus-visible {
+      outline: 2px solid rgba(37, 99, 235, .35);
+      outline-offset: 2px;
+    }
+
+    .acc {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden
+    }
+
+    .acc-header {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      width: 100%;
+      text-align: left;
+      padding: .75rem 1rem;
+    }
+
+    .acc-grid {
+      display: grid;
+      grid-template-columns: 1fr repeat(6, minmax(80px, auto));
+      gap: .5rem;
+      align-items: center;
+      width: 100%;
+    }
+
+    .acc-k {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .chev {
+      transition: transform .15s ease;
+    }
+
+    .rot-90 {
+      transform: rotate(90deg);
+    }
+
+    .acc-body {
+      border-top: 1px solid #eef2f7;
+      padding: .5rem 1rem .75rem 1rem;
+    }
+
+    .mini-th {
+      font-size: .7rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    .acc-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   </style>
 
   <script>
@@ -253,34 +429,35 @@
 
     // ===== DOM =====
     const startEl = document.getElementById("start");
-    const endEl   = document.getElementById("end");
-    const qEl     = document.getElementById("q");
+    const endEl = document.getElementById("end");
+    const qEl = document.getElementById("q");
 
     const fltCarteira = document.getElementById("fltCarteira");
-    const fltAgentes  = document.getElementById("fltAgentes");
+    const fltAgentes = document.getElementById("fltAgentes");
     const fltNomeDisparo = document.getElementById("fltNomeDisparo");
-    const fltMotivo   = document.getElementById("fltMotivo");
+    const fltMotivo = document.getElementById("fltMotivo");
 
-    const cartEl  = document.getElementById("carteira");
+    const cartEl = document.getElementById("carteira");
     const btnAplicar = document.getElementById("btnAplicar");
     const btnClearDates = document.getElementById("btnClearDates");
 
     const alertEl = document.getElementById("alert");
-    const chips   = [...document.querySelectorAll("[data-range]")];
+    const chips = [...document.querySelectorAll("[data-range]")];
 
     // tabs
     const segBtns = [...document.querySelectorAll(".seg-btn")];
     const tabMensagens = document.getElementById("tab-mensagens");
-    const tabAtend     = document.getElementById("tab-atendimentos");
-    const tabHoraHora  = document.getElementById("tab-hora_hora");
+    const tabAtend = document.getElementById("tab-atendimentos");
+    const tabHoraHora = document.getElementById("tab-hora_hora");
+    const tabResumo = document.getElementById("tab-resumo");
 
     // KPIs Mensagens
     const k_total = document.getElementById("k_total");
-    const k_env   = document.getElementById("k_env");
-    const k_ent   = document.getElementById("k_ent");
-    const k_lido  = document.getElementById("k_lido");
-    const k_dr    = document.getElementById("k_dr");
-    const k_rr    = document.getElementById("k_rr");
+    const k_env = document.getElementById("k_env");
+    const k_ent = document.getElementById("k_ent");
+    const k_lido = document.getElementById("k_lido");
+    const k_dr = document.getElementById("k_dr");
+    const k_rr = document.getElementById("k_rr");
 
     // Tabela
     const tbodyMensagens = document.getElementById("tbodyMensagens");
@@ -290,46 +467,47 @@
     let chartMensagens, chartMotivos, chartSeries;
     let chartHHConc, chartHHIn;
     const chartMensagensEmpty = document.getElementById("chartMensagensEmpty");
-    const chartMotivosEmpty   = document.getElementById("chartMotivosEmpty");
-    const chartSeriesEmpty    = document.getElementById("chartSeriesEmpty");
-    const hhConcEmpty         = document.getElementById("hhConcEmpty");
-    const hhInEmpty           = document.getElementById("hhInEmpty");
+    const chartMotivosEmpty = document.getElementById("chartMotivosEmpty");
+    const chartSeriesEmpty = document.getElementById("chartSeriesEmpty");
+    const hhConcEmpty = document.getElementById("hhConcEmpty");
+    const hhInEmpty = document.getElementById("hhInEmpty");
 
     // KPIs Atend
-    const a_em  = document.getElementById("a_em");
-    const a_conc= document.getElementById("a_conc");
+    const a_em = document.getElementById("a_em");
+    const a_conc = document.getElementById("a_conc");
     const a_tma = document.getElementById("a_tma");
     const a_tmr = document.getElementById("a_tmr");
 
-    // ===== Multi-select Agentes (dropdown) =====
-    const btnAgentes  = document.getElementById("btnAgentes");
-    const panelAgentes= document.getElementById("panelAgentes");
-    const agSearch    = document.getElementById("agSearch");
+    // ===== Multi-select Agentes =====
+    const btnAgentes = document.getElementById("btnAgentes");
+    const panelAgentes = document.getElementById("panelAgentes");
+    const agSearch = document.getElementById("agSearch");
     const agSelectAll = document.getElementById("agSelectAll");
-    const agClear     = document.getElementById("agClear");
-    const agList      = document.getElementById("agList");
+    const agClear = document.getElementById("agClear");
+    const agList = document.getElementById("agList");
 
-    let agentsAll = [];           // [{codigo_do_agente, nome}]
+    let agentsAll = [];
     const selectedAgents = new Set();
 
-    function togglePanelAgentes(show){
+    function togglePanelAgentes(show) {
       panelAgentes.classList.toggle("hidden", !show);
     }
-    btnAgentes.addEventListener("click", (e) => {
+    btnAgentes?.addEventListener("click", (e) => {
       e.stopPropagation();
       togglePanelAgentes(panelAgentes.classList.contains("hidden"));
     });
     document.addEventListener("click", (e) => {
-      if(!panelAgentes.contains(e.target) && !btnAgentes.contains(e.target)){
+      if (panelAgentes && !panelAgentes.contains(e.target) && !btnAgentes?.contains(e.target)) {
         togglePanelAgentes(false);
       }
     });
 
-    function renderAgentesList(filter=""){
+    function renderAgentesList(filter = "") {
+      if (!agList) return;
       agList.innerHTML = "";
       const term = filter.trim().toLowerCase();
-      const data = agentsAll.filter(a => (a.nome||"").toLowerCase().includes(term));
-      if(!data.length){
+      const data = agentsAll.filter(a => (a.nome || "").toLowerCase().includes(term));
+      if (!data.length) {
         agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
         return;
       }
@@ -338,67 +516,69 @@
         const row = document.createElement("label");
         row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
         row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked":""}>
-          <span class="text-sm">${a.nome || ("Agente "+a.codigo_do_agente)}</span>
+          <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked" : ""}>
+          <span class="text-sm">${a.nome || ("Agente " + a.codigo_do_agente)}</span>
         `;
         row.querySelector("input").addEventListener("change", (ev) => {
           const v = String(ev.target.value);
-          if(ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
+          if (ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
           updateAgentesButtonLabel();
         });
         agList.appendChild(row);
       });
     }
-    function updateAgentesButtonLabel(){
+    function updateAgentesButtonLabel() {
+      if (!btnAgentes) return;
       const n = selectedAgents.size;
-      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n>1?"s":""}` : "Todos";
+      btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n > 1 ? "s" : ""}` : "Todos";
     }
-    agSearch.addEventListener("input", () => renderAgentesList(agSearch.value));
-    agSelectAll.addEventListener("click", () => {
+    agSearch?.addEventListener("input", () => renderAgentesList(agSearch.value));
+    agSelectAll?.addEventListener("click", () => {
       agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
-      renderAgentesList(agSearch.value);
+      renderAgentesList(agSearch?.value || "");
       updateAgentesButtonLabel();
     });
-    agClear.addEventListener("click", () => {
+    agClear?.addEventListener("click", () => {
       selectedAgents.clear();
-      renderAgentesList(agSearch.value);
+      renderAgentesList(agSearch?.value || "");
       updateAgentesButtonLabel();
     });
 
-    // ===== Multi-select Motivos (dropdown) =====
-    const btnMotivos  = document.getElementById("btnMotivos");
-    const panelMotivos= document.getElementById("panelMotivos");
-    const motSearch   = document.getElementById("motSearch");
-    const motSelectAll= document.getElementById("motSelectAll");
-    const motClear    = document.getElementById("motClear");
-    const motList     = document.getElementById("motList");
+    // ===== Multi-select Motivos =====
+    const btnMotivos = document.getElementById("btnMotivos");
+    const panelMotivos = document.getElementById("panelMotivos");
+    const motSearch = document.getElementById("motSearch");
+    const motSelectAll = document.getElementById("motSelectAll");
+    const motClear = document.getElementById("motClear");
+    const motList = document.getElementById("motList");
 
-    let motivosAll = []; // ["Realizou negociação", ...]
+    let motivosAll = [];
     const selectedMotivos = new Set();
 
-    function togglePanelMotivos(show){
+    function togglePanelMotivos(show) {
       panelMotivos.classList.toggle("hidden", !show);
     }
-    btnMotivos.addEventListener("click", (e) => {
+    btnMotivos?.addEventListener("click", (e) => {
       e.stopPropagation();
       togglePanelMotivos(panelMotivos.classList.contains("hidden"));
     });
     document.addEventListener("click", (e) => {
-      if(!panelMotivos.contains(e.target) && !btnMotivos.contains(e.target)){
+      if (panelMotivos && !panelMotivos.contains(e.target) && !btnMotivos?.contains(e.target)) {
         togglePanelMotivos(false);
       }
     });
 
-    function renderMotivosList(filter=""){
+    function renderMotivosList(filter = "") {
+      if (!motList) return;
       motList.innerHTML = "";
       const term = filter.trim().toLowerCase();
-      const data = motivosAll.filter(m => (m||"").toLowerCase().includes(term));
-      if(!data.length){
+      const data = motivosAll.filter(m => (m || "").toLowerCase().includes(term));
+      if (!data.length) {
         motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>';
         return;
       }
       data.forEach(m => {
-        const id = `mot_${m.replace(/\s+/g,'_')}`;
+        const id = `mot_${m.replace(/\s+/g, '_')}`;
         const row = document.createElement("label");
         row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
         row.innerHTML = `
@@ -408,454 +588,540 @@
         const chk = row.querySelector("input");
         chk.checked = selectedMotivos.has(m);
         chk.addEventListener("change", (ev) => {
-          if(ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
+          if (ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
           updateMotivosButtonLabel();
         });
         motList.appendChild(row);
       });
     }
-    function updateMotivosButtonLabel(){
+    function updateMotivosButtonLabel() {
+      if (!btnMotivos) return;
       const n = selectedMotivos.size;
-      btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n>1?"s":""}` : "Todos";
+      btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n > 1 ? "s" : ""}` : "Todos";
     }
-    motSearch.addEventListener("input", () => renderMotivosList(motSearch.value));
-    motSelectAll.addEventListener("click", () => {
+    motSearch?.addEventListener("input", () => renderMotivosList(motSearch.value));
+    motSelectAll?.addEventListener("click", () => {
       motivosAll.forEach(m => selectedMotivos.add(m));
-      renderMotivosList(motSearch.value);
+      renderMotivosList(motSearch?.value || "");
       updateMotivosButtonLabel();
     });
-    motClear.addEventListener("click", () => {
+    motClear?.addEventListener("click", () => {
       selectedMotivos.clear();
-      renderMotivosList(motSearch.value);
+      renderMotivosList(motSearch?.value || "");
       updateMotivosButtonLabel();
     });
 
     // ===== Utils =====
-    function setAlert(msg){ alertEl.textContent = msg||""; alertEl.classList.toggle("hidden", !msg); }
-    function toPct(part, total){ if(!total) return "—"; return ((part/total)*100).toFixed(1)+"%"; }
-    function fmtDurSec(s){
-      if(s == null) return "—";
-      const m = Math.floor(s/60), sec = s%60;
-      if(m>=60){ const h=Math.floor(m/60), mm=m%60; return `${h}h ${mm}m`; }
+    function setAlert(msg) { alertEl.textContent = msg || ""; alertEl.classList.toggle("hidden", !msg); }
+    function toPct(part, total) { if (!total) return "—"; return ((part / total) * 100).toFixed(1) + "%"; }
+    function fmtDurSec(s) {
+      if (s == null) return "—";
+      const m = Math.floor(s / 60), sec = s % 60;
+      if (m >= 60) { const h = Math.floor(m / 60), mm = m % 60; return `${h}h ${mm}m`; }
       return `${m}m ${sec}s`;
     }
-    function selectedAgentesCSV(){
-      return [...selectedAgents].join(",");
-    }
-    function selectedMotivosCSV(){
-      return [...selectedMotivos].join(",");
-    }
-    const HOUR_LABELS = Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+"h");
+    function selectedAgentesCSV() { return [...selectedAgents].join(","); }
+    function selectedMotivosCSV() { return [...selectedMotivos].join(","); }
+    const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + "h");
 
-    function getActiveTab(){
+    function getActiveTab() {
       return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
     }
 
-    function buildParams(tab){
+    function buildParams(tab) {
       const p = new URLSearchParams();
-      if(startEl.value) p.set("start", startEl.value);
-      if(endEl.value)   p.set("end",   endEl.value);
+      if (startEl.value) p.set("start", startEl.value);
+      if (endEl.value) p.set("end", endEl.value);
 
-      if(tab === "mensagens"){
-        if(qEl.value) p.set("q", qEl.value.trim());
-      }else if(tab === "atendimentos" || tab === "hora_hora"){
-        if(cartEl.value) p.set("phone_id", cartEl.value);
+      if (tab === "mensagens") {
+        if (qEl.value) p.set("q", qEl.value.trim());
+      } else if (tab === "atendimentos" || tab === "hora_hora" || tab === "resumo") {
+        if (cartEl.value) p.set("phone_id", cartEl.value);
         const ags = selectedAgentesCSV();
-        if(ags) p.set("agentes", ags);
-        if(tab === "hora_hora"){
+        if (ags && tab !== "resumo") p.set("agentes", ags);
+        if (tab === "hora_hora") {
           const m = selectedMotivosCSV();
-          if(m) p.set("motivo", m);
+          if (m) p.set("motivo", m);
         }
       }
       p.set("tab", tab);
       return p.toString();
     }
 
-    function savePermalink(){
+    function savePermalink() {
       const tab = getActiveTab();
       const qs = buildParams(tab);
-      const url = location.origin + location.pathname + (qs ? "?"+qs : "");
+      const url = location.origin + location.pathname + (qs ? "?" + qs : "");
       history.replaceState(null, "", url);
     }
 
     let pendingAgents = null;
     let pendingMotivos = null;
 
-    function readFromQS(){
+    function readFromQS() {
       const u = new URL(location.href);
       const tabQS = u.searchParams.get("tab");
-      if(tabQS === "atendimentos" || tabQS === "hora_hora"){
+      if (tabQS === "atendimentos" || tabQS === "hora_hora" || tabQS === "resumo") {
         segBtns.forEach(x => x.classList.remove("seg-active"));
-        segBtns.find(b => b.dataset.tab === tabQS).classList.add("seg-active");
-        tabMensagens.classList.toggle("hidden", tabQS!=="mensagens");
-        tabAtend.classList.toggle("hidden",     tabQS!=="atendimentos");
-        tabHoraHora.classList.toggle("hidden",  tabQS!=="hora_hora");
+        segBtns.find(b => b.dataset.tab === tabQS)?.classList.add("seg-active");
+        tabMensagens.classList.toggle("hidden", tabQS !== "mensagens");
+        tabAtend.classList.toggle("hidden", tabQS !== "atendimentos");
+        tabHoraHora.classList.toggle("hidden", tabQS !== "hora_hora");
+        tabResumo.classList.toggle("hidden", tabQS !== "resumo");
         toggleFiltersForTab(tabQS);
       }
 
       startEl.value = u.searchParams.get("start") || startEl.value;
-      endEl.value   = u.searchParams.get("end") || endEl.value;
+      endEl.value = u.searchParams.get("end") || endEl.value;
 
-      // mensagens
-      qEl.value     = u.searchParams.get("q") || "";
+      qEl.value = u.searchParams.get("q") || "";
 
-      // atendimentos / hora_hora
       const phone = u.searchParams.get("phone_id") || "";
-      if(phone) cartEl.value = phone;
+      if (phone) cartEl.value = phone;
       const agentesQS = u.searchParams.get("agentes");
-      if(agentesQS) pendingAgents = agentesQS.split(",").map(String);
+      if (agentesQS) pendingAgents = agentesQS.split(",").map(String);
 
       const motivosQS = u.searchParams.get("motivo");
-      if(motivosQS) pendingMotivos = motivosQS.split(","); // manter case
+      if (motivosQS) pendingMotivos = motivosQS.split(",");
     }
 
-    function setQuickRange(kind){
-      const now = new Date();
-      const pad = n => String(n).padStart(2,"0");
-      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      let a = new Date(), b = new Date();
-      if(kind==="hoje"){ /* a=b hoje */ }
-      if(kind==="7d"){ a.setDate(now.getDate()-6); }
-      if(kind==="30d"){ a.setDate(now.getDate()-29); }
-      if(kind==="mes"){ a = new Date(now.getFullYear(), now.getMonth(), 1); }
-      startEl.value = toISO(a); endEl.value = toISO(b);
+    // AJUSTE: destacar chip ativo via classe dedicada
+    function highlightChip(ch) {
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("chip--active"));
+      if (ch) ch.classList.add("chip--active");
     }
-
-    function highlightChip(ch){
-      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
-      if(ch) ch.classList.add("bg-blue-600","text-white","border-blue-600");
-    }
-    chips.forEach(ch => ch.addEventListener("click", () => {
+    const chipsElems = document.querySelectorAll(".chip");
+    chipsElems.forEach(ch => ch.addEventListener("click", () => {
       const k = ch.dataset.range;
-      if(k!=="custom") setQuickRange(k);
+      if (k !== "custom") setQuickRange(k);
       highlightChip(ch);
     }));
 
+    function setQuickRange(kind) {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, "0");
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      let a = new Date(), b = new Date();
+      if (kind === "hoje") { /* a=b hoje */ }
+      if (kind === "7d") { a.setDate(now.getDate() - 6); }
+      if (kind === "30d") { a.setDate(now.getDate() - 29); }
+      if (kind === "mes") { a = new Date(now.getFullYear(), now.getMonth(), 1); }
+      startEl.value = toISO(a); endEl.value = toISO(b);
+    }
+
     // Toggle filtros conforme aba
-    function toggleFiltersForTab(tab){
+    function toggleFiltersForTab(tab) {
       const isMsg = tab === "mensagens";
       const isHora = tab === "hora_hora";
+      const isRes = tab === "resumo";
       fltNomeDisparo.classList.toggle("hidden", !isMsg);
-      fltCarteira.classList.toggle("hidden", isMsg);
-      fltAgentes.classList.toggle("hidden", isMsg);
+      fltCarteira.classList.toggle("hidden", isMsg ? true : false);
+      fltAgentes.classList.toggle("hidden", isMsg || isRes);
       fltMotivo.classList.toggle("hidden", !isHora);
     }
 
-    // ===== Data loaders =====
-    async function loadAgentes(){
+    // ===== Data loaders (existentes) =====
+    async function loadAgentes() {
       const selPhone = cartEl.value || "";
       const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
       const res = await fetch(url);
-      const data = await res.json(); // [{codigo_do_agente, nome}]
-      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente "+a.codigo_do_agente) }));
-      // reseta seleção ao trocar carteira
+      const data = await res.json();
+      agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente " + a.codigo_do_agente) }));
       selectedAgents.clear();
-      if(pendingAgents && pendingAgents.length){
+      if (pendingAgents && pendingAgents.length) {
         pendingAgents.forEach(v => selectedAgents.add(String(v)));
         pendingAgents = null;
       }
-      agSearch.value = "";
+      agSearch && (agSearch.value = "");
       renderAgentesList("");
       updateAgentesButtonLabel();
     }
-
-    async function loadMotivosOptions(){
-      // Reaproveita o endpoint de motivos para popular o dropdown, obedecendo filtros de período/phone_id/agentes
-      const qsAt = buildParams("atendimentos"); // sem 'motivo'
+    async function loadMotivosOptions() {
+      const qsAt = buildParams("atendimentos");
       const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qsAt}`);
-      if(!res.ok) throw new Error("Falha ao carregar motivos");
-      const dados = await res.json(); // [{motivo,qtd}]
-      motivosAll = [...new Set(dados.map(d => d.motivo).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
-      // restaura seleção vinda da URL (se houver)
-      if(pendingMotivos && pendingMotivos.length){
+      if (!res.ok) throw new Error("Falha ao carregar motivos");
+      const dados = await res.json();
+      motivosAll = [...new Set(dados.map(d => d.motivo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      if (pendingMotivos && pendingMotivos.length) {
         selectedMotivos.clear();
-        // manter case original se existir na lista
         pendingMotivos.forEach(m => {
           const hit = motivosAll.find(x => x.toLowerCase() === m.toLowerCase());
-          if(hit) selectedMotivos.add(hit);
+          if (hit) selectedMotivos.add(hit);
         });
         pendingMotivos = null;
       }
-      motSearch.value = "";
+      motSearch && (motSearch.value = "");
       renderMotivosList("");
       updateMotivosButtonLabel();
     }
-
-    async function loadResumoMensagens(qs){
+    async function loadResumoMensagens(qs) {
       const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
-      if(!res.ok) throw new Error("Falha no resumo (mensagens)");
+      if (!res.ok) throw new Error("Falha no resumo (mensagens)");
       return res.json();
     }
-    async function loadEnvios(qs){
+    async function loadEnvios(qs) {
       const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
-      if(!res.ok) throw new Error("Falha nos envios");
+      if (!res.ok) throw new Error("Falha nos envios");
       return res.json();
     }
-    async function loadAtendResumo(qs){
+    async function loadAtendResumo(qs) {
       const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
-      if(!res.ok) throw new Error("Falha no resumo (atendimentos)");
+      if (!res.ok) throw new Error("Falha no resumo (atendimentos)");
       return res.json();
     }
-    async function loadAtendMotivos(qs){
+    async function loadAtendMotivos(qs) {
       const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
-      if(!res.ok) throw new Error("Falha nos motivos");
+      if (!res.ok) throw new Error("Falha nos motivos");
       return res.json();
     }
-    async function loadAtendSeries(qs){
+    async function loadAtendSeries(qs) {
       const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
-      if(!res.ok) throw new Error("Falha nas séries");
+      if (!res.ok) throw new Error("Falha nas séries");
       return res.json();
     }
-    async function loadHoraHora(qs){
+    async function loadHoraHora(qs) {
       const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`);
-      if(!res.ok) throw new Error("Falha no hora a hora");
-      return res.json(); // {concluidos:[{hora,qtd}], inbound:[{hora,qtd}]}
+      if (!res.ok) throw new Error("Falha no hora a hora");
+      return res.json();
+    }
+    // Resumo
+    async function loadExtratoMotivos(qs) {
+      const res = await fetch(`${API_BASE}/api/dashboard/extrato_motivos?${qs}`);
+      if (!res.ok) throw new Error("Falha no extrato de motivos");
+      return res.json();
     }
 
     // ===== Render =====
-    async function renderMensagens(){
+    async function renderMensagens() {
       const qs = buildParams("mensagens");
       savePermalink();
 
-      try{
+      try {
         setAlert("");
         k_total.textContent = k_env.textContent = k_ent.textContent = k_lido.textContent = "…";
         const r = await loadResumoMensagens(qs);
-        const total = r.total||0, env=r.enviados||0, ent=r.entregues||0, lido=r.lidos||0;
+        const total = r.total || 0, env = r.enviados || 0, ent = r.entregues || 0, lido = r.lidos || 0;
         k_total.textContent = total; k_env.textContent = env; k_ent.textContent = ent; k_lido.textContent = lido;
         k_dr.textContent = toPct(ent, env || total);
         k_rr.textContent = toPct(lido, ent || total);
-      }catch(e){ setAlert(e.message); }
+      } catch (e) { setAlert(e.message); }
 
-      try{
+      try {
         tbodyMensagens.innerHTML = '<tr><td colspan="6" class="text-center py-6 text-slate-500">Carregando…</td></tr>';
         const data = await loadEnvios(qs);
         tbodyMensagens.innerHTML = "";
-        tblEmpty.classList.toggle("hidden", data.length>0);
+        tblEmpty.classList.toggle("hidden", data.length > 0);
 
-        const labels = [], entregues=[], lidos=[];
+        const labels = [], entregues = [], lidos = [];
         data.forEach(e => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td>${e.nome_disparo||"-"}</td>
-            <td>${e.grupo_trabalho||"-"}</td>
+            <td>${e.nome_disparo || "-"}</td>
+            <td>${e.grupo_trabalho || "-"}</td>
             <td>${e.criado_em ? new Date(e.criado_em).toLocaleString("pt-BR") : "-"}</td>
-            <td class="text-right">${e.total||0}</td>
-            <td class="text-right">${e.entregues||0}</td>
-            <td class="text-right">${e.lidos||0}</td>`;
+            <td class="text-right">${e.total || 0}</td>
+            <td class="text-right">${e.entregues || 0}</td>
+            <td class="text-right">${e.lidos || 0}</td>`;
           tbodyMensagens.appendChild(tr);
-          labels.push(e.nome_disparo||"(sem nome)");
-          entregues.push(e.entregues||0);
-          lidos.push(e.lidos||0);
+          labels.push(e.nome_disparo || "(sem nome)");
+          entregues.push(e.entregues || 0);
+          lidos.push(e.lidos || 0);
         });
 
-        if(chartMensagens){ chartMensagens.destroy(); chartMensagens = null; }
+        if (chartMensagens) { chartMensagens.destroy(); chartMensagens = null; }
         document.getElementById("chartMensagens").classList.remove("hidden");
         chartMensagensEmpty.classList.add("hidden");
 
-        if(labels.length===0){
+        if (labels.length === 0) {
           document.getElementById("chartMensagens").classList.add("hidden");
           chartMensagensEmpty.classList.remove("hidden");
-        }else{
+        } else {
           const ctx = document.getElementById("chartMensagens").getContext("2d");
           chartMensagens = new Chart(ctx, {
             type: "bar",
             data: {
               labels,
               datasets: [
-                {label:"Entregues", data:entregues, backgroundColor:"#3b82f6", stack:"s"},
-                {label:"Lidos",     data:lidos,     backgroundColor:"#10b981", stack:"s"}
+                { label: "Entregues", data: entregues, backgroundColor: "#3b82f6", stack: "s" },
+                { label: "Lidos", data: lidos, backgroundColor: "#10b981", stack: "s" }
               ]
             },
             options: {
-              responsive:true,
-              maintainAspectRatio:false,
-              resizeDelay:200,
-              plugins:{ legend:{ position:"top" } },
-              scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true } }
+              responsive: true,
+              maintainAspectRatio: false,
+              resizeDelay: 200,
+              plugins: { legend: { position: "top" } },
+              scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }
             }
           });
         }
-      }catch(e){ setAlert(e.message); }
+      } catch (e) { setAlert(e.message); }
     }
 
-    async function renderAtend(){
+    async function renderAtend() {
       const qs = buildParams("atendimentos");
       savePermalink();
 
-      try{
-        a_em.textContent=a_conc.textContent=a_tma.textContent=a_tmr.textContent="…";
+      try {
+        a_em.textContent = a_conc.textContent = a_tma.textContent = a_tmr.textContent = "…";
         const r = await loadAtendResumo(qs);
-        a_em.textContent   = r.em_atendimento ?? 0;
+        a_em.textContent = r.em_atendimento ?? 0;
         a_conc.textContent = r.concluidos ?? 0;
-        a_tma.textContent  = fmtDurSec(r.tma_segundos);
-        a_tmr.textContent  = fmtDurSec(r.tmr_segundos);
-      }catch(e){ setAlert("Aba Atendimentos — " + e.message); }
+        a_tma.textContent = fmtDurSec(r.tma_segundos);
+        a_tmr.textContent = fmtDurSec(r.tmr_segundos);
+      } catch (e) { setAlert("Aba Atendimentos — " + e.message); }
 
-      // Motivos
-      try{
+      try {
         const dados = await loadAtendMotivos(qs);
-        if(chartMotivos){ chartMotivos.destroy(); chartMotivos=null; }
+        if (chartMotivos) { chartMotivos.destroy(); chartMotivos = null; }
         document.getElementById("chartMotivos").classList.remove("hidden");
         chartMotivosEmpty.classList.add("hidden");
 
-        if(!dados.length){
+        if (!dados.length) {
           document.getElementById("chartMotivos").classList.add("hidden");
           chartMotivosEmpty.classList.remove("hidden");
-        }else{
+        } else {
           chartMotivos = new Chart(document.getElementById("chartMotivos").getContext("2d"), {
-            type:"pie",
-            data:{ labels: dados.map(d=>d.motivo), datasets:[{ data: dados.map(d=>d.qtd) }] },
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200 }
+            type: "pie",
+            data: { labels: dados.map(d => d.motivo), datasets: [{ data: dados.map(d => d.qtd) }] },
+            options: { responsive: true, maintainAspectRatio: false, resizeDelay: 200 }
           });
         }
-      }catch(e){ setAlert("Motivos — " + e.message); }
+      } catch (e) { setAlert("Motivos — " + e.message); }
 
-      // ===== Séries (ordenadas por data) =====
-      try{
+      try {
         const s = await loadAtendSeries(qs);
 
         const map = {};
-        (s.mensagens||[]).forEach(r => {
+        (s.mensagens || []).forEach(r => {
           const k = r.dia;
-          map[k] = map[k] || { in:0, out:0, conc:0 };
-          map[k].in  = r.inbound;
+          map[k] = map[k] || { in: 0, out: 0, conc: 0 };
+          map[k].in = r.inbound;
           map[k].out = r.outbound;
         });
-        (s.concluidos||[]).forEach(r => {
+        (s.concluidos || []).forEach(r => {
           const k = r.dia;
-          map[k] = map[k] || { in:0, out:0, conc:0 };
+          map[k] = map[k] || { in: 0, out: 0, conc: 0 };
           map[k].conc = r.concluidos;
         });
 
-        function diaToTS(d){
-          if(!d) return 0;
-          if(/^\d{4}-\d{2}-\d{2}$/.test(d)){
-            const [y,m,day] = d.split("-").map(Number);
-            return Date.UTC(y, m-1, day);
+        function diaToTS(d) {
+          if (!d) return 0;
+          if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+            const [y, m, day] = d.split("-").map(Number);
+            return Date.UTC(y, m - 1, day);
           }
-          if(/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)){
-            const [day,mon,year] = d.split("/");
+          if (/^\d{2}\/\d{2}(?:\/\d{4})?$/.test(d)) {
+            const [day, mon, year] = d.split("/");
             const y = year ? Number(year) : new Date().getFullYear();
-            return Date.UTC(Number(y), Number(mon)-1, Number(day));
+            return Date.UTC(Number(y), Number(mon) - 1, Number(day));
           }
           const t = Date.parse(d);
           return isNaN(t) ? 0 : t;
         }
 
         const rows = Object.keys(map)
-          .map(k => ({ dia:k, ts: diaToTS(k), ...map[k] }))
-          .sort((a,b) => a.ts - b.ts);
+          .map(k => ({ dia: k, ts: diaToTS(k), ...map[k] }))
+          .sort((a, b) => a.ts - b.ts);
 
         const dias = rows.map(r => r.dia);
-        const inb  = rows.map(r => r.in);
+        const inb = rows.map(r => r.in);
         const outb = rows.map(r => r.out);
         const conc = rows.map(r => r.conc);
 
-        if(chartSeries){ chartSeries.destroy(); chartSeries=null; }
+        if (chartSeries) { chartSeries.destroy(); chartSeries = null; }
         document.getElementById("chartSeries").classList.remove("hidden");
         chartSeriesEmpty.classList.add("hidden");
 
-        if(!dias.length){
+        if (!dias.length) {
           document.getElementById("chartSeries").classList.add("hidden");
           chartSeriesEmpty.classList.remove("hidden");
-        }else{
+        } else {
           chartSeries = new Chart(document.getElementById("chartSeries").getContext("2d"), {
-            type:"line",
-            data:{
+            type: "line",
+            data: {
               labels: dias,
               datasets: [
-                {label:"Inbound",    data:inb,  borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3},
-                {label:"Outbound",   data:outb, borderColor:"#10b981", backgroundColor:"rgba(16,185,129,.15)", fill:true, tension:.3},
-                {label:"Concluídos", data:conc, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
+                { label: "Inbound", data: inb, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.15)", fill: true, tension: .3 },
+                { label: "Outbound", data: outb, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,.15)", fill: true, tension: .3 },
+                { label: "Concluídos", data: conc, borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,.15)", fill: true, tension: .3 }
               ]
             },
-            options:{
-              responsive:true, maintainAspectRatio:false, resizeDelay:200,
-              plugins:{legend:{position:"top"}},
-              scales:{y:{beginAtZero:true}}
+            options: {
+              responsive: true, maintainAspectRatio: false, resizeDelay: 200,
+              plugins: { legend: { position: "top" } },
+              scales: { y: { beginAtZero: true } }
             }
           });
         }
-      }catch(e){ setAlert("Séries — " + e.message); }
+      } catch (e) { setAlert("Séries — " + e.message); }
     }
 
-    async function renderHoraHora(){
-      // Antes de consultar, garantir motivos populados (para o dropdown)
-      try{
-        await loadMotivosOptions();
-      }catch(e){ /* não bloqueia os gráficos */ }
+    // ===== Resumo =====
+    const resumoList = document.getElementById("resumoList");
+    const resumoEmpty = document.getElementById("resumoEmpty");
+    const btnExportResumo = document.getElementById("btnExportResumo");
 
-      const qs = buildParams("hora_hora");
+    function formatNum(n) { return Number(n || 0).toLocaleString("pt-BR"); }
+
+    function aggByCarteira(rows) {
+      const map = new Map();
+      rows.forEach(r => {
+        const key = r.carteira || "(Sem carteira)";
+        const cur = map.get(key) || {
+          carteira: key,
+          atendimentos: 0,
+          cliente_ficou_inativo: 0,
+          duvidas_gerais: 0,
+          solicitou_2a_via_de_boleto: 0,
+          recusou_a_proposta: 0,
+          realizou_negociacao: 0,
+          agentes: []
+        };
+        cur.atendimentos += Number(r.atendimentos || 0);
+        cur.cliente_ficou_inativo += Number(r.cliente_ficou_inativo || 0);
+        cur.duvidas_gerais += Number(r.duvidas_gerais || 0);
+        cur.solicitou_2a_via_de_boleto += Number(r.solicitou_2a_via_de_boleto || 0);
+        cur.recusou_a_proposta += Number(r.recusou_a_proposta || 0);
+        cur.realizou_negociacao += Number(r.realizou_negociacao || 0);
+        cur.agentes.push({
+          codigo_do_agente: r.codigo_do_agente,
+          nome_agente: r.nome_agente,
+          atendimentos: r.atendimentos,
+          cliente_ficou_inativo: r.cliente_ficou_inativo,
+          duvidas_gerais: r.duvidas_gerais,
+          solicitou_2a_via_de_boleto: r.solicitou_2a_via_de_boleto,
+          recusou_a_proposta: r.recusou_a_proposta,
+          realizou_negociacao: r.realizou_negociacao,
+        });
+        map.set(key, cur);
+      });
+      return Array.from(map.values()).sort((a, b) => b.atendimentos - a.atendimentos);
+    }
+
+    function carteiraRowTemplate(c) {
+      const total = c.atendimentos || 0;
+      const pct = (x) => total ? ((x / total) * 100).toFixed(1) + "%" : "—";
+      return `
+        <div class="acc" data-carteira="${c.carteira}">
+          <button class="acc-header hover:bg-slate-50" title="${c.carteira}">
+            <svg class="w-4 h-4 text-slate-500 chev" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+            <div class="flex-1 font-semibold acc-name">${c.carteira}</div><!-- AJUSTE: sem quebra, com ellipsis -->
+            <div class="acc-grid text-sm">
+              <div class="acc-k"><span class="text-slate-500">Atend.</span> <span class="font-semibold">${formatNum(total)}</span></div>
+              <div class="acc-k"><span class="text-slate-500">Inativo</span> <span class="font-semibold">${formatNum(c.cliente_ficou_inativo)}</span> <span class="text-slate-500">(${pct(c.cliente_ficou_inativo)})</span></div>
+              <div class="acc-k"><span class="text-slate-500">Dúvidas</span> <span class="font-semibold">${formatNum(c.duvidas_gerais)}</span> <span class="text-slate-500">(${pct(c.duvidas_gerais)})</span></div>
+              <div class="acc-k"><span class="text-slate-500">2ª via</span> <span class="font-semibold">${formatNum(c.solicitou_2a_via_de_boleto)}</span> <span class="text-slate-500">(${pct(c.solicitou_2a_via_de_boleto)})</span></div>
+              <div class="acc-k"><span class="text-slate-500">Recusou</span> <span class="font-semibold">${formatNum(c.recusou_a_proposta)}</span> <span class="text-slate-500">(${pct(c.recusou_a_proposta)})</span></div>
+              <div class="acc-k"><span class="text-slate-500">Negoc.</span> <span class="font-semibold">${formatNum(c.realizou_negociacao)}</span> <span class="text-slate-500">(${pct(c.realizou_negociacao)})</span></div>
+            </div>
+          </button>
+          <div class="acc-body hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead>
+                  <tr>
+                    <th class="mini-th text-left">Código</th>
+                    <th class="mini-th text-left">Agente</th>
+                    <th class="mini-th text-right">Atend.</th>
+                    <th class="mini-th text-right">Inativo</th>
+                    <th class="mini-th text-right">Dúvidas</th>
+                    <th class="mini-th text-right">2ª via</th>
+                    <th class="mini-th text-right">Recusou</th>
+                    <th class="mini-th text-right">Negoc.</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderResumoRows(groups) {
+      resumoList.innerHTML = "";
+      if (!groups.length) { resumoEmpty.classList.remove("hidden"); return; }
+      resumoEmpty.classList.add("hidden");
+      const frag = document.createDocumentFragment();
+      groups.forEach(c => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = carteiraRowTemplate(c);
+        const acc = wrapper.firstElementChild;
+        const header = acc.querySelector(".acc-header");
+        const body = acc.querySelector(".acc-body");
+        const chev = acc.querySelector(".chev");
+        header.addEventListener("click", () => {
+          const open = body.classList.contains("hidden");
+          document.querySelectorAll("#resumoList .acc-body").forEach(el => el.classList.add("hidden"));
+          document.querySelectorAll("#resumoList .chev").forEach(el => el.classList.remove("rot-90"));
+          if (open) {
+            body.classList.remove("hidden");
+            chev.classList.add("rot-90");
+            fillAgentesTable(body.querySelector("tbody"), c.agentes);
+          }
+        });
+        frag.appendChild(acc);
+      });
+      resumoList.appendChild(frag);
+    }
+
+    function fillAgentesTable(tbody, agentes) {
+      tbody.innerHTML = "";
+      const rows = [...agentes].sort((a, b) => b.atendimentos - a.atendimentos);
+      rows.forEach(a => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td class="py-1.5 pr-2">${a.codigo_do_agente ?? "-"}</td>
+          <td class="py-1.5 pr-2">${a.nome_agente ?? "-"}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.atendimentos)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.cliente_ficou_inativo)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.duvidas_gerais)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.solicitou_2a_via_de_boleto)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.recusou_a_proposta)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.realizou_negociacao)}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function renderResumo() {
+      const qs = buildParams("resumo");
       savePermalink();
-
-      try{
-        const data = await loadHoraHora(qs);
-
-        // Constrói arrays 0..23 garantindo ordem
-        const hours = Array.from({length:24}, (_,h)=>h);
-        const concSeries = new Array(24).fill(0);
-        const inSeries   = new Array(24).fill(0);
-
-        (data.concluidos||[]).forEach(r => {
-          const h = Number(r.hora); if(h>=0 && h<=23) concSeries[h] = Number(r.qtd)||0;
-        });
-        (data.inbound||[]).forEach(r => {
-          const h = Number(r.hora); if(h>=0 && h<=23) inSeries[h] = Number(r.qtd)||0;
-        });
-
-        // Destrói anteriores
-        if(chartHHConc){ chartHHConc.destroy(); chartHHConc=null; }
-        if(chartHHIn){   chartHHIn.destroy();   chartHHIn=null;   }
-
-        // Concluídos
-        const ctxC = document.getElementById("chartHHConc").getContext("2d");
-        if(concSeries.every(v=>v===0)){
-          document.getElementById("chartHHConc").classList.add("hidden");
-          hhConcEmpty.classList.remove("hidden");
-        }else{
-          document.getElementById("chartHHConc").classList.remove("hidden");
-          hhConcEmpty.classList.add("hidden");
-          chartHHConc = new Chart(ctxC, {
-            type:"line",
-            data:{ labels: HOUR_LABELS, datasets:[
-              {label:"Concluídos", data:concSeries, borderColor:"#f59e0b", backgroundColor:"rgba(245,158,11,.15)", fill:true, tension:.3}
-            ]},
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
-          });
-        }
-
-        // Inbound
-        const ctxI = document.getElementById("chartHHIn").getContext("2d");
-        if(inSeries.every(v=>v===0)){
-          document.getElementById("chartHHIn").classList.add("hidden");
-          hhInEmpty.classList.remove("hidden");
-        }else{
-          document.getElementById("chartHHIn").classList.remove("hidden");
-          hhInEmpty.classList.add("hidden");
-          chartHHIn = new Chart(ctxI, {
-            type:"line",
-            data:{ labels: HOUR_LABELS, datasets:[
-              {label:"Inbound", data:inSeries, borderColor:"#2563eb", backgroundColor:"rgba(37,99,235,.15)", fill:true, tension:.3}
-            ]},
-            options:{ responsive:true, maintainAspectRatio:false, resizeDelay:200, plugins:{legend:{position:"top"}}, scales:{y:{beginAtZero:true}} }
-          });
-        }
-
-      }catch(e){
-        setAlert("Hora a hora — " + e.message);
+      setAlert("");
+      try {
+        const data = await loadExtratoMotivos(qs);
+        const rows = data.map(r => ({
+          codigo_do_agente: r.codigo_do_agente ?? r[0],
+          nome_agente: r.nome_agente ?? r[1],
+          carteira: r.carteira ?? r[2],
+          atendimentos: Number(r.atendimentos ?? r[3] ?? 0),
+          cliente_ficou_inativo: Number(r.cliente_ficou_inativo ?? r[4] ?? 0),
+          duvidas_gerais: Number(r.duvidas_gerais ?? r[5] ?? 0),
+          solicitou_2a_via_de_boleto: Number((r.solicitou_2ª_via_de_boleto ?? r.solicitou_2a_via_de_boleto) ?? r[6] ?? 0),
+          recusou_a_proposta: Number(r.recusou_a_proposta ?? r[7] ?? 0),
+          realizou_negociacao: Number(r.realizou_negociacao ?? r[8] ?? 0),
+        }));
+        const groups = aggByCarteira(rows);
+        window.__lastResumo = groups;
+        renderResumoRows(groups);
+      } catch (e) {
+        setAlert("Resumo — " + e.message);
+        resumoList.innerHTML = "";
+        resumoEmpty.classList.remove("hidden");
       }
     }
 
-    async function render(){
+    async function render() {
       const tab = getActiveTab();
-      if(tab==="mensagens") await renderMensagens();
-      else if(tab==="atendimentos"){
-        if(cartEl.value && !agentsAll.length) await loadAgentes();
+      if (tab === "mensagens") await renderMensagens();
+      else if (tab === "atendimentos") {
+        if (cartEl.value && !agentsAll.length) await loadAgentes();
         await renderAtend();
-      }else{ // hora_hora
-        if(cartEl.value && !agentsAll.length) await loadAgentes();
+      } else if (tab === "hora_hora") {
+        if (cartEl.value && !agentsAll.length) await loadAgentes();
+        await loadMotivosOptions();
         await renderHoraHora();
+      } else { // resumo
+        await renderResumo();
       }
     }
 
@@ -864,55 +1130,85 @@
       segBtns.forEach(x => x.classList.remove("seg-active"));
       btn.classList.add("seg-active");
       const tab = btn.dataset.tab;
-      tabMensagens.classList.toggle("hidden", tab!=="mensagens");
-      tabAtend.classList.toggle("hidden",     tab!=="atendimentos");
-      tabHoraHora.classList.toggle("hidden",  tab!=="hora_hora");
+      tabMensagens.classList.toggle("hidden", tab !== "mensagens");
+      tabAtend.classList.toggle("hidden", tab !== "atendimentos");
+      tabHoraHora.classList.toggle("hidden", tab !== "hora_hora");
+      tabResumo.classList.toggle("hidden", tab !== "resumo");
       toggleFiltersForTab(tab);
-      if((tab === "atendimentos" || tab==="hora_hora") && cartEl.value){
+      if ((tab === "atendimentos" || tab === "hora_hora") && cartEl.value) {
         await loadAgentes();
       }
-      if(tab === "hora_hora"){
+      if (tab === "hora_hora") {
         await loadMotivosOptions();
       }
       render();
     }));
 
     // preencher carteiras
-    (function fillCarteiras(){
+    (function fillCarteiras() {
       const frag = document.createDocumentFragment();
       Object.keys(phoneIdMap).forEach(id => {
         const opt = document.createElement("option");
         opt.value = id; opt.textContent = phoneIdMap[id];
         frag.appendChild(opt);
       });
-      cartEl.appendChild(frag);
+      document.getElementById("carteira").appendChild(frag);
     })();
 
-    // mudanças de carteira -> recarregar agentes e motivos conforme aba
-    cartEl.addEventListener("change", async () => {
+    // mudanças de carteira
+    document.getElementById("carteira").addEventListener("change", async () => {
       const tab = getActiveTab();
-      if(tab!=="mensagens"){
+      if (tab !== "mensagens") {
         await loadAgentes();
-        if(tab==="hora_hora") await loadMotivosOptions();
+        if (tab === "hora_hora") await loadMotivosOptions();
+      }
+      if (tab === "resumo") {
+        await renderResumo();
       }
     });
 
     // Limpar datas
     btnClearDates.addEventListener("click", () => {
       startEl.value = ""; endEl.value = "";
-      chips.forEach(x => x.classList.remove("bg-blue-600","text-white","border-blue-600"));
+      document.querySelectorAll(".chip").forEach(x => x.classList.remove("chip--active"));
     });
 
     // Aplicar
     btnAplicar.addEventListener("click", render);
 
+    // Export CSV do Resumo
+    btnExportResumo?.addEventListener("click", () => {
+      const headers = ["carteira", "atendimentos", "cliente_ficou_inativo", "duvidas_gerais", "solicitou_2a_via_de_boleto", "recusou_a_proposta", "realizou_negociacao"];
+      const lines = [headers.join(";")];
+      if (window.__lastResumo && Array.isArray(window.__lastResumo)) {
+        window.__lastResumo.forEach(c => {
+          const row = [
+            c.carteira,
+            c.atendimentos,
+            c.cliente_ficou_inativo,
+            c.duvidas_gerais,
+            c.solicitou_2a_via_de_boleto,
+            c.recusou_a_proposta,
+            c.realizou_negociacao
+          ].map(x => String(x).replaceAll(";", ","));
+          lines.push(row.join(";"));
+        });
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "resumo_por_carteira.csv"; a.click();
+      URL.revokeObjectURL(url);
+    });
+
     // ===== Init =====
-    function initDefaults(){
-      const now = new Date(); const pad = n=>String(n).padStart(2,"0");
-      const toISO = d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-      const b = new Date(); const a = new Date(); a.setDate(b.getDate()-6);
+    function initDefaults() {
+      const now = new Date(); const pad = n => String(n).padStart(2, "0");
+      const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const b = new Date(); const a = new Date(); a.setDate(b.getDate() - 6);
       startEl.value = toISO(a); endEl.value = toISO(b);
-      highlightChip(document.querySelector('[data-range="7d"]'));
+      const chip7d = document.querySelector('.chip[data-range="7d"]');
+      highlightChip(chip7d);
     }
     initDefaults();
     readFromQS();
@@ -920,4 +1216,5 @@
     render();
   </script>
 </body>
+
 </html>
