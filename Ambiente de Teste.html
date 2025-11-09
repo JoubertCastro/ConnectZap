@@ -100,6 +100,31 @@
       outline: none;
       box-shadow: 0 0 0 2px #2563eb inset;
     }
+
+    .table-th {
+      white-space: nowrap;
+      font-weight: 600;
+      font-size: 12px;
+      color: #374151;
+    }
+
+    .table-td {
+      vertical-align: top;
+      font-size: 13px;
+    }
+
+    .switch {
+      position: relative; display: inline-block; width: 42px; height: 24px;
+    }
+    .switch input {opacity:0;width:0;height:0;}
+    .slider {
+      position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.2s;border-radius:9999px;
+    }
+    .slider:before {
+      position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:9999px; box-shadow: 0 1px 2px rgba(0,0,0,.12);
+    }
+    input:checked + .slider {background:#22c55e;}
+    input:checked + .slider:before {transform: translateX(18px);}
   </style>
 </head>
 
@@ -243,13 +268,13 @@
         <table class="min-w-full text-sm">
           <thead class="bg-gray-50">
             <tr>
-              <th class="text-left px-3 py-2">Código</th>
-              <th class="text-left px-3 py-2">Nome</th>
-              <th class="text-left px-3 py-2">Carteira</th>
-              <th class="text-left px-3 py-2">Desde</th>
-              <th class="text-left px-3 py-2">Tickets ativos</th>
-              <th class="text-left px-3 py-2">Inatividade</th>
-              <th class="text-left px-3 py-2">Ações</th>
+              <th class="text-left px-3 py-2 table-th">Código</th>
+              <th class="text-left px-3 py-2 table-th">Nome</th>
+              <th class="text-left px-3 py-2 table-th">Carteira</th>
+              <th class="text-left px-3 py-2 table-th">Desde</th>
+              <th class="text-left px-3 py-2 table-th">Tickets ativos</th>
+              <th class="text-left px-3 py-2 table-th">Inatividade</th>
+              <th class="text-left px-3 py-2 table-th">Ações</th>
             </tr>
           </thead>
           <tbody id="tbodyOnline"></tbody>
@@ -293,7 +318,129 @@
       </div>
     </details>
 
-    <!-- ====== NOVO BLOCO: Textos padrão (novo/editar/apagar) ====== -->
+    <!-- ====== NOVO BLOCO: Painel de Avisos ====== -->
+    <details class="card" open>
+      <summary class="summary-row">
+        <span class="font-bold text-lg">Painel de avisos</span>
+        <span class="pill">criar / listar / editar</span>
+      </summary>
+
+      <!-- Filtros e ações -->
+      <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <div>
+          <label class="text-sm text-gray-700">Filtrar por carteira</label>
+          <select id="pvFiltroCarteira" class="w-full border rounded-md p-2">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-700 flex items-center gap-2">
+            <span>Somente ativos</span>
+            <label class="switch">
+              <input id="pvSomenteAtivos" type="checkbox" checked>
+              <span class="slider"></span>
+            </label>
+          </label>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="pvBtnRecarregar" class="btn btn-muted">Recarregar</button>
+          <span id="pvMsg" class="text-sm text-gray-600"></span>
+        </div>
+      </div>
+
+      <!-- Criar novo aviso -->
+      <div class="mt-4 p-3 border rounded-lg bg-gray-50">
+        <div class="font-medium mb-2">Novo aviso</div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div class="md:col-span-2">
+            <label class="text-sm text-gray-700">Título</label>
+            <input id="pvNovoTitulo" type="text" class="w-full border rounded-md p-2" placeholder="Ex: Incidente 09/11 — instabilidade no provedor">
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Prioridade (0..10)</label>
+            <input id="pvNovoPrioridade" type="number" min="0" max="10" value="0" class="w-full border rounded-md p-2">
+          </div>
+          <div class="flex items-end gap-2">
+            <label class="text-sm text-gray-700 flex items-center gap-2">
+              <input id="pvNovoEnabled" type="checkbox" checked>
+              Ativo
+            </label>
+          </div>
+          <div class="md:col-span-4">
+            <label class="text-sm text-gray-700">Conteúdo</label>
+            <textarea id="pvNovoConteudo" rows="3" class="w-full border rounded-md p-2" placeholder="Mensagem detalhando o aviso, orientações, prazos etc."></textarea>
+          </div>
+          <div class="md:col-span-4">
+            <label class="text-sm text-gray-700">Carteiras (opcional)</label>
+            <div id="pvNovoCarteiras" class="flex flex-wrap gap-2 mt-1"></div>
+            <div class="text-xs text-gray-500 mt-1">Se nenhuma carteira for marcada, o aviso será <b>global</b>.</div>
+          </div>
+          <div class="md:col-span-4 flex gap-2">
+            <button id="pvBtnCriar" class="btn btn-primary">Criar aviso</button>
+            <span id="pvNovoMsg" class="text-sm"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editar aviso (inline) -->
+      <div id="pvEditBox" class="hidden mt-4 p-3 border rounded-lg bg-indigo-50/40">
+        <div class="flex items-center justify-between">
+          <div class="font-medium">Editar aviso <span id="pvEditId" class="px-2 py-[2px] rounded bg-indigo-100 text-indigo-900 text-xs"></span></div>
+          <button id="pvBtnCancelarEdicao" class="btn btn-muted">Cancelar</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+          <div class="md:col-span-2">
+            <label class="text-sm text-gray-700">Título</label>
+            <input id="pvEditTitulo" type="text" class="w-full border rounded-md p-2">
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Prioridade (0..10)</label>
+            <input id="pvEditPrioridade" type="number" min="0" max="10" class="w-full border rounded-md p-2" value="0">
+          </div>
+          <div class="flex items-end gap-2">
+            <label class="text-sm text-gray-700 flex items-center gap-2">
+              <input id="pvEditEnabled" type="checkbox"> Ativo
+            </label>
+          </div>
+          <div class="md:col-span-4">
+            <label class="text-sm text-gray-700">Conteúdo</label>
+            <textarea id="pvEditConteudo" rows="3" class="w-full border rounded-md p-2"></textarea>
+          </div>
+          <div class="md:col-span-4">
+            <label class="text-sm text-gray-700">Carteiras</label>
+            <div id="pvEditCarteiras" class="flex flex-wrap gap-2 mt-1"></div>
+          </div>
+          <div class="md:col-span-4 flex gap-2">
+            <button id="pvBtnSalvarEdicao" class="btn btn-primary">Salvar alterações</button>
+            <span id="pvEditMsg" class="text-sm"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lista de avisos -->
+      <div class="mt-4">
+        <div class="text-sm text-gray-700 mb-2">Avisos cadastrados</div>
+        <div class="overflow-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="text-left px-3 py-2 table-th">ID</th>
+                <th class="text-left px-3 py-2 table-th">Ativo</th>
+                <th class="text-left px-3 py-2 table-th">Prior.</th>
+                <th class="text-left px-3 py-2 table-th">Título</th>
+                <th class="text-left px-3 py-2 table-th">Carteiras</th>
+                <th class="text-left px-3 py-2 table-th">Criado em</th>
+                <th class="text-left px-3 py-2 table-th">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="pvTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+    <!-- ====== FIM Painel de Avisos ====== -->
+
+    <!-- ====== BLOCO: Textos padrão (existente) ====== -->
     <details class="card">
       <summary class="summary-row">
         <span class="font-bold text-lg">Gerenciar textos padrão</span>
@@ -362,7 +509,7 @@
         </div>
       </div>
     </details>
-    <!-- ====== FIM NOVO BLOCO ====== -->
+    <!-- ====== FIM BLOCO Textos ====== -->
 
     <!-- Logout automático -->
     <details class="card">
@@ -395,7 +542,7 @@
 
   <script>
     /* === Bases de API === */
-    const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes + textos
+    const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes + textos + painel
     const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
 
     /* === Carteiras === */
@@ -414,7 +561,7 @@
     }
     function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
 
-    // >>> NOVOS helpers para inatividade
+    // >>> Helpers para inatividade
     function parseTempoInativo(v) {
       if (v == null) return null;
       if (typeof v === 'number' && isFinite(v)) return v;
@@ -436,12 +583,35 @@
     }
     // <<< FIM helpers inatividade
 
+    // >>> Helpers Painel de Avisos
+    function makeCarteirasChecklist(containerEl, selected = new Set()) {
+      containerEl.innerHTML = CARTEIRAS.map(c =>
+        `<label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
+          <input type="checkbox" value="${c}" ${selected.has(c) ? "checked" : ""}> ${c}
+        </label>`
+      ).join("");
+    }
+    function readChecklist(containerEl) {
+      return Array.from(containerEl.querySelectorAll('input[type="checkbox"]:checked')).map(ch => ch.value);
+    }
+    function badge(str, variant = "muted") {
+      const map = { muted: "bg-gray-100 text-gray-800", ok: "bg-green-100 text-green-800", warn: "bg-amber-100 text-amber-800", err: "bg-red-100 text-red-800", indigo: "bg-indigo-100 text-indigo-800", blue: "bg-blue-100 text-blue-800" };
+      return `<span class="inline-block text-xs px-2 py-[2px] rounded ${map[variant] || map.muted}">${str}</span>`;
+    }
+    // <<< FIM Helpers Painel
+
     /* === Estados === */
     let filtroCarteira = "";
     let ultimoOnline = [];
     let mapaTicketsAtivos = {};
     let pendentesCarteiraAgg = [];
     let lastSig = { online: "", contagem: "", pendentes: "" };
+
+    // Painel de Avisos estados
+    let pvItems = [];
+    let pvSomenteAtivos = true;
+    let pvFiltroCar = "";
+    let pvEditId = null;
 
     /* === Init UI === */
     (function initUI() {
@@ -454,16 +624,21 @@
       // logout checkboxes
       const wrap = document.getElementById("lgCarteiras");
       wrap.innerHTML = CARTEIRAS.map(c => `
-    <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
-      <input type="checkbox" class="lg-check" value="${c}"> ${c}
-    </label>
-  `).join("");
+        <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
+          <input type="checkbox" class="lg-check" value="${c}"> ${c}
+        </label>
+      `).join("");
 
       // bloco limites
       const tlCarteira = document.getElementById("tlCarteira");
       tlCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
 
-      // carregar config de logout (se houver)
+      // Painel de Avisos: filtros e checklists
+      fillSelect(document.getElementById("pvFiltroCarteira"), CARTEIRAS);
+      makeCarteirasChecklist(document.getElementById("pvNovoCarteiras"));
+      makeCarteirasChecklist(document.getElementById("pvEditCarteiras"));
+
+      // carregar config de logout
       fetch(`${API_BASE}/supervisao/logout-config`).then(r => r.json()).then(cfg => {
         document.getElementById("lgEnabled").checked = !!cfg.enabled;
         document.getElementById("lgTime").value = (cfg.time || "18:00").slice(0, 5);
@@ -471,8 +646,11 @@
         document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
       }).catch(() => { });
 
-      // carrega chips + valor inicial do limite (se carteira já estiver selecionada)
+      // carrega chips + valor inicial do limite
       carregarTicketsLimitList();
+
+      // Painel de Avisos: primeira carga
+      pvRecarregar();
     })();
 
     /* === Ciclo de atualização estável (1 requisição em voo) === */
@@ -487,7 +665,7 @@
     }
 
     // fetch JSON com timeout e abort composto
-    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
+    async function fetchJSON(url, { signal, timeoutMs = 9000, ...init } = {}) {
       const own = new AbortController();
       const t = setTimeout(() => own.abort("timeout"), timeoutMs);
 
@@ -501,7 +679,9 @@
       }
 
       try {
-        const r = await fetch(url, { signal: finalSignal });
+        const r = await fetch(url, { signal: finalSignal, ...init });
+        const ct = r.headers.get("content-type") || "";
+        if (!ct.includes("application/json")) return await r.text(); // fallback
         return await r.json();
       } finally {
         clearTimeout(t);
@@ -637,20 +817,20 @@
         if (critico) tr.classList.add("bg-amber-50");
 
         tr.innerHTML = `
-      <td class="px-3 py-2">${a.codigo_do_agente}</td>
-      <td class="px-3 py-2">${a.nome || "-"}</td>
-      <td class="px-3 py-2">${a.carteira}</td>
-      <td class="px-3 py-2">${fmt(a.data_hora)}</td>
-      <td class="px-3 py-2">${tickets}</td>
-      <td class="px-3 py-2 ${critico ? 'text-amber-700 font-medium' : 'text-gray-600'}">
-        ${tempoSeg != null ? fmtDuracao(tempoSeg) : '—'}
-        ${critico ? '<span class="ml-2 inline-block px-2 py-[2px] text-[11px] rounded-full bg-amber-200 text-amber-900">1h+</span>' : ''}
-      </td>
-      <td class="px-3 py-2">
-        <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
-          onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
-      </td>
-    `;
+          <td class="px-3 py-2 table-td">${a.codigo_do_agente}</td>
+          <td class="px-3 py-2 table-td">${a.nome || "-"}</td>
+          <td class="px-3 py-2 table-td">${a.carteira}</td>
+          <td class="px-3 py-2 table-td">${fmt(a.data_hora)}</td>
+          <td class="px-3 py-2 table-td">${tickets}</td>
+          <td class="px-3 py-2 table-td ${critico ? 'text-amber-700 font-medium' : 'text-gray-600'}">
+            ${tempoSeg != null ? fmtDuracao(tempoSeg) : '—'}
+            ${critico ? '<span class="ml-2 inline-block px-2 py-[2px] text-[11px] rounded-full bg-amber-200 text-amber-900">1h+</span>' : ''}
+          </td>
+          <td class="px-3 py-2 table-td">
+            <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
+              onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
+          </td>
+        `;
         tbody.appendChild(tr);
       });
 
@@ -814,7 +994,7 @@
       await salvarTicketsLimit(0, carteira);
     };
 
-    /* === NOVO: Ações de textos padrão === */
+    /* === BLOCO Textos padrão (existente) === */
     function buildIdOrChavePayload(idVal, chaveVal) {
       const payload = {};
       const id = Number(idVal);
@@ -936,6 +1116,235 @@
       filtroCarteira = e.target.value || "";
       carregarTudo("filtro");
     });
+
+    /* === Painel de Avisos: lógica === */
+    async function pvRecarregar() {
+      const msg = document.getElementById("pvMsg");
+      msg.textContent = "Carregando...";
+      pvSomenteAtivos = document.getElementById("pvSomenteAtivos").checked;
+      pvFiltroCar = document.getElementById("pvFiltroCarteira").value || "";
+
+      try {
+        // GET básico (sem parâmetros obrigatórios). Se sua API suportar filtros, pode-se anexar querystring aqui.
+        let url = `${API_BASE}/painel/avisos`;
+        const qs = [];
+        if (pvSomenteAtivos) qs.push("enabled_only=1");
+        if (pvFiltroCar) qs.push(`carteira=${encodeURIComponent(pvFiltroCar)}`);
+        if (qs.length) url += "?" + qs.join("&");
+
+        const data = await fetchJSON(url);
+        pvItems = Array.isArray(data) ? data : (data?.avisos || []); // aceita {avisos:[...]} ou array direto
+        pvRenderLista();
+        msg.textContent = `${pvItems.length} avisos`;
+      } catch (e) {
+        pvItems = [];
+        pvRenderLista();
+        msg.textContent = "Falha ao carregar.";
+      }
+    }
+
+    function pvRenderLista() {
+      const tbody = document.getElementById("pvTbody");
+      tbody.innerHTML = "";
+      if (!pvItems.length) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td class="px-3 py-2 text-sm text-gray-500" colspan="7">Nenhum aviso encontrado.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      // Ordena por prioridade desc e created_at desc, se disponíveis
+      const items = [...pvItems].sort((a, b) => {
+        const pa = Number(a.prioridade ?? 0), pb = Number(b.prioridade ?? 0);
+        if (pb !== pa) return pb - pa;
+        const da = new Date(a.created_at || 0).getTime();
+        const db = new Date(b.created_at || 0).getTime();
+        return db - da;
+      });
+
+      items.forEach(av => {
+        const tr = document.createElement("tr");
+        tr.className = "border-b align-top";
+        const carteiras = Array.isArray(av.carteiras) ? av.carteiras : [];
+        const enabled = !!av.enabled;
+        const deleted = !!av.deleted_at;
+
+        tr.innerHTML = `
+          <td class="px-3 py-2 table-td">${av.id ?? "-"}</td>
+          <td class="px-3 py-2 table-td">
+            ${enabled ? badge("Ativo", "ok") : badge("Inativo", "warn")}
+            ${deleted ? `<div class="mt-1">${badge("Removido", "err")}</div>` : ""}
+          </td>
+          <td class="px-3 py-2 table-td">${Number(av.prioridade ?? 0)}</td>
+          <td class="px-3 py-2 table-td">
+            <div class="font-medium">${(av.titulo || "—")}</div>
+            <div class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">${(av.conteudo || "").slice(0, 400)}${(av.conteudo||"").length>400?"…":""}</div>
+          </td>
+          <td class="px-3 py-2 table-td">
+            ${carteiras.length ? carteiras.map(c => badge(c, "blue")).join(" ") : badge("Global", "indigo")}
+          </td>
+          <td class="px-3 py-2 table-td">
+            <div>${fmt(av.created_at)}</div>
+            ${av.updated_at ? `<div class="text-xs text-gray-500">upd: ${fmt(av.updated_at)}</div>` : ""}
+          </td>
+          <td class="px-3 py-2 table-td">
+            <div class="flex flex-wrap gap-2">
+              <button class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200" onclick="pvToggleEnabled(${av.id}, ${enabled ? 'false' : 'true'})">${enabled ? 'Desativar' : 'Ativar'}</button>
+              <button class="px-2 py-1 bg-indigo-100 text-indigo-900 rounded hover:bg-indigo-200" onclick="pvAbrirEdicao(${av.id})">Editar</button>
+              <button class="px-2 py-1 bg-amber-100 text-amber-900 rounded hover:bg-amber-200" onclick="pvRemover(${av.id})">Remover</button>
+              <button class="px-2 py-1 bg-red-100 text-red-900 rounded hover:bg-red-200" onclick="pvApagarDef(${av.id})">Apagar definitivo</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Criar
+    document.getElementById("pvBtnCriar").onclick = async () => {
+      const m = document.getElementById("pvNovoMsg");
+      m.textContent = "";
+      const titulo = (document.getElementById("pvNovoTitulo").value || "").trim();
+      const conteudo = (document.getElementById("pvNovoConteudo").value || "").trim();
+      const prioridade = Number(document.getElementById("pvNovoPrioridade").value || 0);
+      const enabled = document.getElementById("pvNovoEnabled").checked;
+      const carteiras = readChecklist(document.getElementById("pvNovoCarteiras"));
+
+      if (!titulo) { m.textContent = "Informe o título."; m.style.color = "var(--warn)"; return; }
+      if (!conteudo) { m.textContent = "Informe o conteúdo."; m.style.color = "var(--warn)"; return; }
+      if (!Number.isInteger(prioridade) || prioridade < 0 || prioridade > 10) { m.textContent = "Prioridade deve ser 0..10."; m.style.color = "var(--warn)"; return; }
+
+      try {
+        m.textContent = "Salvando...";
+        const r = await fetch(`${API_BASE}/painel/novo_texto`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ titulo, conteudo, prioridade, enabled, carteiras })
+        });
+        const j = await r.json();
+        if (!j.ok) { m.textContent = j.erro || "Erro ao salvar."; m.style.color = "var(--err)"; return; }
+        m.textContent = "Criado com sucesso!";
+        m.style.color = "var(--ok)";
+        document.getElementById("pvNovoTitulo").value = "";
+        document.getElementById("pvNovoConteudo").value = "";
+        document.getElementById("pvNovoPrioridade").value = "0";
+        document.getElementById("pvNovoEnabled").checked = true;
+        document.querySelectorAll("#pvNovoCarteiras input[type='checkbox']").forEach(ch => ch.checked = false);
+        pvRecarregar();
+      } catch (e) {
+        m.textContent = "Erro de rede.";
+        m.style.color = "var(--err)";
+      }
+    };
+
+    // Abrir edição
+    window.pvAbrirEdicao = (id) => {
+      const item = pvItems.find(x => x.id === id);
+      if (!item) return;
+      pvEditId = id;
+      document.getElementById("pvEditId").textContent = `#${id}`;
+      document.getElementById("pvEditTitulo").value = item.titulo || "";
+      document.getElementById("pvEditConteudo").value = item.conteudo || "";
+      document.getElementById("pvEditPrioridade").value = Number(item.prioridade ?? 0);
+      document.getElementById("pvEditEnabled").checked = !!item.enabled;
+      makeCarteirasChecklist(document.getElementById("pvEditCarteiras"), new Set(Array.isArray(item.carteiras) ? item.carteiras : []));
+      document.getElementById("pvEditBox").classList.remove("hidden");
+      document.getElementById("pvEditMsg").textContent = "";
+    };
+
+    document.getElementById("pvBtnCancelarEdicao").onclick = () => {
+      pvEditId = null;
+      document.getElementById("pvEditBox").classList.add("hidden");
+      document.getElementById("pvEditMsg").textContent = "";
+    };
+
+    // Salvar edição
+    document.getElementById("pvBtnSalvarEdicao").onclick = async () => {
+      const msg = document.getElementById("pvEditMsg");
+      if (!pvEditId) { msg.textContent = "Nada para salvar."; msg.style.color = "var(--warn)"; return; }
+      const titulo = (document.getElementById("pvEditTitulo").value || "").trim();
+      const conteudo = (document.getElementById("pvEditConteudo").value || "").trim();
+      const prioridade = Number(document.getElementById("pvEditPrioridade").value || 0);
+      const enabled = document.getElementById("pvEditEnabled").checked;
+      const carteiras = readChecklist(document.getElementById("pvEditCarteiras"));
+
+      if (!titulo) { msg.textContent = "Informe o título."; msg.style.color = "var(--warn)"; return; }
+      if (!conteudo) { msg.textContent = "Informe o conteúdo."; msg.style.color = "var(--warn)"; return; }
+      if (!Number.isInteger(prioridade) || prioridade < 0 || prioridade > 10) { msg.textContent = "Prioridade deve ser 0..10."; msg.style.color = "var(--warn)"; return; }
+
+      try {
+        msg.textContent = "Salvando...";
+        msg.style.color = "";
+        const r = await fetch(`${API_BASE}/painel/editar_texto`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: pvEditId, titulo, conteudo, enabled, prioridade, carteiras })
+        });
+        const j = await r.json();
+        if (!j.ok) { msg.textContent = j.erro || "Erro ao salvar."; msg.style.color = "var(--err)"; return; }
+        msg.textContent = "Salvo.";
+        msg.style.color = "var(--ok)";
+        pvRecarregar();
+      } catch (e) {
+        msg.textContent = "Erro de rede.";
+        msg.style.color = "var(--err)";
+      }
+    };
+
+    // Toggle enabled
+    window.pvToggleEnabled = async (id, enabled) => {
+      try {
+        const r = await fetch(`${API_BASE}/painel/editar_texto`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, enabled })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao atualizar status");
+        pvRecarregar();
+      } catch (e) {
+        alert(e.message || "Erro ao atualizar status");
+      }
+    };
+
+    // Remover (soft)
+    window.pvRemover = async (id) => {
+      if (!confirm(`Remover (soft delete) o aviso #${id}?`)) return;
+      try {
+        const r = await fetch(`${API_BASE}/painel/apagar_texto`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, hard: false })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao remover");
+        pvRecarregar();
+      } catch (e) {
+        alert(e.message || "Erro ao remover");
+      }
+    };
+
+    // Apagar definitivo (hard)
+    window.pvApagarDef = async (id) => {
+      if (!confirm(`APAGAR DEFINITIVAMENTE o aviso #${id}? Essa ação não pode ser desfeita.`)) return;
+      try {
+        const r = await fetch(`${API_BASE}/painel/apagar_texto`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, hard: true })
+        });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao apagar");
+        pvRecarregar();
+      } catch (e) {
+        alert(e.message || "Erro ao apagar");
+      }
+    };
+
+    // Filtros/ações UI Painel
+    document.getElementById("pvSomenteAtivos").addEventListener("change", pvRecarregar);
+    document.getElementById("pvFiltroCarteira").addEventListener("change", pvRecarregar);
+    document.getElementById("pvBtnRecarregar").addEventListener("click", pvRecarregar);
 
     /* === Start === */
     carregarTudo("primeiro");
