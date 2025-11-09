@@ -372,10 +372,10 @@
 
     .acc-grid {
       display: grid;
-      grid-template-columns: 1fr repeat(6, minmax(80px, auto));
+      grid-template-columns: repeat(6, minmax(80px, auto));
       gap: .5rem;
       align-items: center;
-      width: 100%;
+      flex: none;
     }
 
     .acc-k {
@@ -1207,8 +1207,8 @@
       const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       const b = new Date(); const a = new Date(); a.setDate(b.getDate() - 6);
       startEl.value = toISO(a); endEl.value = toISO(b);
-      const chip7d = document.querySelector('.chip[data-range="7d"]');
-      highlightChip(chip7d);
+      const chiphj = document.querySelector('.chip[data-range="hoje"]');
+      highlightChip(chiphj);
     }
     initDefaults();
     readFromQS();
