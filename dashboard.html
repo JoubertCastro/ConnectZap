@@ -23,7 +23,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-sm text-slate-500 mr-1">Período:</span>
 
-          <!-- chips de período (AJUSTE: classe chip) -->
+          <!-- chips de período -->
           <button
             class="chip px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-sm font-medium cursor-pointer focus:outline-none"
             data-range="hoje">Hoje</button>
@@ -261,7 +261,7 @@
         </div>
       </div>
 
-      <!-- Aba: Resumo (carteira -> agentes) -->
+      <!-- Aba: Resumo -->
       <div id="tab-resumo" class="p-4 space-y-4 hidden">
         <div class="flex items-center justify-between">
           <div class="text-sm text-slate-600">Resumo por carteira. Clique para expandir e ver os agentes.</div>
@@ -438,7 +438,6 @@
     const btnClearDates = document.getElementById("btnClearDates");
 
     const alertEl = document.getElementById("alert");
-    const chips = [...document.querySelectorAll("[data-range]")];
 
     // tabs
     const segBtns = [...document.querySelectorAll(".seg-btn")];
@@ -485,36 +484,23 @@
     let agentsAll = [];
     const selectedAgents = new Set();
 
-    function togglePanelAgentes(show) {
-      panelAgentes.classList.toggle("hidden", !show);
-    }
-    btnAgentes?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelAgentes(panelAgentes.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if (panelAgentes && !panelAgentes.contains(e.target) && !btnAgentes?.contains(e.target)) {
-        togglePanelAgentes(false);
-      }
-    });
+    function togglePanelAgentes(show) { panelAgentes.classList.toggle("hidden", !show); }
+    btnAgentes?.addEventListener("click", (e) => { e.stopPropagation(); togglePanelAgentes(panelAgentes.classList.contains("hidden")); });
+    document.addEventListener("click", (e) => { if (panelAgentes && !panelAgentes.contains(e.target) && !btnAgentes?.contains(e.target)) togglePanelAgentes(false); });
 
     function renderAgentesList(filter = "") {
       if (!agList) return;
       agList.innerHTML = "";
       const term = filter.trim().toLowerCase();
       const data = agentsAll.filter(a => (a.nome || "").toLowerCase().includes(term));
-      if (!data.length) {
-        agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>';
-        return;
-      }
+      if (!data.length) { agList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum agente</div>'; return; }
       data.forEach(a => {
         const id = `ag_${a.codigo_do_agente}`;
         const row = document.createElement("label");
         row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
         row.innerHTML = `
           <input type="checkbox" class="w-4 h-4" id="${id}" value="${a.codigo_do_agente}" ${selectedAgents.has(String(a.codigo_do_agente)) ? "checked" : ""}>
-          <span class="text-sm">${a.nome || ("Agente " + a.codigo_do_agente)}</span>
-        `;
+          <span class="text-sm">${a.nome || ("Agente " + a.codigo_do_agente)}</span>`;
         row.querySelector("input").addEventListener("change", (ev) => {
           const v = String(ev.target.value);
           if (ev.target.checked) selectedAgents.add(v); else selectedAgents.delete(v);
@@ -529,16 +515,8 @@
       btnAgentes.querySelector("span").textContent = n ? `${n} selecionado${n > 1 ? "s" : ""}` : "Todos";
     }
     agSearch?.addEventListener("input", () => renderAgentesList(agSearch.value));
-    agSelectAll?.addEventListener("click", () => {
-      agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente)));
-      renderAgentesList(agSearch?.value || "");
-      updateAgentesButtonLabel();
-    });
-    agClear?.addEventListener("click", () => {
-      selectedAgents.clear();
-      renderAgentesList(agSearch?.value || "");
-      updateAgentesButtonLabel();
-    });
+    agSelectAll?.addEventListener("click", () => { agentsAll.forEach(a => selectedAgents.add(String(a.codigo_do_agente))); renderAgentesList(agSearch?.value || ""); updateAgentesButtonLabel(); });
+    agClear?.addEventListener("click", () => { selectedAgents.clear(); renderAgentesList(agSearch?.value || ""); updateAgentesButtonLabel(); });
 
     // ===== Multi-select Motivos =====
     const btnMotivos = document.getElementById("btnMotivos");
@@ -551,42 +529,24 @@
     let motivosAll = [];
     const selectedMotivos = new Set();
 
-    function togglePanelMotivos(show) {
-      panelMotivos.classList.toggle("hidden", !show);
-    }
-    btnMotivos?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      togglePanelMotivos(panelMotivos.classList.contains("hidden"));
-    });
-    document.addEventListener("click", (e) => {
-      if (panelMotivos && !panelMotivos.contains(e.target) && !btnMotivos?.contains(e.target)) {
-        togglePanelMotivos(false);
-      }
-    });
+    function togglePanelMotivos(show) { panelMotivos.classList.toggle("hidden", !show); }
+    btnMotivos?.addEventListener("click", (e) => { e.stopPropagation(); togglePanelMotivos(panelMotivos.classList.contains("hidden")); });
+    document.addEventListener("click", (e) => { if (panelMotivos && !panelMotivos.contains(e.target) && !btnMotivos?.contains(e.target)) togglePanelMotivos(false); });
 
     function renderMotivosList(filter = "") {
       if (!motList) return;
       motList.innerHTML = "";
       const term = filter.trim().toLowerCase();
       const data = motivosAll.filter(m => (m || "").toLowerCase().includes(term));
-      if (!data.length) {
-        motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>';
-        return;
-      }
+      if (!data.length) { motList.innerHTML = '<div class="text-sm text-slate-500 px-2 py-1.5">Nenhum motivo</div>'; return; }
       data.forEach(m => {
         const id = `mot_${m.replace(/\s+/g, '_')}`;
         const row = document.createElement("label");
         row.className = "flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded";
-        row.innerHTML = `
-          <input type="checkbox" class="w-4 h-4" id="${id}">
-          <span class="text-sm">${m}</span>
-        `;
+        row.innerHTML = `<input type="checkbox" class="w-4 h-4" id="${id}"><span class="text-sm">${m}</span>`;
         const chk = row.querySelector("input");
         chk.checked = selectedMotivos.has(m);
-        chk.addEventListener("change", (ev) => {
-          if (ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m);
-          updateMotivosButtonLabel();
-        });
+        chk.addEventListener("change", (ev) => { if (ev.target.checked) selectedMotivos.add(m); else selectedMotivos.delete(m); updateMotivosButtonLabel(); });
         motList.appendChild(row);
       });
     }
@@ -596,33 +556,18 @@
       btnMotivos.querySelector("span").textContent = n ? `${n} motivo${n > 1 ? "s" : ""}` : "Todos";
     }
     motSearch?.addEventListener("input", () => renderMotivosList(motSearch.value));
-    motSelectAll?.addEventListener("click", () => {
-      motivosAll.forEach(m => selectedMotivos.add(m));
-      renderMotivosList(motSearch?.value || "");
-      updateMotivosButtonLabel();
-    });
-    motClear?.addEventListener("click", () => {
-      selectedMotivos.clear();
-      renderMotivosList(motSearch?.value || "");
-      updateMotivosButtonLabel();
-    });
+    motSelectAll?.addEventListener("click", () => { motivosAll.forEach(m => selectedMotivos.add(m)); renderMotivosList(motSearch?.value || ""); updateMotivosButtonLabel(); });
+    motClear?.addEventListener("click", () => { selectedMotivos.clear(); renderMotivosList(motSearch?.value || ""); updateMotivosButtonLabel(); });
 
     // ===== Utils =====
     function setAlert(msg) { alertEl.textContent = msg || ""; alertEl.classList.toggle("hidden", !msg); }
     function toPct(part, total) { if (!total) return "—"; return ((part / total) * 100).toFixed(1) + "%"; }
-    function fmtDurSec(s) {
-      if (s == null) return "—";
-      const m = Math.floor(s / 60), sec = s % 60;
-      if (m >= 60) { const h = Math.floor(m / 60), mm = m % 60; return `${h}h ${mm}m`; }
-      return `${m}m ${sec}s`;
-    }
+    function fmtDurSec(s) { if (s == null) return "—"; const m = Math.floor(s / 60), sec = s % 60; if (m >= 60) { const h = Math.floor(m / 60), mm = m % 60; return `${h}h ${mm}m`; } return `${m}m ${sec}s`; }
     function selectedAgentesCSV() { return [...selectedAgents].join(","); }
     function selectedMotivosCSV() { return [...selectedMotivos].join(","); }
     const HOUR_LABELS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + "h");
 
-    function getActiveTab() {
-      return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens";
-    }
+    function getActiveTab() { return document.querySelector(".seg-btn.seg-active")?.dataset.tab || "mensagens"; }
 
     function buildParams(tab) {
       const p = new URLSearchParams();
@@ -681,13 +626,12 @@
       if (motivosQS) pendingMotivos = motivosQS.split(",");
     }
 
-    // AJUSTE: destacar chip ativo via classe dedicada
+    // chips
     function highlightChip(ch) {
       document.querySelectorAll(".chip").forEach(x => x.classList.remove("chip--active"));
       if (ch) ch.classList.add("chip--active");
     }
-    const chipsElems = document.querySelectorAll(".chip");
-    chipsElems.forEach(ch => ch.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(ch => ch.addEventListener("click", () => {
       const k = ch.dataset.range;
       if (k !== "custom") setQuickRange(k);
       highlightChip(ch);
@@ -698,7 +642,10 @@
       const pad = n => String(n).padStart(2, "0");
       const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       let a = new Date(), b = new Date();
-      if (kind === "hoje") { /* a=b hoje */ }
+      if (kind === "hoje") {
+        a = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        b = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
       if (kind === "7d") { a.setDate(now.getDate() - 6); }
       if (kind === "30d") { a.setDate(now.getDate() - 29); }
       if (kind === "mes") { a = new Date(now.getFullYear(), now.getMonth(), 1); }
@@ -716,7 +663,7 @@
       fltMotivo.classList.toggle("hidden", !isHora);
     }
 
-    // ===== Data loaders (existentes) =====
+    // ===== Data loaders =====
     async function loadAgentes() {
       const selPhone = cartEl.value || "";
       const url = `${API_BASE}/api/agentes` + (selPhone ? `?phone_id=${encodeURIComponent(selPhone)}` : "");
@@ -724,10 +671,7 @@
       const data = await res.json();
       agentsAll = data.map(a => ({ codigo_do_agente: String(a.codigo_do_agente), nome: a.nome || ("Agente " + a.codigo_do_agente) }));
       selectedAgents.clear();
-      if (pendingAgents && pendingAgents.length) {
-        pendingAgents.forEach(v => selectedAgents.add(String(v)));
-        pendingAgents = null;
-      }
+      if (pendingAgents && pendingAgents.length) { pendingAgents.forEach(v => selectedAgents.add(String(v))); pendingAgents = null; }
       agSearch && (agSearch.value = "");
       renderAgentesList("");
       updateAgentesButtonLabel();
@@ -750,42 +694,13 @@
       renderMotivosList("");
       updateMotivosButtonLabel();
     }
-    async function loadResumoMensagens(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`);
-      if (!res.ok) throw new Error("Falha no resumo (mensagens)");
-      return res.json();
-    }
-    async function loadEnvios(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`);
-      if (!res.ok) throw new Error("Falha nos envios");
-      return res.json();
-    }
-    async function loadAtendResumo(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`);
-      if (!res.ok) throw new Error("Falha no resumo (atendimentos)");
-      return res.json();
-    }
-    async function loadAtendMotivos(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`);
-      if (!res.ok) throw new Error("Falha nos motivos");
-      return res.json();
-    }
-    async function loadAtendSeries(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`);
-      if (!res.ok) throw new Error("Falha nas séries");
-      return res.json();
-    }
-    async function loadHoraHora(qs) {
-      const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`);
-      if (!res.ok) throw new Error("Falha no hora a hora");
-      return res.json();
-    }
-    // Resumo
-    async function loadExtratoMotivos(qs) {
-      const res = await fetch(`${API_BASE}/api/dashboard/extrato_motivos?${qs}`);
-      if (!res.ok) throw new Error("Falha no extrato de motivos");
-      return res.json();
-    }
+    async function loadResumoMensagens(qs) { const res = await fetch(`${API_BASE}/api/dashboard/resumo?${qs}`); if (!res.ok) throw new Error("Falha no resumo (mensagens)"); return res.json(); }
+    async function loadEnvios(qs) { const res = await fetch(`${API_BASE}/api/dashboard/envios?${qs}`); if (!res.ok) throw new Error("Falha nos envios"); return res.json(); }
+    async function loadAtendResumo(qs) { const res = await fetch(`${API_BASE}/api/atendimentos/resumo?${qs}`); if (!res.ok) throw new Error("Falha no resumo (atendimentos)"); return res.json(); }
+    async function loadAtendMotivos(qs) { const res = await fetch(`${API_BASE}/api/atendimentos/motivos?${qs}`); if (!res.ok) throw new Error("Falha nos motivos"); return res.json(); }
+    async function loadAtendSeries(qs) { const res = await fetch(`${API_BASE}/api/atendimentos/series?${qs}`); if (!res.ok) throw new Error("Falha nas séries"); return res.json(); }
+    async function loadHoraHora(qs) { const res = await fetch(`${API_BASE}/api/atendimentos/hora_hora?${qs}`); if (!res.ok) throw new Error("Falha no hora a hora"); return res.json(); }
+    async function loadExtratoMotivos(qs) { const res = await fetch(`${API_BASE}/api/dashboard/extrato_motivos?${qs}`); if (!res.ok) throw new Error("Falha no extrato de motivos"); return res.json(); }
 
     // ===== Render =====
     async function renderMensagens() {
@@ -867,6 +782,7 @@
         a_tmr.textContent = fmtDurSec(r.tmr_segundos);
       } catch (e) { setAlert("Aba Atendimentos — " + e.message); }
 
+      // Motivos
       try {
         const dados = await loadAtendMotivos(qs);
         if (chartMotivos) { chartMotivos.destroy(); chartMotivos = null; }
@@ -885,6 +801,7 @@
         }
       } catch (e) { setAlert("Motivos — " + e.message); }
 
+      // Séries
       try {
         const s = await loadAtendSeries(qs);
 
@@ -916,9 +833,7 @@
           return isNaN(t) ? 0 : t;
         }
 
-        const rows = Object.keys(map)
-          .map(k => ({ dia: k, ts: diaToTS(k), ...map[k] }))
-          .sort((a, b) => a.ts - b.ts);
+        const rows = Object.keys(map).map(k => ({ dia: k, ts: diaToTS(k), ...map[k] })).sort((a, b) => a.ts - b.ts);
 
         const dias = rows.map(r => r.dia);
         const inb = rows.map(r => r.in);
@@ -953,6 +868,58 @@
       } catch (e) { setAlert("Séries — " + e.message); }
     }
 
+    // ===== Hora a Hora =====
+    async function renderHoraHora() {
+      try { await loadMotivosOptions(); } catch (e) { }
+
+      const qs = buildParams("hora_hora");
+      savePermalink();
+      try {
+        const data = await loadHoraHora(qs);
+
+        const concSeries = new Array(24).fill(0);
+        const inSeries = new Array(24).fill(0);
+
+        (data.concluidos || []).forEach(r => { const h = Number(r.hora); if (h >= 0 && h <= 23) concSeries[h] = Number(r.qtd) || 0; });
+        (data.inbound || []).forEach(r => { const h = Number(r.hora); if (h >= 0 && h <= 23) inSeries[h] = Number(r.qtd) || 0; });
+
+        if (chartHHConc) { chartHHConc.destroy(); chartHHConc = null; }
+        if (chartHHIn) { chartHHIn.destroy(); chartHHIn = null; }
+
+        // Concluídos
+        const ctxC = document.getElementById("chartHHConc").getContext("2d");
+        if (concSeries.every(v => v === 0)) {
+          document.getElementById("chartHHConc").classList.add("hidden");
+          hhConcEmpty.classList.remove("hidden");
+        } else {
+          document.getElementById("chartHHConc").classList.remove("hidden");
+          hhConcEmpty.classList.add("hidden");
+          chartHHConc = new Chart(ctxC, {
+            type: "line",
+            data: { labels: HOUR_LABELS, datasets: [{ label: "Concluídos", data: concSeries, borderColor: "#f59e0b", backgroundColor: "rgba(245,158,11,.15)", fill: true, tension: .3 }] },
+            options: { responsive: true, maintainAspectRatio: false, resizeDelay: 200, plugins: { legend: { position: "top" } }, scales: { y: { beginAtZero: true } } }
+          });
+        }
+
+        // Inbound
+        const ctxI = document.getElementById("chartHHIn").getContext("2d");
+        if (inSeries.every(v => v === 0)) {
+          document.getElementById("chartHHIn").classList.add("hidden");
+          hhInEmpty.classList.remove("hidden");
+        } else {
+          document.getElementById("chartHHIn").classList.remove("hidden");
+          hhInEmpty.classList.add("hidden");
+          chartHHIn = new Chart(ctxI, {
+            type: "line",
+            data: { labels: HOUR_LABELS, datasets: [{ label: "Inbound", data: inSeries, borderColor: "#2563eb", backgroundColor: "rgba(37,99,235,.15)", fill: true, tension: .3 }] },
+            options: { responsive: true, maintainAspectRatio: false, resizeDelay: 200, plugins: { legend: { position: "top" } }, scales: { y: { beginAtZero: true } } }
+          });
+        }
+      } catch (e) {
+        setAlert("Hora a hora — " + e.message);
+      }
+    }
+
     // ===== Resumo =====
     const resumoList = document.getElementById("resumoList");
     const resumoEmpty = document.getElementById("resumoEmpty");
@@ -963,16 +930,7 @@
       const map = new Map();
       rows.forEach(r => {
         const key = r.carteira || "(Sem carteira)";
-        const cur = map.get(key) || {
-          carteira: key,
-          atendimentos: 0,
-          cliente_ficou_inativo: 0,
-          duvidas_gerais: 0,
-          solicitou_2a_via_de_boleto: 0,
-          recusou_a_proposta: 0,
-          realizou_negociacao: 0,
-          agentes: []
-        };
+        const cur = map.get(key) || { carteira: key, atendimentos: 0, cliente_ficou_inativo: 0, duvidas_gerais: 0, solicitou_2a_via_de_boleto: 0, recusou_a_proposta: 0, realizou_negociacao: 0, agentes: [] };
         cur.atendimentos += Number(r.atendimentos || 0);
         cur.cliente_ficou_inativo += Number(r.cliente_ficou_inativo || 0);
         cur.duvidas_gerais += Number(r.duvidas_gerais || 0);
@@ -1001,7 +959,7 @@
         <div class="acc" data-carteira="${c.carteira}">
           <button class="acc-header hover:bg-slate-50" title="${c.carteira}">
             <svg class="w-4 h-4 text-slate-500 chev" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
-            <div class="flex-1 font-semibold acc-name">${c.carteira}</div><!-- AJUSTE: sem quebra, com ellipsis -->
+            <div class="flex-1 font-semibold acc-name">${c.carteira}</div>
             <div class="acc-grid text-sm">
               <div class="acc-k"><span class="text-slate-500">Atend.</span> <span class="font-semibold">${formatNum(total)}</span></div>
               <div class="acc-k"><span class="text-slate-500">Inativo</span> <span class="font-semibold">${formatNum(c.cliente_ficou_inativo)}</span> <span class="text-slate-500">(${pct(c.cliente_ficou_inativo)})</span></div>
@@ -1049,11 +1007,7 @@
           const open = body.classList.contains("hidden");
           document.querySelectorAll("#resumoList .acc-body").forEach(el => el.classList.add("hidden"));
           document.querySelectorAll("#resumoList .chev").forEach(el => el.classList.remove("rot-90"));
-          if (open) {
-            body.classList.remove("hidden");
-            chev.classList.add("rot-90");
-            fillAgentesTable(body.querySelector("tbody"), c.agentes);
-          }
+          if (open) { body.classList.remove("hidden"); chev.classList.add("rot-90"); fillAgentesTable(body.querySelector("tbody"), c.agentes); }
         });
         frag.appendChild(acc);
       });
@@ -1113,9 +1067,8 @@
         await renderAtend();
       } else if (tab === "hora_hora") {
         if (cartEl.value && !agentsAll.length) await loadAgentes();
-        await loadMotivosOptions();
         await renderHoraHora();
-      } else { // resumo
+      } else {
         await renderResumo();
       }
     }
@@ -1157,9 +1110,7 @@
         await loadAgentes();
         if (tab === "hora_hora") await loadMotivosOptions();
       }
-      if (tab === "resumo") {
-        await renderResumo();
-      }
+      if (tab === "resumo") { await renderResumo(); }
     });
 
     // Limpar datas
@@ -1172,7 +1123,7 @@
     btnAplicar.addEventListener("click", render);
 
     // ===== Init =====
-    function initDefaults(){
+    function initDefaults() {
       setQuickRange("hoje");
       const chipHoje = document.querySelector('.chip[data-range="hoje"]');
       highlightChip(chipHoje);
