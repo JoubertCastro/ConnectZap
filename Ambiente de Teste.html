@@ -114,17 +114,124 @@
     }
 
     .switch {
-      position: relative; display: inline-block; width: 42px; height: 24px;
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
     }
-    .switch input {opacity:0;width:0;height:0;}
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
     .slider {
-      position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e5e7eb;transition:.2s;border-radius:9999px;
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #e5e7eb;
+      transition: .2s;
+      border-radius: 9999px;
     }
+
     .slider:before {
-      position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:9999px; box-shadow: 0 1px 2px rgba(0,0,0,.12);
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      transition: .2s;
+      border-radius: 9999px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
     }
-    input:checked + .slider {background:#22c55e;}
-    input:checked + .slider:before {transform: translateX(18px);}
+
+    input:checked+.slider {
+      background: #22c55e;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(18px);
+    }
+
+    /* === Priority Picker (0..10 com cores) === */
+    .prio-wrap {
+      position: relative;
+    }
+
+    .prio-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .5rem;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .prio-left {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .prio-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 9999px;
+      display: inline-block;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
+    }
+
+    .prio-caret {
+      width: 16px;
+      height: 16px;
+      opacity: .7;
+    }
+
+    .prio-menu {
+      position: absolute;
+      z-index: 50;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .prio-opt {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: transparent;
+      border: 0;
+      text-align: left;
+    }
+
+    .prio-opt:hover {
+      background: #f3f4f6;
+    }
+
+    .prio-label {
+      font-size: 14px;
+    }
   </style>
 </head>
 
@@ -354,12 +461,17 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div class="md:col-span-2">
             <label class="text-sm text-gray-700">Título</label>
-            <input id="pvNovoTitulo" type="text" class="w-full border rounded-md p-2" placeholder="Ex: Atenção, não deixe o cliente esperando resposta">
+            <input id="pvNovoTitulo" type="text" class="w-full border rounded-md p-2"
+              placeholder="Ex: Atenção, não deixe o cliente esperando resposta">
           </div>
+
+          <!-- PRIORIDADE NOVO: picker colorido -->
           <div>
             <label class="text-sm text-gray-700">Ordem do aviso (0 até 10)</label>
-            <input id="pvNovoPrioridade" type="number" min="0" max="10" value="0" class="w-full border rounded-md p-2">
+            <div id="pvNovoPrioridadePicker" class="prio-wrap mt-1"></div>
+            <input id="pvNovoPrioridade" type="hidden" value="0">
           </div>
+
           <div class="flex items-end gap-2">
             <label class="text-sm text-gray-700 flex items-center gap-2">
               <input id="pvNovoEnabled" type="checkbox" checked>
@@ -368,7 +480,8 @@
           </div>
           <div class="md:col-span-4">
             <label class="text-sm text-gray-700">Conteúdo</label>
-            <textarea id="pvNovoConteudo" rows="3" class="w-full border rounded-md p-2" placeholder="Mensagem detalhada"></textarea>
+            <textarea id="pvNovoConteudo" rows="3" class="w-full border rounded-md p-2"
+              placeholder="Mensagem detalhada"></textarea>
           </div>
           <div class="md:col-span-4">
             <label class="text-sm text-gray-700">Carteiras (opcional)</label>
@@ -385,7 +498,8 @@
       <!-- Editar aviso (inline) -->
       <div id="pvEditBox" class="hidden mt-4 p-3 border rounded-lg bg-indigo-50/40">
         <div class="flex items-center justify-between">
-          <div class="font-medium">Editar aviso <span id="pvEditId" class="px-2 py-[2px] rounded bg-indigo-100 text-indigo-900 text-xs"></span></div>
+          <div class="font-medium">Editar aviso <span id="pvEditId"
+              class="px-2 py-[2px] rounded bg-indigo-100 text-indigo-900 text-xs"></span></div>
           <button id="pvBtnCancelarEdicao" class="btn btn-muted">Cancelar</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
@@ -393,10 +507,14 @@
             <label class="text-sm text-gray-700">Título</label>
             <input id="pvEditTitulo" type="text" class="w-full border rounded-md p-2">
           </div>
+
+          <!-- PRIORIDADE EDIT: picker colorido -->
           <div>
             <label class="text-sm text-gray-700">Prioridade (0..10)</label>
-            <input id="pvEditPrioridade" type="number" min="0" max="10" class="w-full border rounded-md p-2" value="0">
+            <div id="pvEditPrioridadePicker" class="prio-wrap mt-1"></div>
+            <input id="pvEditPrioridade" type="hidden" value="0">
           </div>
+
           <div class="flex items-end gap-2">
             <label class="text-sm text-gray-700 flex items-center gap-2">
               <input id="pvEditEnabled" type="checkbox"> Ativo
@@ -456,7 +574,8 @@
           </div>
           <div class="md:col-span-2">
             <label class="text-sm text-gray-700">Texto</label>
-            <textarea id="txConteudoNovo" rows="4" class="w-full border rounded-md p-2" placeholder="Conteúdo do texto padrão"></textarea>
+            <textarea id="txConteudoNovo" rows="4" class="w-full border rounded-md p-2"
+              placeholder="Conteúdo do texto padrão"></textarea>
           </div>
           <div class="md:col-span-3 flex gap-2">
             <button id="btnNovoTexto" class="btn btn-primary">Salvar novo texto</button>
@@ -479,7 +598,8 @@
           </div>
           <div>
             <label class="text-sm text-gray-700">Novo texto</label>
-            <textarea id="txConteudoEdit" rows="4" class="w-full border rounded-md p-2" placeholder="Conteúdo atualizado"></textarea>
+            <textarea id="txConteudoEdit" rows="4" class="w-full border rounded-md p-2"
+              placeholder="Conteúdo atualizado"></textarea>
           </div>
           <div class="md:col-span-3 flex gap-2">
             <button id="btnEditarTexto" class="btn btn-primary">Aplicar edição</button>
@@ -599,6 +719,91 @@
     }
     // <<< FIM Helpers Painel
 
+    /* === Priority Picker Helpers === */
+    const __prioPickers = {}; // por hiddenId
+    function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+    function priorityColor(n) {
+      const v = Math.max(0, Math.min(10, Number(n) || 0));
+      const hue = Math.round((v / 10) * 120);   // 0=vermelho → 120=verde
+      return `hsl(${hue} 85% 45%)`;
+    }
+    function priorityText(n) {
+      const v = Math.max(0, Math.min(10, Number(n) || 0));
+      // Rótulos simples — pode ajustar se quiser “Crítico/Médio/Informativo”
+      return `${v}`;
+    }
+    function renderPriorityPicker({ mountId, hiddenId, initial = 0 }) {
+      const mount = document.getElementById(mountId);
+      const hidden = document.getElementById(hiddenId);
+      if (!mount || !hidden) return;
+
+      hidden.value = String(initial);
+
+      mount.innerHTML = `
+        <div class="prio-wrap">
+          <button type="button" class="prio-btn" id="${hiddenId}__btn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="prio-left">
+              <span class="prio-dot" id="${hiddenId}__dot"></span>
+              <span class="prio-label" id="${hiddenId}__label"></span>
+            </span>
+            <svg class="prio-caret" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"/></svg>
+          </button>
+          <div class="prio-menu hidden" id="${hiddenId}__menu" role="listbox"></div>
+        </div>
+      `;
+
+      const btn = document.getElementById(`${hiddenId}__btn`);
+      const dot = document.getElementById(`${hiddenId}__dot`);
+      const lab = document.getElementById(`${hiddenId}__label`);
+      const menu = document.getElementById(`${hiddenId}__menu`);
+
+      function paint(v) {
+        dot.style.background = priorityColor(v);
+        lab.textContent = `Prioridade ${priorityText(v)}`;
+      }
+
+      function openMenu() {
+        menu.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
+      }
+      function closeMenu() {
+        menu.classList.add("hidden");
+        btn.setAttribute("aria-expanded", "false");
+      }
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = btn.getAttribute("aria-expanded") === "true";
+        if (isOpen) closeMenu(); else openMenu();
+      });
+      document.addEventListener("click", () => closeMenu());
+
+      // opções 0..10
+      menu.innerHTML = Array.from({ length: 11 }, (_, i) => {
+        const c = priorityColor(i);
+        return `
+          <button class="prio-opt" data-val="${i}">
+            <span class="prio-dot" style="background:${c}"></span>
+            <span class="prio-label">Prioridade ${i}</span>
+          </button>
+        `;
+      }).join("");
+
+      menu.querySelectorAll(".prio-opt").forEach(opt => {
+        opt.addEventListener("click", (ev) => {
+          const v = Number(ev.currentTarget.getAttribute("data-val"));
+          hidden.value = String(v);
+          paint(v);
+          closeMenu();
+        });
+      });
+
+      // estado inicial
+      paint(Number(hidden.value || initial));
+
+      // expose setter
+      __prioPickers[hiddenId] = { set(v) { hidden.value = String(v); paint(v); } };
+    }
+
     /* === Estados === */
     let filtroCarteira = "";
     let ultimoOnline = [];
@@ -636,6 +841,10 @@
       fillSelect(document.getElementById("pvFiltroCarteira"), CARTEIRAS);
       makeCarteirasChecklist(document.getElementById("pvNovoCarteiras"));
       makeCarteirasChecklist(document.getElementById("pvEditCarteiras"));
+
+      // >>> Renderiza os 2 pickers de prioridade
+      renderPriorityPicker({ mountId: "pvNovoPrioridadePicker", hiddenId: "pvNovoPrioridade", initial: 0 });
+      renderPriorityPicker({ mountId: "pvEditPrioridadePicker", hiddenId: "pvEditPrioridade", initial: 0 });
 
       // carregar config de logout
       fetch(`${API_BASE}/supervisao/logout-config`).then(r => r.json()).then(cfg => {
@@ -1167,6 +1376,7 @@
         const carteiras = Array.isArray(av.carteiras) ? av.carteiras : [];
         const enabled = !!av.enabled;
         const deleted = !!av.deleted_at;
+        const pr = Number(av.prioridade ?? 0);
 
         tr.innerHTML = `
           <td class="px-3 py-2 table-td">${av.id ?? "-"}</td>
@@ -1174,10 +1384,15 @@
             ${enabled ? badge("Ativo", "ok") : badge("Inativo", "warn")}
             ${deleted ? `<div class="mt-1">${badge("Removido", "err")}</div>` : ""}
           </td>
-          <td class="px-3 py-2 table-td">${Number(av.prioridade ?? 0)}</td>
+          <td class="px-3 py-2 table-td">
+            <div class="flex items-center gap-2">
+              <span class="inline-block w-3 h-3 rounded-full" style="background:${priorityColor(pr)}"></span>
+              <span>${pr}</span>
+            </div>
+          </td>
           <td class="px-3 py-2 table-td">
             <div class="font-medium">${(av.titulo || "—")}</div>
-            <div class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">${(av.conteudo || "").slice(0, 400)}${(av.conteudo||"").length>400?"…":""}</div>
+            <div class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">${(av.conteudo || "").slice(0, 400)}${(av.conteudo || "").length > 400 ? "…" : ""}</div>
           </td>
           <td class="px-3 py-2 table-td">
             ${carteiras.length ? carteiras.map(c => badge(c, "blue")).join(" ") : badge("Global", "indigo")}
@@ -1227,6 +1442,7 @@
         document.getElementById("pvNovoTitulo").value = "";
         document.getElementById("pvNovoConteudo").value = "";
         document.getElementById("pvNovoPrioridade").value = "0";
+        if (__prioPickers["pvNovoPrioridade"]) __prioPickers["pvNovoPrioridade"].set(0);
         document.getElementById("pvNovoEnabled").checked = true;
         document.querySelectorAll("#pvNovoCarteiras input[type='checkbox']").forEach(ch => ch.checked = false);
         pvRecarregar();
@@ -1244,7 +1460,9 @@
       document.getElementById("pvEditId").textContent = `#${id}`;
       document.getElementById("pvEditTitulo").value = item.titulo || "";
       document.getElementById("pvEditConteudo").value = item.conteudo || "";
-      document.getElementById("pvEditPrioridade").value = Number(item.prioridade ?? 0);
+      const pr = Number(item.prioridade ?? 0);
+      document.getElementById("pvEditPrioridade").value = pr;
+      if (__prioPickers["pvEditPrioridade"]) __prioPickers["pvEditPrioridade"].set(pr);
       document.getElementById("pvEditEnabled").checked = !!item.enabled;
       makeCarteirasChecklist(document.getElementById("pvEditCarteiras"), new Set(Array.isArray(item.carteiras) ? item.carteiras : []));
       document.getElementById("pvEditBox").classList.remove("hidden");
