@@ -556,6 +556,74 @@
       </div>
     </details>
     <!-- ====== FIM Painel de Avisos ====== -->
+
+    <!-- ====== BLOCO: Textos padrão (existente) ====== -->
+    <details class="card">
+      <div class="mt-3 space-y-6">
+        <!-- NOVO TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">Chave (única)</label>
+            <input id="txChaveNovo" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
+          </div>
+          <div class="md:col-span-2">
+            <label class="text-sm text-gray-700">Texto</label>
+            <textarea id="txConteudoNovo" rows="4" class="w-full border rounded-md p-2"
+              placeholder="Conteúdo do texto padrão"></textarea>
+          </div>
+          <div class="md:col-span-3 flex gap-2">
+            <button id="btnNovoTexto" class="btn btn-primary">Salvar novo texto</button>
+            <div id="txNovoMsg" class="text-sm hidden"></div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- EDITAR TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">ID (opcional)</label>
+            <input id="txIdEdit" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
+            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
+            <input id="txChaveEdit" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Novo texto</label>
+            <textarea id="txConteudoEdit" rows="4" class="w-full border rounded-md p-2"
+              placeholder="Conteúdo atualizado"></textarea>
+          </div>
+          <div class="md:col-span-3 flex gap-2">
+            <button id="btnEditarTexto" class="btn btn-primary">Aplicar edição</button>
+            <div id="txEditarMsg" class="text-sm hidden"></div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- APAGAR TEXTO -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label class="text-sm text-gray-700">ID (opcional)</label>
+            <input id="txIdDelete" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
+            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
+          </div>
+          <div>
+            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
+            <input id="txChaveDelete" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
+          </div>
+          <div class="flex items-end">
+            <button id="btnApagarTexto" class="btn btn-muted w-full">Apagar texto</button>
+          </div>
+          <div class="md:col-span-3">
+            <div id="txApagarMsg" class="text-sm hidden"></div>
+          </div>
+        </div>
+      </div>
+    </details>
+    <!-- ====== FIM BLOCO Textos ====== -->
     <!-- Logout automático -->
     <details class="card">
       <summary class="summary-row">
