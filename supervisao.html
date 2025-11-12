@@ -424,8 +424,8 @@
       </div>
     </details>
 
-    <!-- ====== Painel de Avisos ====== -->
-    <details class="card" open>
+    <!-- ====== Painel de Avisos (agora inicia fechado) ====== -->
+    <details class="card">
       <summary class="summary-row">
         <span class="font-bold text-lg">Painel de avisos</span>
         <span class="pill">criar / listar / editar</span>
@@ -557,8 +557,8 @@
     </details>
     <!-- ====== FIM Painel de Avisos ====== -->
 
-    <!-- ====== BLOCO: Textos padrão (existente) ====== -->
-    <details class="card">
+    <!-- ====== BLOCO: Textos padrão ====== -->
+    <details class="card hidden" aria-hidden="true">
       <summary class="summary-row">
         <span class="font-bold text-lg">Gerenciar textos padrão</span>
         <span class="pill">novo/editar/apagar</span>
@@ -628,7 +628,8 @@
         </div>
       </div>
     </details>
-    <!-- ====== FIM BLOCO Textos ====== -->
+    <!-- ====== FIM BLOCO Textos (escondido) ====== -->
+
     <!-- Logout automático -->
     <details class="card">
       <summary class="summary-row">
@@ -1057,82 +1058,6 @@
       } catch (e) { alert(e.message || "Erro ao forçar offline"); }
     }
 
-    /* === Cadastro de agente === */
-    document.getElementById("btnCadastrar").onclick = async () => {
-      const msg = document.getElementById("cadMsg"); hideMsg(msg);
-      const codigo = Number(document.getElementById("cadCodigo").value);
-      const nome = (document.getElementById("cadNome").value || "").trim();
-      const carteira = document.getElementById("cadCarteira").value;
-      const origem = document.getElementById("cadOrigem").value;
-
-      if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
-      if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
-      if (!carteira) return showMsg(msg, "Selecione a carteira.", "warn");
-      if (!origem) return showMsg(msg, "Selecione a origem BD.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
-        showMsg(msg, "Agente cadastrado com sucesso.", "ok");
-
-        document.getElementById("cadCodigo").value = "";
-        document.getElementById("cadNome").value = "";
-        document.getElementById("cadCarteira").value = "";
-        document.getElementById("cadOrigem").value = "";
-
-        carregarTudo("acao");
-      } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
-    };
-
-    /* === Buscar/editar agente === */
-    document.getElementById("btnBuscar").onclick = async () => {
-      const cod = Number(document.getElementById("buscaCodigo").value);
-      const msg = document.getElementById("editMsg"); hideMsg(msg);
-      if (!cod || !Number.isInteger(cod)) return showMsg(msg, "Informe um código inteiro válido.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes/${cod}`);
-        const j = await r.json();
-        if (!j.ok) {
-          showMsg(msg, j.erro || "Não encontrado.", "warn");
-          document.getElementById("editBox").classList.add("hidden");
-          return;
-        }
-        const ag = j.agente;
-        document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
-        document.getElementById("edNome").textContent = ag.nome;
-        document.getElementById("edCarteira").value = ag.carteira;
-        document.getElementById("edOrigem").textContent = ag.origem_bd;
-        document.getElementById("editBox").classList.remove("hidden");
-      } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
-    };
-    document.getElementById("btnLimparBusca").onclick = () => {
-      document.getElementById("buscaCodigo").value = "";
-      document.getElementById("editBox").classList.add("hidden");
-      hideMsg(document.getElementById("editMsg"));
-    };
-    document.getElementById("btnSalvarEdicao").onclick = async () => {
-      const msg = document.getElementById("editMsg"); hideMsg(msg);
-      const codigo = Number(document.getElementById("edCodigo").textContent);
-      const nova = document.getElementById("edCarteira").value;
-      if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carteira: nova })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
-        showMsg(msg, "Carteira atualizada.", "ok");
-        carregarTudo("acao");
-      } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
-    };
-
     /* === Limite de tickets por carteira === */
     async function carregarTicketsLimitList() {
       try {
@@ -1200,7 +1125,7 @@
       await salvarTicketsLimit(0, carteira);
     };
 
-    /* === BLOCO Textos padrão (existente) === */
+    /* === BLOCO Textos padrão (handlers mantidos) === */
     function buildIdOrChavePayload(idVal, chaveVal) {
       const payload = {};
       const id = Number(idVal);
@@ -1211,7 +1136,7 @@
     }
 
     // Novo texto
-    document.getElementById("btnNovoTexto").onclick = async () => {
+    document.getElementById("btnNovoTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txNovoMsg"); hideMsg(msg);
       const chave = (document.getElementById("txChaveNovo").value || "").trim();
       const texto = (document.getElementById("txConteudoNovo").value || "").trim();
@@ -1231,10 +1156,10 @@
         document.getElementById("txChaveNovo").value = "";
         document.getElementById("txConteudoNovo").value = "";
       } catch (e) { showMsg(msg, "Erro de rede ao salvar texto.", "err"); }
-    };
+    });
 
     // Editar texto
-    document.getElementById("btnEditarTexto").onclick = async () => {
+    document.getElementById("btnEditarTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txEditarMsg"); hideMsg(msg);
       const idVal = document.getElementById("txIdEdit").value;
       const chaveVal = document.getElementById("txChaveEdit").value;
@@ -1257,10 +1182,10 @@
         document.getElementById("txChaveEdit").value = "";
         document.getElementById("txConteudoEdit").value = "";
       } catch (e) { showMsg(msg, "Erro de rede ao editar texto.", "err"); }
-    };
+    });
 
     // Apagar texto
-    document.getElementById("btnApagarTexto").onclick = async () => {
+    document.getElementById("btnApagarTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txApagarMsg"); hideMsg(msg);
       const idVal = document.getElementById("txIdDelete").value;
       const chaveVal = document.getElementById("txChaveDelete").value;
@@ -1282,7 +1207,7 @@
         document.getElementById("txIdDelete").value = "";
         document.getElementById("txChaveDelete").value = "";
       } catch (e) { showMsg(msg, "Erro de rede ao apagar texto.", "err"); }
-    };
+    });
 
     /* === Logout automático === */
     document.getElementById("btnSalvarLogout").onclick = async () => {
