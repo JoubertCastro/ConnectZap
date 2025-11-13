@@ -487,7 +487,7 @@ async function carregarMensagens(){
   const df = janelaAtiva?.fim    || document.getElementById("dataFim").value || "";
   const tipo = document.getElementById("filtroTipo").value;
 
-  let url = `${API_BASE}/api/conversas/${contatoSelecionado}?phone_id=${encodeURIComponent(phoneIdAtual)}`;
+  let url = `${API_BASE}/api/conversas_monitoria/${contatoSelecionado}?phone_id=${encodeURIComponent(phoneIdAtual)}`;
   if(di) url += `&data_inicio=${encodeURIComponent(di)}`;
   if(df) url += `&data_fim=${encodeURIComponent(df)}`;
 
@@ -576,7 +576,7 @@ function exportarPDF(){
   pdfMake.createPdf(docDefinition).download(`conversa_${contatoSelecionado}.pdf`);
 }
 
-/* ====== FILTRO AVANÇADO (conversas_em_andamento) ====== */
+/* ====== FILTRO AVANÇADO (conversas_atendidas) ====== */
 const fxLista = document.getElementById("fxLista");
 const fxHint  = document.getElementById("fxHint");
 document.getElementById("btnBuscarFX").addEventListener("click", buscarAvancado);
