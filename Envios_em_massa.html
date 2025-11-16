@@ -183,7 +183,11 @@
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
                       <optgroup label="Consulta no SIC">
-                        <option value="arc4u">Arc4U — Venc hoje</option>
+                        <option value="arc4u_G1">Arc4U G1— Venc hoje</option>
+                        <option value="arc4u_M">Arc4U M— Venc hoje</option>
+                        <option value="arc4u_A1">Arc4U A1— Venc hoje</option>
+                        <option value="arc4u_C1">Arc4U C1— Venc hoje</option>
+                        <option value="arc4u">Arc4U Outros— Venc hoje</option>
                         <option value="serasa">Serasa — Venc hoje</option>
                         <option value="serasa_atraso">Serasa — Atraso</option>
                         <option value="mercado_pago_2">Mercado Pago(2) — Venc hoje</option>
@@ -705,7 +709,7 @@
           byId('estrategiaSelect').addEventListener('change', async function(){
             const selected = this.value;
             try{
-              if(selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa"){
+              if(selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa"){
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
