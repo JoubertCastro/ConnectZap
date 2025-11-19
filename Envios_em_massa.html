@@ -621,14 +621,14 @@
             let allowedValues;
             switch (contaKey) {
               case 'arc4u':
-                allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1','atraso_new_Arc4u','atraso_old_Arc4u', 'arc4u'];
+                allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'atraso_new_Arc4u', 'atraso_old_Arc4u', 'arc4u'];
                 break;
               case 'arc4u_veiculos':
                 allowedValues = ['arc4u_veiculos'];
-                break;                
+                break;
               case 'mpcobranca2':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
-                break;                
+                break;
               case 'serasa':
                 allowedValues = ['serasa', 'serasa_atraso'];
                 break;
@@ -1003,10 +1003,38 @@
             // Tratamento específico para Arc4u_Veiculos (TELEFONE, PrimeiroNome, CPF, PLACA)
             if (fonte === "arc4u_veiculos") {
               contatos = rows.map(r => {
-                const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
-                const nome = (r?.PrimeiroNome ?? "").toString();
-                const cpf = String(r?.CPF ?? "").toString();
-                const placa = String(r?.PLACA ?? "").toString();
+                const row = r || {};
+                const telRaw =
+                  row.TELEFONE ?? row.telefone ?? row.Telefone ?? row.Tel ?? row.tel ?? "";
+                const tel = String(telRaw).replace(/\D+/g, "");
+                // PrimeiroNome / Nome
+                const nomeRaw =
+                  row.PrimeiroNome ?? row.primeiroNome ?? row.PRIMEIRONOME ??
+                  row.NOME ?? row.Nome ?? row.nome ?? "";
+                const nome = String(nomeRaw || "");
+                let cpfRaw = row.CPF ?? row.cpf ?? row.Cpf ?? "";
+                if (!cpfRaw) {
+                  for (const k in row) {
+                    if (k && k.toUpperCase().includes("CPF")) {
+                      cpfRaw = row[k];
+                      break;
+                    }
+                  }
+                }
+                const cpf = cpfRaw != null ? String(cpfRaw) : "";
+                let placaRaw =
+                  row.PLACA ?? row.placa ?? row.Placa ??
+                  row.PLACA_VEICULO ?? row.PLACA_VEIC ?? "";
+                if (!placaRaw) {
+                  for (const k in row) {
+                    const kUp = k ? k.toUpperCase() : "";
+                    if (kUp.includes("PLACA") || kUp.includes("VEICULO")) {
+                      placaRaw = row[k];
+                      break;
+                    }
+                  }
+                }
+                const placa = placaRaw != null ? String(placaRaw) : "";
                 return { to: tel, vars: [nome, cpf, placa] };
               }).filter(c => c.to);
 
@@ -1035,7 +1063,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" ||selected === "atraso_old_Arc4u" ||selected === "atraso_new_Arc4u" ||selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
