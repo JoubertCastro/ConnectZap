@@ -1000,16 +1000,30 @@
             const data = await res.json();
             const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            // Converte para {to, vars} — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
-            contatos = rows.map(r => {
-              const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
-              const nome = (r?.PrimeiroNome ?? "").toString();
-              const valor = (r?.VALOR_PARCELA ?? "").toString();
-              const vcto = (r?.VENCIMENTO ?? "").toString();
-              return { to: tel, vars: [nome, valor, vcto] };
-            }).filter(c => c.to);
+            // Tratamento específico para Arc4u_Veiculos (TELEFONE, PrimeiroNome, CPF, PLACA)
+            if (fonte === "arc4u_veiculos") {
+              contatos = rows.map(r => {
+                const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
+                const nome = (r?.PrimeiroNome ?? "").toString();
+                const cpf = (r?.CPF ?? "").toString();
+                const placa = (r?.PLACA ?? "").toString();
+                return { to: tel, vars: [nome, cpf, placa] };
+              }).filter(c => c.to);
 
-            csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO"];
+              csvHeaders = ["PrimeiroNome", "CPF", "PLACA"];
+            } else {
+              // Padrão — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
+              contatos = rows.map(r => {
+                const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
+                const nome = (r?.PrimeiroNome ?? "").toString();
+                const valor = (r?.VALOR_PARCELA ?? "").toString();
+                const vcto = (r?.VENCIMENTO ?? "").toString();
+                return { to: tel, vars: [nome, valor, vcto] };
+              }).filter(c => c.to);
+
+              csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO"];
+            }
+
             document.getElementById('contagemContatos').textContent =
               `✔️ Estratégia "${fonte}" (consulta no sic) carregada com ${contatos.length} contato(s).`;
 
