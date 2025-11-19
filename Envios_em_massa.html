@@ -443,6 +443,7 @@
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
                       <optgroup label="Consulta no SIC">
+                        <option value="arc4u_veiculos">Arc4U G1— Venc hoje</option>
                         <option value="arc4u_G1">Arc4U G1— Venc hoje</option>
                         <option value="arc4u_M">Arc4U M— Venc hoje</option>
                         <option value="arc4u_A1">Arc4U A1— Venc hoje</option>
@@ -623,7 +624,7 @@
                 allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1','atraso_new_Arc4u','atraso_old_Arc4u', 'arc4u'];
                 break;
               case 'arc4u_veiculos':
-                allowedValues = ['arc4u'];
+                allowedValues = ['arc4u_veiculos'];
                 break;                
               case 'mpcobranca2':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
@@ -1020,7 +1021,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "atraso_old_Arc4u" ||selected === "atraso_new_Arc4u" ||selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" ||selected === "atraso_old_Arc4u" ||selected === "atraso_new_Arc4u" ||selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
