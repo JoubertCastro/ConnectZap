@@ -1005,8 +1005,8 @@
               contatos = rows.map(r => {
                 const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
                 const nome = (r?.PrimeiroNome ?? "").toString();
-                const cpf = (r?.CPF ?? "").toString();
-                const placa = (r?.PLACA ?? "").toString();
+                const cpf = String(r?.CPF ?? "").toString();
+                const placa = String(r?.PLACA ?? "").toString();
                 return { to: tel, vars: [nome, cpf, placa] };
               }).filter(c => c.to);
 
