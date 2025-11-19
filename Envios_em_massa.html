@@ -349,6 +349,7 @@
                   <option value="mpcobranca2">Mercado Pago Cobrança 2</option>
                   <option value="divzero">DivZero</option>
                   <option value="arc4u">Arc4U</option>
+                  <option value="arc4u_veiculos">Arc4U Veiculos</option>
                   <option value="serasa">Serasa</option>
                   <option value="mpvendas">Mercado Pago Vendas</option>
                 </select>
@@ -621,6 +622,9 @@
               case 'arc4u':
                 allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1','atraso_new_Arc4u','atraso_old_Arc4u', 'arc4u'];
                 break;
+              case 'arc4u_veiculos':
+                allowedValues = ['arc4u'];
+                break;                
               case 'mpcobranca2':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
                 break;                
@@ -1166,6 +1170,7 @@
             mpcobranca2: { phone: "821562937700669", waba: "1989071868573988" },
             divzero: { phone: "779797401888141", waba: "1714740535849713" },
             arc4u: { phone: "829210283602406", waba: "757728786687884" },
+            arc4u_veiculos: { phone: "905309685992125", waba: "757728786687884" },
             serasa: { phone: "713021321904495", waba: "803987045361450" },
             mpvendas: { phone: "803535039503723", waba: "760293050103603" }
           };
