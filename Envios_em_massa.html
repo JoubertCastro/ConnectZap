@@ -445,6 +445,7 @@
                       <optgroup label="Consulta no SIC">
                         <option value="arc4u_veiculos">Arc4U Veiculos</option>
                         <option value="arc4u_G1">Arc4U G1— Venc hoje</option>
+                        <option value="arc4u_G2">Arc4U G2— Venc hoje</option>
                         <option value="arc4u_M">Arc4U M— Venc hoje</option>
                         <option value="arc4u_A1">Arc4U A1— Venc hoje</option>
                         <option value="arc4u_C1">Arc4U C1— Venc hoje</option>
@@ -622,7 +623,7 @@
             let allowedValues;
             switch (contaKey) {
               case 'arc4u':
-                allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'atraso_new_Arc4u', 'atraso_old_Arc4u','antecipa_old_Arc4u', 'arc4u'];
+                allowedValues = ['arc4u_G1','arc4u_G2', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'atraso_new_Arc4u', 'atraso_old_Arc4u','antecipa_old_Arc4u', 'arc4u'];
                 break;
               case 'arc4u_veiculos':
                 allowedValues = ['arc4u_veiculos'];
@@ -1064,7 +1065,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
