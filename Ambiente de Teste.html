@@ -349,6 +349,7 @@
                   <option value="mpcobranca2">Mercado Pago Cobrança 2</option>
                   <option value="divzero">DivZero</option>
                   <option value="arc4u">Arc4U</option>
+                  <option value="arc4u_veiculos">Arc4U Veiculos</option>
                   <option value="serasa">Serasa</option>
                   <option value="mpvendas">Mercado Pago Vendas</option>
                 </select>
@@ -442,10 +443,15 @@
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
                       <optgroup label="Consulta no SIC">
+                        <option value="arc4u_veiculos">Arc4U Veiculos</option>
                         <option value="arc4u_G1">Arc4U G1— Venc hoje</option>
+                        <option value="arc4u_G2">Arc4U G2— Venc hoje</option>
                         <option value="arc4u_M">Arc4U M— Venc hoje</option>
                         <option value="arc4u_A1">Arc4U A1— Venc hoje</option>
                         <option value="arc4u_C1">Arc4U C1— Venc hoje</option>
+                        <option value="atraso_new_Arc4u">Arc4U Atraso New</option>
+                        <option value="atraso_old_Arc4u">Arc4U Atraso Old</option>
+                        <option value="antecipa_old_Arc4u">Arc4U Antecipa Old</option>
                         <option value="arc4u">Arc4U Outros— Venc hoje</option>
                         <option value="serasa">Serasa — Venc hoje</option>
                         <option value="serasa_atraso">Serasa — Atraso</option>
@@ -617,11 +623,14 @@
             let allowedValues;
             switch (contaKey) {
               case 'arc4u':
-                allowedValues = ['arc4u_G1', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'arc4u'];
+                allowedValues = ['arc4u_G1','arc4u_G2', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'atraso_new_Arc4u', 'atraso_old_Arc4u','antecipa_old_Arc4u', 'arc4u'];
+                break;
+              case 'arc4u_veiculos':
+                allowedValues = ['arc4u_veiculos'];
                 break;
               case 'mpcobranca2':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
-                break;                
+                break;
               case 'serasa':
                 allowedValues = ['serasa', 'serasa_atraso'];
                 break;
@@ -993,16 +1002,58 @@
             const data = await res.json();
             const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            // Converte para {to, vars} — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
-            contatos = rows.map(r => {
-              const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
-              const nome = (r?.PrimeiroNome ?? "").toString();
-              const valor = (r?.VALOR_PARCELA ?? "").toString();
-              const vcto = (r?.VENCIMENTO ?? "").toString();
-              return { to: tel, vars: [nome, valor, vcto] };
-            }).filter(c => c.to);
+            // Tratamento específico para Arc4u_Veiculos (TELEFONE, PrimeiroNome, CPF, PLACA)
+            if (fonte === "arc4u_veiculos") {
+              contatos = rows.map(r => {
+                const row = r || {};
+                const telRaw =
+                  row.TELEFONE ?? row.telefone ?? row.Telefone ?? row.Tel ?? row.tel ?? "";
+                const tel = String(telRaw).replace(/\D+/g, "");
+                // PrimeiroNome / Nome
+                const nomeRaw =
+                  row.PrimeiroNome ?? row.primeiroNome ?? row.PRIMEIRONOME ??
+                  row.NOME ?? row.Nome ?? row.nome ?? "";
+                const nome = String(nomeRaw || "");
+                let cpfRaw = row.CPF ?? row.cpf ?? row.Cpf ?? "";
+                if (!cpfRaw) {
+                  for (const k in row) {
+                    if (k && k.toUpperCase().includes("CPF")) {
+                      cpfRaw = row[k];
+                      break;
+                    }
+                  }
+                }
+                const cpf = cpfRaw != null ? String(cpfRaw) : "";
+                let placaRaw =
+                  row.PLACA ?? row.placa ?? row.Placa ??
+                  row.PLACA_VEICULO ?? row.PLACA_VEIC ?? "";
+                if (!placaRaw) {
+                  for (const k in row) {
+                    const kUp = k ? k.toUpperCase() : "";
+                    if (kUp.includes("PLACA") || kUp.includes("VEICULO")) {
+                      placaRaw = row[k];
+                      break;
+                    }
+                  }
+                }
+                const placa = placaRaw != null ? String(placaRaw) : "";
+                return { to: tel, vars: [nome, cpf, placa] };
+              }).filter(c => c.to);
 
-            csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO"];
+              csvHeaders = ["PrimeiroNome", "CPF", "PLACA"];
+            } else {
+              // Padrão — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
+              contatos = rows.map(r => {
+                const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
+                const nome = (r?.PrimeiroNome ?? "").toString();
+                const valor = (r?.VALOR_PARCELA ?? "").toString();
+                const vcto = (r?.VENCIMENTO ?? "").toString();
+                return { to: tel, vars: [nome, valor, vcto] };
+              }).filter(c => c.to);
+
+              csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO"];
+            }
+
             document.getElementById('contagemContatos').textContent =
               `✔️ Estratégia "${fonte}" (consulta no sic) carregada com ${contatos.length} contato(s).`;
 
@@ -1014,7 +1065,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_G1" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
@@ -1164,6 +1215,7 @@
             mpcobranca2: { phone: "821562937700669", waba: "1989071868573988" },
             divzero: { phone: "779797401888141", waba: "1714740535849713" },
             arc4u: { phone: "829210283602406", waba: "757728786687884" },
+            arc4u_veiculos: { phone: "905309685992125", waba: "757728786687884" },
             serasa: { phone: "713021321904495", waba: "803987045361450" },
             mpvendas: { phone: "803535039503723", waba: "760293050103603" }
           };
