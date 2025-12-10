@@ -621,6 +621,10 @@
                         <option value="atraso_old_Arc4u">Arc4U Atraso Old</option>
                         <option value="antecipa_old_Arc4u">Arc4U Antecipa Old</option>
                         <option value="arc4u">Arc4U Outros— Venc hoje</option>
+                        <option value="divzero_eamv">DivZero EAVM — Venc hoje</option>
+                        <option value="divzero_p1">DivZero P1 — Venc hoje</option>
+                        <option value="divzero_p2">DivZero P2 — Venc hoje</option>
+                        <option value="divzero_lp">DivZero LP — Venc hoje</option>
                         <option value="serasa">Serasa — Venc hoje</option>
                         <option value="serasa_atraso">Serasa — Atraso</option>
                         <option value="mercado_pago_2">Mercado Pago(2) — Venc hoje</option>
@@ -801,6 +805,9 @@
                 break;
               case 'serasa':
                 allowedValues = ['serasa', 'serasa_atraso'];
+                break;
+              case 'divzero':
+                allowedValues = ['divzero_eamv', 'divzero_p1','divzero_p2','divzero_lp'];
                 break;
               default:
                 allowedValues = allConsultaOptions.map(o => o.value);
@@ -1233,7 +1240,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eamv" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
