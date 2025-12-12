@@ -626,6 +626,8 @@
                         <option value="divzero_p2">DivZero P2 — Venc hoje</option>
                         <option value="divzero_lp">DivZero LP — Venc hoje</option>
                         <option value="divzero_atraso">DivZero — Atraso</option>
+                        <option value="divzero_oficio">DivZero — Oficio</option>
+                        <option value="divzero_serasa">DivZero — Serasa</option>
                         <option value="serasa">Serasa — Venc hoje</option>
                         <option value="serasa_atraso">Serasa — Atraso</option>
                         <option value="mercado_pago_2">Mercado Pago(2) — Venc hoje</option>
@@ -637,6 +639,7 @@
                         <option value="estrategia2">Teste Josimar e Larissa</option>
                         <option value="estrategia3">Teste Matheus Ribeiro</option>
                         <option value="estrategia4">Teste Hellen</option>
+                        <option value="estrategia5">Teste Alessandra e Matheus T.</option>
                       </optgroup>
                     </select>
                   </div>
@@ -763,6 +766,10 @@
             estrategia4: [
               { to: "5561994013534", vars: ["Hellen", "100.00", "01/01/2025"] },
             ],
+            estrategia5: [
+              { to: "556193794339", vars: ["Alessandra", "100.00", "01/01/2025"] },
+              { to: "556191419712", vars: ["Matheus Teixeira", "100.00", "01/01/2025"] },
+            ],
           };
 
           let contatos = [];              // [{ to, vars[] }]
@@ -808,7 +815,7 @@
                 allowedValues = ['serasa', 'serasa_atraso'];
                 break;
               case 'divzero':
-                allowedValues = ['divzero_eavm', 'divzero_p1','divzero_p2','divzero_lp','divzero_atraso'];
+                allowedValues = ['divzero_eavm', 'divzero_p1','divzero_p2','divzero_lp','divzero_atraso','divzero_oficio','divzero_serasa'];
                 break;
               default:
                 allowedValues = allConsultaOptions.map(o => o.value);
@@ -1241,7 +1248,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_serasa" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
