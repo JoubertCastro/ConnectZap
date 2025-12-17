@@ -307,6 +307,13 @@
                 <option>Bd8</option>
               </select>
             </div>
+            <!-- NOVO: Permissão de envio individual no cadastro -->
+            <div class="md:col-span-2 flex items-end">
+              <label class="text-sm text-gray-700 flex items-center gap-2">
+                <input id="cadPermiteEnvioInd" type="checkbox" class="w-4 h-4">
+                Permitir envio individual
+              </label>
+            </div>
           </div>
           <div class="flex gap-2 mt-4">
             <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
@@ -353,9 +360,16 @@
                 <span class="text-xs text-gray-500 block">Origem BD</span>
                 <span id="edOrigem" class="font-medium">—</span>
               </div>
+              <!-- NOVO: Permissão de envio individual na edição -->
+              <div class="md:col-span-2 flex items-center">
+                <label class="text-sm text-gray-700 flex items-center gap-2">
+                  <input id="edPermiteEnvioInd" type="checkbox" class="w-4 h-4">
+                  Permitir envio individual
+                </label>
+              </div>
             </div>
             <div class="flex gap-2 mt-3">
-              <button id="btnSalvarEdicao" class="btn btn-primary">Salvar carteira</button>
+              <button id="btnSalvarEdicao" class="btn btn-primary">Salvar alterações</button>
               <div id="editMsg" class="text-sm hidden"></div>
             </div>
           </div>
@@ -666,7 +680,7 @@
 
     /* === Carteiras === */
     const CARTEIRAS = [
-      "ConnectZap", "Banco PAN", "Recovery PJ", "Recovery PF",
+      "ConnectZap", "Banco PAN", "Recovery PJ", "Recovery PF","Recovery Preventivo","Recovery Manutenção",
       "Mercado Pago Cobrança", "DivZero", "Arc4U","Arc4U Veiculos", "Serasa", "Mercado Pago Vendas"
     ];
 
@@ -674,10 +688,7 @@
     function showMsg(el, text, type = "ok") { el.classList.remove("hidden"); el.textContent = text; el.style.color = (type === "ok" ? "var(--ok)" : type === "warn" ? "var(--warn)" : "var(--err)"); }
     function hideMsg(el) { el.classList.add("hidden"); el.textContent = ""; el.style.color = ""; }
     function fmt(dt) { try { return new Date(dt).toLocaleString("pt-BR"); } catch { return dt || "—"; } }
-    function fillSelect(sel, vals, includeEmpty = true) {
-      sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";
-      vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
-    }
+    function fillSelect(sel, vals, includeEmpty = true) {sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });}
     function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
 
     // >>> Helpers para inatividade
@@ -724,7 +735,7 @@
     function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
     function priorityColor(n) {
       const v = Math.max(0, Math.min(10, Number(n) || 0));
-      const hue = Math.round((v / 10) * 120);   // 
+      const hue = Math.round((v / 10) * 120);
       return `hsl(${hue} 85% 45%)`;
     }
     function priorityText(n) {
@@ -796,10 +807,7 @@
         });
       });
 
-      // estado inicial
       paint(Number(hidden.value || initial));
-
-      // expose setter
       __prioPickers[hiddenId] = { set(v) { hidden.value = String(v); paint(v); } };
     }
 
@@ -841,7 +849,7 @@
       makeCarteirasChecklist(document.getElementById("pvNovoCarteiras"));
       makeCarteirasChecklist(document.getElementById("pvEditCarteiras"));
 
-      // >>> Renderiza os 2 pickers de prioridade
+      // Renderiza os 2 pickers de prioridade
       renderPriorityPicker({ mountId: "pvNovoPrioridadePicker", hiddenId: "pvNovoPrioridade", initial: 0 });
       renderPriorityPicker({ mountId: "pvEditPrioridadePicker", hiddenId: "pvEditPrioridade", initial: 0 });
 
@@ -871,12 +879,10 @@
       refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
     }
 
-    // fetch JSON com timeout e abort composto
     async function fetchJSON(url, { signal, timeoutMs = 9000, ...init } = {}) {
       const own = new AbortController();
       const t = setTimeout(() => own.abort("timeout"), timeoutMs);
 
-      // compor sinais (parent + timeout)
       let finalSignal = own.signal;
       if (signal) {
         const comp = new AbortController();
@@ -888,7 +894,7 @@
       try {
         const r = await fetch(url, { signal: finalSignal, ...init });
         const ct = r.headers.get("content-type") || "";
-        if (!ct.includes("application/json")) return await r.text(); // fallback
+        if (!ct.includes("application/json")) return await r.text();
         return await r.json();
       } finally {
         clearTimeout(t);
@@ -961,7 +967,7 @@
           const sigPend = sig(pend.value);
           if (sigPend !== lastSig.pendentes) {
             lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value; // 
+            pendentesCarteiraAgg = pend.value;
           }
 
           const norm = s => (s || "")
@@ -986,7 +992,6 @@
           });
         }
 
-        // Render tabela
         renderOnlineTable();
 
         document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
@@ -1057,6 +1062,7 @@
         carregarTudo("acao");
       } catch (e) { alert(e.message || "Erro ao forçar offline"); }
     }
+
     /* === Cadastro de agente === */
     document.getElementById("btnCadastrar").onclick = async () => {
       const msg = document.getElementById("cadMsg"); hideMsg(msg);
@@ -1064,6 +1070,7 @@
       const nome = (document.getElementById("cadNome").value || "").trim();
       const carteira = document.getElementById("cadCarteira").value;
       const origem = document.getElementById("cadOrigem").value;
+      const permiteEnvioInd = document.getElementById("cadPermiteEnvioInd").checked; // NOVO
 
       if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
       if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
@@ -1073,7 +1080,13 @@
       try {
         const r = await fetch(`${API_BASE}/agentes`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ codigo_do_agente: codigo, nome, carteira, origem_bd: origem })
+          body: JSON.stringify({
+            codigo_do_agente: codigo,
+            nome,
+            carteira,
+            origem_bd: origem,
+            permite_envio_individual: permiteEnvioInd // NOVO
+          })
         });
         const j = await r.json();
         if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
@@ -1083,6 +1096,7 @@
         document.getElementById("cadNome").value = "";
         document.getElementById("cadCarteira").value = "";
         document.getElementById("cadOrigem").value = "";
+        document.getElementById("cadPermiteEnvioInd").checked = false; // reset NOVO
 
         carregarTudo("acao");
       } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
@@ -1107,31 +1121,39 @@
         document.getElementById("edNome").textContent = ag.nome;
         document.getElementById("edCarteira").value = ag.carteira;
         document.getElementById("edOrigem").textContent = ag.origem_bd;
+        document.getElementById("edPermiteEnvioInd").checked = !!ag.permite_envio_individual; // NOVO
         document.getElementById("editBox").classList.remove("hidden");
       } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
     };
+
     document.getElementById("btnLimparBusca").onclick = () => {
       document.getElementById("buscaCodigo").value = "";
       document.getElementById("editBox").classList.add("hidden");
       hideMsg(document.getElementById("editMsg"));
     };
+
     document.getElementById("btnSalvarEdicao").onclick = async () => {
       const msg = document.getElementById("editMsg"); hideMsg(msg);
       const codigo = Number(document.getElementById("edCodigo").textContent);
       const nova = document.getElementById("edCarteira").value;
+      const permiteEnvioInd = document.getElementById("edPermiteEnvioInd").checked; // NOVO
       if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
 
       try {
         const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
           method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carteira: nova })
+          body: JSON.stringify({
+            carteira: nova,
+            permite_envio_individual: permiteEnvioInd // NOVO
+          })
         });
         const j = await r.json();
         if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
-        showMsg(msg, "Carteira atualizada.", "ok");
+        showMsg(msg, "Alterações salvas.", "ok");
         carregarTudo("acao");
       } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
     };
+
     /* === Limite de tickets por carteira === */
     async function carregarTicketsLimitList() {
       try {
@@ -1209,7 +1231,6 @@
       return payload;
     }
 
-    // Novo texto
     document.getElementById("btnNovoTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txNovoMsg"); hideMsg(msg);
       const chave = (document.getElementById("txChaveNovo").value || "").trim();
@@ -1232,7 +1253,6 @@
       } catch (e) { showMsg(msg, "Erro de rede ao salvar texto.", "err"); }
     });
 
-    // Editar texto
     document.getElementById("btnEditarTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txEditarMsg"); hideMsg(msg);
       const idVal = document.getElementById("txIdEdit").value;
@@ -1258,7 +1278,6 @@
       } catch (e) { showMsg(msg, "Erro de rede ao editar texto.", "err"); }
     });
 
-    // Apagar texto
     document.getElementById("btnApagarTexto")?.addEventListener("click", async () => {
       const msg = document.getElementById("txApagarMsg"); hideMsg(msg);
       const idVal = document.getElementById("txIdDelete").value;
@@ -1409,7 +1428,6 @@
       });
     }
 
-    // Criar
     document.getElementById("pvBtnCriar").onclick = async () => {
       const m = document.getElementById("pvNovoMsg");
       m.textContent = "";
@@ -1447,7 +1465,6 @@
       }
     };
 
-    // Abrir edição
     window.pvAbrirEdicao = (id) => {
       const item = pvItems.find(x => x.id === id);
       if (!item) return;
@@ -1470,7 +1487,6 @@
       document.getElementById("pvEditMsg").textContent = "";
     };
 
-    // Salvar edição
     document.getElementById("pvBtnSalvarEdicao").onclick = async () => {
       const msg = document.getElementById("pvEditMsg");
       if (!pvEditId) { msg.textContent = "Nada para salvar."; msg.style.color = "var(--warn)"; return; }
@@ -1503,7 +1519,6 @@
       }
     };
 
-    // Toggle enabled
     window.pvToggleEnabled = async (id, enabled) => {
       try {
         const r = await fetch(`${API_BASE}/painel/editar_texto`, {
@@ -1519,7 +1534,6 @@
       }
     };
 
-    // Remover (soft)
     window.pvRemover = async (id) => {
       if (!confirm(`Remover (soft delete) o aviso #${id}?`)) return;
       try {
@@ -1536,7 +1550,6 @@
       }
     };
 
-    // Apagar definitivo (hard)
     window.pvApagarDef = async (id) => {
       if (!confirm(`APAGAR DEFINITIVAMENTE o aviso #${id}? Essa ação não pode ser desfeita.`)) return;
       try {
@@ -1553,7 +1566,6 @@
       }
     };
 
-    // Filtros/ações UI Painel
     document.getElementById("pvSomenteAtivos").addEventListener("change", pvRecarregar);
     document.getElementById("pvFiltroCarteira").addEventListener("change", pvRecarregar);
     document.getElementById("pvBtnRecarregar").addEventListener("click", pvRecarregar);
