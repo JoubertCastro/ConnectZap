@@ -897,7 +897,29 @@
             return str.replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s]));
           }
 
-          // ================== UI Helpers ==================
+          
+          function pickAny(obj, keys) {
+            for (const k of keys) {
+              if (obj && obj[k] != null && obj[k] !== "") return obj[k];
+            }
+            return "";
+          }
+
+          // evita quebrar conteudo CSV (backend separa por vírgula)
+          function safeVar(v) {
+            let s = (v ?? "").toString();
+            s = s.replace(/\r\n?/g, "\n").replace(/\n+/g, " ").trim();
+
+            // 1) troca vírgula decimal (310,48 -> 310.48)
+            s = s.replace(/(\d),(\d)/g, "$1.$2");
+
+            // 2) qualquer outra vírgula vira " - " pra não quebrar o split
+            s = s.replace(/,/g, " - ");
+
+            return s;
+          }
+
+// ================== UI Helpers ==================
           function renderSelect(id, varIndex, current) {
             let opts = '';
             if (csvHeaders.length > 0) {
@@ -1179,79 +1201,95 @@
           }
 
           // ================== Estratégias ONLINE (consulta do sic) ==================
-          async function carregarEstrategiaOnline(fonte) {
-            const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
-            const res = await fetch(url, {
-              method: "GET",
-              mode: "cors",
-              credentials: "omit",
-              cache: "no-store"
-            });
-            if (!res.ok) {
-              const msg = await res.text();
-              throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
-            }
-            const data = await res.json();
-            const rows = Array.isArray(data?.dados) ? data.dados : [];
+                    async function carregarEstrategiaOnline(fonte) {
+                      const url = `${ESTRAT_API}/api/estrategias/${encodeURIComponent(fonte)}`;
+                      const res = await fetch(url, {
+                        method: "GET",
+                        mode: "cors",
+                        credentials: "omit",
+                        cache: "no-store"
+                      });
+                      if (!res.ok) {
+                        const msg = await res.text();
+                        throw new Error(`Falha ao carregar estratégia (${res.status}): ${msg}`);
+                      }
+                      const data = await res.json();
+                      const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-            // Tratamento específico para Arc4u_Veiculos (TELEFONE, PrimeiroNome, CPF, PLACA)
-            if (fonte === "arc4u_veiculos") {
-              contatos = rows.map(r => {
-                const row = r || {};
-                const telRaw =
-                  row.TELEFONE ?? row.telefone ?? row.Telefone ?? row.Tel ?? row.tel ?? "";
-                const tel = String(telRaw).replace(/\D+/g, "");
-                // PrimeiroNome / Nome
-                const nomeRaw =
-                  row.PrimeiroNome ?? row.primeiroNome ?? row.PRIMEIRONOME ??
-                  row.NOME ?? row.Nome ?? row.nome ?? "";
-                const nome = String(nomeRaw || "");
-                let cpfRaw = row.CPF ?? row.cpf ?? row.Cpf ?? "";
-                if (!cpfRaw) {
-                  for (const k in row) {
-                    if (k && k.toUpperCase().includes("CPF")) {
-                      cpfRaw = row[k];
-                      break;
+                      // 1) Arc4U Veículos: [PrimeiroNome, CPF, PLACA]
+                      if (fonte === "arc4u_veiculos") {
+                        contatos = rows.map(r => {
+                          const row = r || {};
+                          const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to", "msisdn", "phone", "celular", "numero", "destinatario"]);
+                          const tel = String(telRaw).replace(/\D+/g, "");
+
+                          const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+                          let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                          if (!cpfRaw) {
+                            for (const k in row) if (String(k).toUpperCase().includes("CPF")) { cpfRaw = row[k]; break; }
+                          }
+                          let placaRaw = pickAny(row, ["PLACA", "placa", "Placa", "PLACA_VEICULO", "placa_veiculo", "PLACA_VEIC"]);
+                          if (!placaRaw) {
+                            for (const k in row) {
+                              const kUp = String(k).toUpperCase();
+                              if ((kUp.includes("PLACA") || kUp.includes("VEICULO")) && row[k] != null && row[k] !== "") { placaRaw = row[k]; break; }
+                            }
+                          }
+
+                          return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(placaRaw)] };
+                        }).filter(c => c.to);
+
+                        csvHeaders = ["PrimeiroNome", "CPF", "PLACA"];
+
+                      } else {
+                        // 2) Estratégias com DESCRICAO: [PrimeiroNome, CPF, DESCRICAO]
+                        const hasDescricao = rows.some(row =>
+                          row && (row.DESCRICAO != null || row.Descricao != null || row.descricao != null || row["ds_descricao"] != null)
+                        );
+
+                        if (hasDescricao) {
+                          contatos = rows.map(r => {
+                            const row = r || {};
+                            const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                            const tel = String(telRaw).replace(/\D+/g, "");
+
+                            const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+                            let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                            if (!cpfRaw) {
+                              for (const k in row) if (String(k).toUpperCase().includes("CPF")) { cpfRaw = row[k]; break; }
+                            }
+
+                            const descRaw = pickAny(row, ["DESCRICAO", "Descricao", "descricao", "ds_descricao"]);
+
+                            return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
+                          }).filter(c => c.to);
+
+                          csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+
+                        } else {
+                          // 3) Padrão: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
+                          contatos = rows.map(r => {
+                            const row = r || {};
+                            const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                            const tel = String(telRaw).replace(/\D+/g, "");
+
+                            const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+                            const valorRaw = pickAny(row, ["VALOR_PARCELA", "valor_parcela", "valor", "valor_parc", "vl_parcela", "vlr"]);
+                            const vctoRaw = pickAny(row, ["VENCIMENTO", "vencimento", "dt_vcto", "data_vencimento", "dt_venc"]);
+
+                            return { to: tel, vars: [safeVar(nomeRaw), safeVar(valorRaw), safeVar(vctoRaw)] };
+                          }).filter(c => c.to);
+
+                          csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO"];
+                        }
+                      }
+
+                      document.getElementById('contagemContatos').textContent =
+                        `✔️ Estratégia "${fonte}" (consulta no sic) carregada com ${contatos.length} contato(s).`;
+
+                      renderMapUI();
+                      calcularCusto();
                     }
-                  }
-                }
-                const cpf = cpfRaw != null ? String(cpfRaw) : "";
-                let placaRaw =
-                  row.PLACA ?? row.placa ?? row.Placa ??
-                  row.PLACA_VEICULO ?? row.PLACA_VEIC ?? "";
-                if (!placaRaw) {
-                  for (const k in row) {
-                    const kUp = k ? k.toUpperCase() : "";
-                    if (kUp.includes("PLACA") || kUp.includes("VEICULO")) {
-                      placaRaw = row[k];
-                      break;
-                    }
-                  }
-                }
-                const placa = placaRaw != null ? String(placaRaw) : "";
-                return { to: tel, vars: [nome, cpf, placa] };
-              }).filter(c => c.to);
-
-              csvHeaders = ["PrimeiroNome", "CPF", "PLACA"];
-            } else {
-              // Padrão — ordem: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
-              contatos = rows.map(r => {
-                const tel = String(r?.TELEFONE || "").replace(/\D+/g, "");
-                const nome = (r?.PrimeiroNome ?? "").toString();
-                const valor = (r?.VALOR_PARCELA ?? "").toString();
-                const vcto = (r?.VENCIMENTO ?? "").toString();
-                return { to: tel, vars: [nome, valor, vcto] };
-              }).filter(c => c.to);
-
-              csvHeaders = ["PrimeiroNome", "VALOR_PARCELA", "VENCIMENTO","CONTRATO","DESCRICAO"];
-            }
-
-            document.getElementById('contagemContatos').textContent =
-              `✔️ Estratégia "${fonte}" (consulta no sic) carregada com ${contatos.length} contato(s).`;
-
-            renderMapUI();
-            calcularCusto();
-          }
 
           // ================== Contatos (arquivo e exemplos) ==================
           byId('estrategiaSelect').addEventListener('change', async function () {
@@ -1298,7 +1336,7 @@
 
               contatos = dataRows.map(r => ({
                 to: (r[0] || '').replace(/\D+/g, ''),
-                vars: r.slice(1),
+                vars: r.slice(1).map(safeVar),
               })).filter(c => c.to);
 
               document.getElementById('contagemContatos').textContent = `✔️ Arquivo carregado com ${contatos.length} contato(s).`;
