@@ -638,6 +638,7 @@
                         <option value="mercado_pago_2">Mercado Pago(2) — Venc hoje</option>
                         <option value="mercado_pago_4">Mercado Pago(4) — Venc hoje</option>
                         <option value="mercado_pago_9">Mercado Pago(9) — Venc hoje</option>
+                        <option value="ofertas_recovery">DivZero — Oficio</option>
                       </optgroup>
                       <optgroup label="Realizar teste">
                         <option value="estrategia1">Teste Karen</option>
@@ -809,6 +810,9 @@
             switch (contaKey) {
               case 'arc4u':
                 allowedValues = ['arc4u_G1', 'arc4u_G2', 'arc4u_M', 'arc4u_A1', 'arc4u_C1', 'atraso_new_Arc4u', 'atraso_old_Arc4u', 'antecipa_old_Arc4u', 'arc4u'];
+                break;
+              case 'recoverypf':
+                allowedValues = ['ofertas_recovery'];
                 break;
               case 'arc4u_veiculos':
                 allowedValues = ['arc4u_veiculos'];
@@ -1253,7 +1257,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa") {
+              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa" || selected === "ofertas_recovery") {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
