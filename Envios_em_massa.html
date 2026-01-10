@@ -1290,7 +1290,7 @@
                           return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
                         }).filter(c => c.to);
 
-                        csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+                        csvHeaders = ["PrimeiroNome", "CPF", "Contrato"];
 
                       } else if (fonte === "entrada_divzero_p2") {
                         // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
@@ -1313,7 +1313,7 @@
                           return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
                         }).filter(c => c.to);
 
-                        csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+                        csvHeaders = ["PrimeiroNome", "CPF", "Contrato"];
 
                       } else if (fonte === "entrada_divzero_lp") {
                         // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
