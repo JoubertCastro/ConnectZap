@@ -1269,6 +1269,98 @@
 
                         csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
 
+                      } else if (fonte === "entrada_divzero_p1") {
+                        // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
+                        contatos = rows.map(r => {
+                          const row = r || {};
+                          const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                          const tel = String(telRaw).replace(/\D+/g, "");
+
+                          const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+
+                          let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                          if (!cpfRaw) {
+                            for (const k in row) {
+                              if (String(k).toUpperCase().includes("CPF") && row[k] != null && row[k] !== "") { cpfRaw = row[k]; break; }
+                            }
+                          }
+
+                          const descRaw = pickAny(row, ["DESCRICAO", "Descricao", "descricao", "ds_descricao"]);
+
+                          return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
+                        }).filter(c => c.to);
+
+                        csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+
+                      } else if (fonte === "entrada_divzero_p2") {
+                        // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
+                        contatos = rows.map(r => {
+                          const row = r || {};
+                          const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                          const tel = String(telRaw).replace(/\D+/g, "");
+
+                          const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+
+                          let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                          if (!cpfRaw) {
+                            for (const k in row) {
+                              if (String(k).toUpperCase().includes("CPF") && row[k] != null && row[k] !== "") { cpfRaw = row[k]; break; }
+                            }
+                          }
+
+                          const descRaw = pickAny(row, ["DESCRICAO", "Descricao", "descricao", "ds_descricao"]);
+
+                          return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
+                        }).filter(c => c.to);
+
+                        csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+
+                      } else if (fonte === "entrada_divzero_lp") {
+                        // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
+                        contatos = rows.map(r => {
+                          const row = r || {};
+                          const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                          const tel = String(telRaw).replace(/\D+/g, "");
+
+                          const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+
+                          let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                          if (!cpfRaw) {
+                            for (const k in row) {
+                              if (String(k).toUpperCase().includes("CPF") && row[k] != null && row[k] !== "") { cpfRaw = row[k]; break; }
+                            }
+                          }
+
+                          const descRaw = pickAny(row, ["DESCRICAO", "Descricao", "descricao", "ds_descricao"]);
+
+                          return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
+                        }).filter(c => c.to);
+
+                        csvHeaders = ["PrimeiroNome", "CPF", "DESCRICAO"];
+
+                      } else if (fonte === "entrada_divzero_eavm") {
+                        // Ofertas Recovery (SIC): [PrimeiroNome, CPF, DESCRICAO]
+                        contatos = rows.map(r => {
+                          const row = r || {};
+                          const telRaw = pickAny(row, ["TELEFONE", "telefone", "Telefone", "Tel", "tel", "to"]);
+                          const tel = String(telRaw).replace(/\D+/g, "");
+
+                          const nomeRaw = pickAny(row, ["PrimeiroNome", "primeiroNome", "PRIMEIRONOME", "NOME", "Nome", "nome", "cliente"]);
+
+                          let cpfRaw = pickAny(row, ["CPF", "cpf", "Cpf", "CPF_CLIENTE", "cpf_cliente"]);
+                          if (!cpfRaw) {
+                            for (const k in row) {
+                              if (String(k).toUpperCase().includes("CPF") && row[k] != null && row[k] !== "") { cpfRaw = row[k]; break; }
+                            }
+                          }
+
+                          const descRaw = pickAny(row, ["DESCRICAO", "Descricao", "descricao", "ds_descricao"]);
+
+                          return { to: tel, vars: [safeVar(nomeRaw), safeVar(cpfRaw), safeVar(descRaw)] };
+                        }).filter(c => c.to);
+
+                        csvHeaders = ["PrimeiroNome", "CPF", "Contrato"];
+
                       } else {
                         // Fluxo normal: [PrimeiroNome, VALOR_PARCELA, VENCIMENTO]
                         contatos = rows.map(r => {
