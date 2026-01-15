@@ -515,7 +515,8 @@
                   <option value="recoverypf_prev">Recovery Preventivo</option>
                   <option value="recoverypf_man">Recovery Manutenção</option>
                   <option value="mpcobranca">Mercado Pago Cobrança</option>
-                  <option value="divzero">DivZero</option>
+                  <option value="divzero_p2">DivZero P2</option>
+                  <option value="divzero_lp">DivZero LP</option>
                   <option value="arc4u">Arc4U</option>
                   <option value="arc4u_veiculos">Arc4U Veiculos</option>
                   <option value="serasa">Serasa</option>
@@ -817,13 +818,16 @@
               case 'arc4u_veiculos':
                 allowedValues = ['arc4u_veiculos'];
                 break;
-              case 'mpcobranca2':
+              case 'mpcobranca':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
                 break;
               case 'serasa':
                 allowedValues = ['serasa', 'serasa_atraso'];
                 break;
-              case 'divzero':
+              case 'divzero_lp':
+                allowedValues = ['divzero_hoje','divzero_eavm', 'divzero_p1','divzero_p2','divzero_lp','divzero_atraso','divzero_oficio','divzero_serasa','entrada_divzero_p1','entrada_divzero_p2','entrada_divzero_lp','entrada_divzero_eavm'];
+                break;
+              case 'divzero_p2':
                 allowedValues = ['divzero_hoje','divzero_eavm', 'divzero_p1','divzero_p2','divzero_lp','divzero_atraso','divzero_oficio','divzero_serasa','entrada_divzero_p1','entrada_divzero_p2','entrada_divzero_lp','entrada_divzero_eavm'];
                 break;
               default:
@@ -1537,7 +1541,8 @@
             recoverypf_prev: { phone: "938298879357445", waba: "825347669829173" },
             recoverypf_man: { phone: "897647883433681", waba: "825347669829173" },
             mpcobranca: { phone: "821562937700669", waba: "1989071868573988" },
-            divzero: { phone: "779797401888141", waba: "1714740535849713" },
+            divzero_p2: { phone: "779797401888141", waba: "1714740535849713" },
+            divzero_lp: { phone: "922259637643727", waba: "1714740535849713" },
             arc4u: { phone: "829210283602406", waba: "757728786687884" },
             arc4u_veiculos: { phone: "905309685992125", waba: "757728786687884" },
             serasa: { phone: "713021321904495", waba: "803987045361450" },
@@ -1593,7 +1598,8 @@
                   <option value="recoverypf_prev">Recovery Preventivo</option>
                   <option value="recoverypf_man">Recovery Manutenção</option>
                   <option value="mpcobranca">Mercado Pago Cobrança</option>
-                  <option value="divzero">DivZero</option>
+                  <option value="divzero_p2">DivZero P2</option>
+                  <option value="divzero_lp">DivZero LP</option>
                   <option value="arc4u">Arc4U</option>
                   <option value="arc4u_veiculos">Arc4U Veiculos</option>
                   <option value="serasa">Serasa</option>
