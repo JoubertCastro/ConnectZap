@@ -2,1576 +2,915 @@
 <html lang="pt-BR">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ConnectZap — Supervisão</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversas WhatsApp — Supervisor</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --ok: #16a34a;
-      --warn: #d97706;
-      --err: #dc2626
-    }
-
-    .card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px
-    }
-
-    .kpi {
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      background: #fff;
-      padding: 14px
-    }
-
-    .pill {
-      padding: 2px 8px;
-      border-radius: 9999px;
-      background: #f3f4f6;
-      font-size: 12px
-    }
-
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 9999px;
+    /* ========= Bolhas de mensagem (ajustadas) ========= */
+    .msg {
       display: inline-block;
-      margin-right: 6px
+      max-width: min(70%, 560px);
+      padding: 10px 14px 18px;
+      margin: 6px 0;
+      position: relative;
+      border-radius: 18px;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, .10);
+      transition: background .18s ease;
     }
 
-    .dot.online {
-      background: #16a34a
+    @media (max-width: 768px) {
+      .msg {
+        max-width: 86%;
+      }
     }
 
-    .dot.offline {
-      background: #9ca3af
+    .msg.enviada {
+      align-self: flex-end;
+      background: linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
+      color: #111827;
     }
 
-    .btn {
-      padding: 10px 14px;
-      border-radius: 10px
+    .msg.recebida {
+      align-self: flex-start;
+      background: var(--bubble-in-bg, #fff);
+      border: 1px solid var(--bubble-in-border, #e2e8f0);
     }
 
-    .btn-primary {
-      background: #2563eb;
-      color: #fff
+    .msg .hora {
+      position: absolute;
+      right: 8px;
+      bottom: 4px;
+      font-size: 11px;
+      color: #4b5563;
     }
 
-    .btn-muted {
-      background: #f3f4f6
+    /* Caudas dos balões */
+    .msg.enviada::after,
+    .msg.recebida::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      width: 14px;
+      height: 14px;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
     }
 
-    details>summary {
+    .msg.enviada::after {
+      right: -7px;
+      background: linear-gradient(120deg, var(--bubble-out-g1, #dcf8c6), var(--bubble-out-g2, #b8f0a4));
+    }
+
+    .msg.recebida::after {
+      left: -7px;
+      background: var(--bubble-in-bg, #fff);
+      border-left: 1px solid var(--bubble-in-border, #e2e8f0);
+      border-bottom: 1px solid var(--bubble-in-border, #e2e8f0);
+    }
+
+    /* Ações dentro do balão */
+    .msg .actions {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      display: flex;
+      gap: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+    }
+
+    .msg:hover .actions,
+    .msg:focus-within .actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .icon-btn {
+      font-size: 14px;
+      color: #64748b;
       cursor: pointer;
-      list-style: none
     }
 
-    details>summary::-webkit-details-marker {
-      display: none
+    .icon-btn:hover {
+      color: #2563eb;
     }
 
-    .summary-row {
+    /* Mídia */
+    .msg img.thumb {
+      max-width: 280px;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+    }
+
+    /* ========= Cartões de sistema ========= */
+    .msg.system {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      color: #0f172a;
+    }
+
+    .msg.system::after {
+      display: none;
+    }
+
+    .sys-title {
+      font-weight: 700;
+      font-size: .9rem;
       display: flex;
       align-items: center;
-      gap: .5rem
+      gap: .5rem;
     }
 
-    details.card summary {
-      border-radius: 12px;
-      padding: 10px 12px;
-      margin: -8px;
-      margin-bottom: 8px;
-      transition: background .18s ease, box-shadow .18s ease, transform .12s ease;
+    .sys-body {
+      font-size: .9rem;
+      color: #334155;
     }
 
-    details.card:hover summary {
-      background: #f9fafb;
+    .sys-meta {
+      font-size: .75rem;
+      color: #64748b;
     }
 
-    details.card[open] summary {
-      background: #eef2ff;
-      box-shadow: 0 0 0 2px #6366f1 inset;
-    }
-
-    details.card summary:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px #2563eb inset;
-    }
-
-    .table-th {
-      white-space: nowrap;
-      font-weight: 600;
-      font-size: 12px;
-      color: #374151;
-    }
-
-    .table-td {
-      vertical-align: top;
-      font-size: 13px;
-    }
-
-    .switch {
-      position: relative;
+    .sys-pill {
       display: inline-block;
-      width: 42px;
-      height: 24px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: #e5e7eb;
-      transition: .2s;
+      font-size: .7rem;
+      font-weight: 700;
+      padding: .1rem .4rem;
       border-radius: 9999px;
+      background: #eef2ff;
+      color: #3730a3;
     }
 
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background: white;
-      transition: .2s;
-      border-radius: 9999px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+    /* Extras */
+    .dia {
+      text-align: center;
+      margin: 12px 0;
+      font-size: 12px;
+      color: #888;
     }
 
-    input:checked+.slider {
-      background: #22c55e;
+    .contato-selected {
+      background: #f0f9ff !important;
     }
 
-    input:checked+.slider:before {
-      transform: translateX(18px);
+    mark {
+      background: #ffef6b;
+      color: #000;
+      padding: 0 2px;
+      border-radius: 2px;
     }
 
-    .prio-wrap {
-      position: relative;
+    #digitando {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
     }
 
-    .prio-btn {
-      width: 100%;
+    /* Bloco de filtros compacto */
+    .filter-card {
+      border: 1px solid #e2e8f0;
+      border-radius: .75rem;
+      background: #fff;
+    }
+
+    .filter-title {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: .5rem;
+      padding: .6rem .8rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .chip-btn {
+      padding: .4rem .7rem;
+      font-size: .8rem;
+      border-radius: .6rem;
+      border: 1px solid #e2e8f0;
       background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 8px 10px;
+      color: #334155;
+      font-weight: 600;
     }
 
-    .prio-left {
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
+    .chip-btn.active {
+      background: #1d4ed8;
+      color: #fff;
+      border-color: #1d4ed8;
     }
 
-    .prio-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 9999px;
-      display: inline-block;
-      flex-shrink: 0;
-      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .06);
+    @media (max-width: 768px) {
+      aside {
+        width: 42%;
+      }
     }
 
-    .prio-caret {
-      width: 16px;
-      height: 16px;
-      opacity: .7;
-    }
-
-    .prio-menu {
+    /* Acessibilidade */
+    .sr-only {
       position: absolute;
-      z-index: 50;
-      left: 0;
-      right: 0;
-      top: calc(100% + 6px);
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 6px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, .08);
-      max-height: 260px;
-      overflow: auto;
-    }
-
-    .prio-opt {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      padding: 8px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      background: transparent;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
       border: 0;
-      text-align: left;
-    }
-
-    .prio-opt:hover {
-      background: #f3f4f6;
-    }
-
-    .prio-label {
-      font-size: 14px;
     }
   </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <header class="bg-white border-b sticky top-0 z-10">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-      <div class="flex items-center gap-3">
-        <h1 class="text-lg md:text-xl font-semibold">ConnectZap — Supervisão</h1>
-        <span class="hidden md:inline text-sm text-gray-500">Administração de agentes & visão operacional</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <label for="filtroGlobalCarteira" class="text-sm text-gray-600">Carteira:</label>
-        <select id="filtroGlobalCarteira" class="border rounded-md p-2 text-sm">
-          <option value="">Todas</option>
-        </select>
-        <span id="autoInfo" class="text-xs text-gray-400">Atualização automática a cada 10s</span>
+<body class="h-screen flex bg-gray-100">
+
+  <!-- =========== SIDEBAR =========== -->
+  <aside id="sidebar" class="w-1/3 lg:w-1/4 bg-white border-r flex flex-col">
+    <!-- Filtros -->
+    <div class="p-3 border-b">
+      <div class="filter-card">
+        <div class="filter-title">
+          <span class="summary-label">
+            <span>Filtros</span>
+            <span id="fltResumo" class="text-xs font-normal text-slate-500"></span>
+          </span>
+        </div>
+
+        <div class="p-3 space-y-3">
+          <div class="space-y-1">
+            <label class="text-xs text-gray-500 font-medium">Carteira</label>
+            <select id="filtroConta" class="w-full p-2 border rounded-md text-sm">
+              <option value="">— selecione —</option>
+              <option value="*">Todas as contas</option>
+              <option value="789025174304270">ConnectZap</option>
+              <option value="805610009301153">Banco PAN</option>
+              <option value="802977069563598">Recovery</option>
+              <option value="938298879357445">Recovery Preventivo</option>
+              <option value="821562937700669">Mercado Pago Cobrança</option>
+              <option value="779797401888141">DivZero P2</option>
+              <option value="922259637643727">DivZero LP</option>
+              <option value="829210283602406">Arc4U</option>
+              <option value="905309685992125">Arc4U Veiculos</option>
+              <option value="713021321904495">Serasa</option>
+              <option value="803535039503723">Mercado Pago Vendas</option>
+            </select>
+          </div>
+
+          <div class="space-y-2">
+            <div class="text-xs text-gray-500 font-medium">Ordenação</div>
+            <div class="flex flex-wrap gap-2">
+              <button class="chip-btn" data-sort="desc">Mais recentes primeiro</button>
+              <button class="chip-btn" data-sort="asc">Mais antigos primeiro</button>
+            </div>
+            <div class="flex gap-2">
+              <button id="btnAtualizar"
+                class="px-3 py-2 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700">Atualizar
+                fila</button>
+              <input id="searchInput" type="text" placeholder="🔍 filtrar na lista..."
+                class="flex-1 p-2 rounded-md border text-sm" autocomplete="off" />
+            </div>
+          </div>
+
+          <div id="hintFiltro" class="text-xs text-gray-500 bg-slate-50 border border-dashed rounded-md p-2">
+            Selecione a <b>carteira</b>, escolha a <b>ordenação</b> e clique em <b>Atualizar fila</b>. Mostrando sempre
+            os <b>últimos 2 dias</b>.
+          </div>
+        </div>
       </div>
     </div>
-  </header>
 
-  <main class="max-w-6xl mx-auto p-4 space-y-6">
-    <!-- KPIs -->
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="kpi">
-        <div class="text-gray-500 text-sm">Agentes online</div>
-        <div id="kpiOnlineTotal" class="text-3xl font-bold mt-1">—</div>
-        <div id="kpiOnlineCarteiras" class="text-xs text-gray-500 mt-2 space-x-1"></div>
+    <!-- Lista de contatos -->
+    <ul id="contatos" class="flex-1 overflow-y-auto"></ul>
+
+    <div class="p-2 text-xs text-gray-500 border-t">
+      A lista <b>não</b> atualiza automaticamente. Use “Atualizar fila”.
+    </div>
+  </aside>
+
+  <!-- =========== MAIN CHAT =========== -->
+  <main class="flex-1 flex flex-col">
+    <div class="flex items-center justify-between p-3 border-b bg-white space-x-2">
+      <div class="flex items-center space-x-3 min-w-0">
+        <h2 id="tituloConversa" class="font-bold text-lg truncate">Selecione uma conversa</h2>
+        <div id="subInfo" class="text-sm text-gray-500 truncate"></div>
       </div>
-      <div class="kpi">
-        <div class="text-gray-500 text-sm">Conversas em andamento</div>
-        <div id="kpiEmAndamento" class="text-3xl font-bold mt-1">—</div>
-        <div class="text-xs text-gray-500 mt-2">Somatório dos tickets dos agentes online</div>
+      <div id="rangeResumo" class="text-xs text-gray-500"></div>
+    </div>
+
+    <div id="chat" class="flex-1 p-4 overflow-y-auto flex flex-col space-y-1 bg-gray-50">
+      <p id="loading" class="text-center text-gray-500">Selecione um contato para ver as mensagens...</p>
+    </div>
+    <div id="digitando" class="px-4 text-left hidden">Digitando...</div>
+
+    <div id="respostaPreview" class="hidden px-3 py-2 border-t bg-gray-50 text-sm flex justify-between items-center">
+      <div class="truncate max-w-[80%]">
+        <span class="font-semibold">Respondendo:</span>
+        <span id="respostaTexto" class="text-gray-600"></span>
       </div>
-      <div class="kpi">
-        <div class="text-gray-500 text-sm">Pendentes na fila (24hrs)</div>
-        <div id="kpiPendentesFila" class="text-3xl font-bold mt-1">—</div>
-        <div id="kpiPendentesPorCarteira" class="text-xs text-gray-500 mt-2 space-x-1"></div>
-      </div>
-      <div class="kpi">
-        <div class="text-gray-500 text-sm">Última atualização</div>
-        <div id="kpiAtualizado" class="text-lg font-semibold mt-1">—</div>
-        <div id="kpiMsg" class="text-xs mt-2 text-gray-500"></div>
-      </div>
-    </section>
+      <button onclick="cancelarResposta()" class="text-red-500 text-xs">✖</button>
+    </div>
 
-    <!-- Cadastrar/Editar -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <details class="card">
-        <summary class="summary-row">
-          <span class="font-bold text-lg">Cadastrar agente</span>
-          <span class="pill">formulário</span>
-        </summary>
-        <div class="mt-3">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-            <div>
-              <label class="text-sm text-gray-700">Código (SIC)</label>
-              <input id="cadCodigo" type="number" min="1" class="w-full border rounded-md p-2" placeholder="Ex: 123" />
-            </div>
-            <div class="md:col-span-2">
-              <label class="text-sm text-gray-700">Nome completo</label>
-              <input id="cadNome" type="text" class="w-full border rounded-md p-2" placeholder="Nome e sobrenome" />
-            </div>
-            <div>
-              <label class="text-sm text-gray-700">Carteira</label>
-              <select id="cadCarteira" class="w-full border rounded-md p-2"></select>
-            </div>
-            <div>
-              <label class="text-sm text-gray-700">Origem BD</label>
-              <select id="cadOrigem" class="w-full border rounded-md p-2">
-                <option value="">Selecione</option>
-                <option>Bd4</option>
-                <option>Bd5</option>
-                <option>Bd7</option>
-                <option>Bd8</option>
-              </select>
-            </div>
-            <!-- NOVO: Permissão de envio individual no cadastro -->
-            <div class="md:col-span-2 flex items-end">
-              <label class="text-sm text-gray-700 flex items-center gap-2">
-                <input id="cadPermiteEnvioInd" type="checkbox" class="w-4 h-4">
-                Permitir envio individual
-              </label>
-            </div>
-          </div>
-          <div class="flex gap-2 mt-4">
-            <button id="btnCadastrar" class="btn btn-primary">Salvar</button>
-            <div id="cadMsg" class="text-sm hidden"></div>
-          </div>
-        </div>
-      </details>
+    <div class="p-3 border-t flex space-x-2 bg-white items-center">
+      <input type="file" id="fileInput" accept="application/pdf" class="hidden" onchange="enviarPDF(event)">
+      <button onclick="document.getElementById('fileInput').click()"
+        class="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600">📝 PDF</button>
 
-      <details class="card">
-        <summary class="summary-row">
-          <span class="font-bold text-lg">Buscar e editar agente</span>
-          <span class="pill">edição</span>
-        </summary>
-        <div class="mt-3">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label class="text-sm text-gray-700">Código (SIC)</label>
-              <input id="buscaCodigo" type="number" min="1" class="w-full border rounded-md p-2"
-                placeholder="Ex: 123" />
-            </div>
-            <div class="flex items-end">
-              <button id="btnBuscar" class="btn btn-primary w-full">Buscar</button>
-            </div>
-            <div class="flex items-end">
-              <button id="btnLimparBusca" class="btn btn-muted w-full">Limpar</button>
-            </div>
-          </div>
-
-          <div id="editBox" class="mt-4 hidden border rounded-lg p-3 bg-gray-50">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div>
-                <span class="text-xs text-gray-500 block">Código</span>
-                <span id="edCodigo" class="font-medium">—</span>
-              </div>
-              <div class="md:col-span-2">
-                <span class="text-xs text-gray-500 block">Nome</span>
-                <span id="edNome" class="font-medium">—</span>
-              </div>
-              <div>
-                <label class="text-sm text-gray-700">Carteira</label>
-                <select id="edCarteira" class="w-full border rounded-md p-2"></select>
-              </div>
-              <div>
-                <span class="text-xs text-gray-500 block">Origem BD</span>
-                <span id="edOrigem" class="font-medium">—</span>
-              </div>
-              <!-- NOVO: Permissão de envio individual na edição -->
-              <div class="md:col-span-2 flex items-center">
-                <label class="text-sm text-gray-700 flex items-center gap-2">
-                  <input id="edPermiteEnvioInd" type="checkbox" class="w-4 h-4">
-                  Permitir envio individual
-                </label>
-              </div>
-            </div>
-            <div class="flex gap-2 mt-3">
-              <button id="btnSalvarEdicao" class="btn btn-primary">Salvar alterações</button>
-              <div id="editMsg" class="text-sm hidden"></div>
-            </div>
-          </div>
-        </div>
-      </details>
-    </section>
-
-    <!-- Agentes online -->
-    <section class="card">
-      <div class="flex items-center justify-between">
-        <h2 class="font-bold text-lg">Agentes online agora</h2>
-        <span class="pill"><span class="dot online"></span> Online</span>
-      </div>
-
-      <div class="overflow-auto border rounded-lg mt-3">
-        <table class="min-w-full text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="text-left px-3 py-2 table-th">Código</th>
-              <th class="text-left px-3 py-2 table-th">Nome</th>
-              <th class="text-left px-3 py-2 table-th">Carteira</th>
-              <th class="text-left px-3 py-2 table-th">Desde</th>
-              <th class="text-left px-3 py-2 table-th">Tickets ativos</th>
-              <th class="text-left px-3 py-2 table-th">Inatividade</th>
-              <th class="text-left px-3 py-2 table-th">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyOnline"></tbody>
-        </table>
-      </div>
-      <div id="onlineMsg" class="text-sm text-gray-500 mt-2"></div>
-    </section>
-
-    <!-- Limite de tickets -->
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Configurar limite de tickets em andamento</span>
-        <span class="pill">por carteira</span>
-      </summary>
-      <div class="mt-3 space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Carteira</label>
-            <select id="tlCarteira" class="w-full border rounded-md p-2"></select>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Máximo por operador (0 = sem limite)</label>
-            <input id="tlLimit" type="number" min="0" max="50" value="0" class="w-full border rounded-md p-2">
-          </div>
-          <div class="flex items-end gap-2">
-            <button id="btnSalvarTicketsLimit" class="btn btn-primary w-full">Salvar limite</button>
-            <button id="btnResetTicketsLimit" class="btn btn-muted w-full">Zerar</button>
-          </div>
-        </div>
-
-        <div class="text-xs text-gray-500">
-          Observação: o limite é aplicado <b>por carteira</b> no momento do “Pegar Próxima”. Se o agente já tiver
-          atingido o teto naquela carteira, o sistema bloqueia a reserva e retorna uma mensagem para o Agente.
-        </div>
-
-        <div>
-          <div class="text-sm text-gray-700 mb-2">Carteiras configuradas:</div>
-          <div id="tlChips" class="flex flex-wrap gap-2"></div>
-          <div id="tlMsg" class="text-sm text-gray-600 mt-2"></div>
-        </div>
-      </div>
-    </details>
-
-    <!-- ====== Painel de Avisos (agora inicia fechado) ====== -->
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Painel de avisos</span>
-        <span class="pill">criar / listar / editar</span>
-      </summary>
-
-      <!-- Filtros e ações -->
-      <div class="mt-2 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-        <div>
-          <label class="text-sm text-gray-700">Filtrar por carteira</label>
-          <select id="pvFiltroCarteira" class="w-full border rounded-md p-2">
-            <option value="">Todas</option>
-          </select>
-        </div>
-        <div class="flex items-center gap-3">
-          <label class="text-sm text-gray-700 flex items-center gap-2">
-            <span>Somente ativos</span>
-            <label class="switch">
-              <input id="pvSomenteAtivos" type="checkbox" checked>
-              <span class="slider"></span>
-            </label>
-          </label>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="pvBtnRecarregar" class="btn btn-muted">Recarregar</button>
-          <span id="pvMsg" class="text-sm text-gray-600"></span>
-        </div>
-      </div>
-
-      <!-- Criar novo aviso -->
-      <div class="mt-4 p-3 border rounded-lg bg-gray-50">
-        <div class="font-medium mb-2">Novo aviso</div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div class="md:col-span-2">
-            <label class="text-sm text-gray-700">Título</label>
-            <input id="pvNovoTitulo" type="text" class="w-full border rounded-md p-2"
-              placeholder="Ex: Atenção, não deixe o cliente esperando resposta">
-          </div>
-
-          <!-- picker colorido -->
-          <div>
-            <label class="text-sm text-gray-700">Ordem do aviso (0 até 10)</label>
-            <div id="pvNovoPrioridadePicker" class="prio-wrap mt-1"></div>
-            <input id="pvNovoPrioridade" type="hidden" value="0">
-          </div>
-
-          <div class="flex items-end gap-2">
-            <label class="text-sm text-gray-700 flex items-center gap-2">
-              <input id="pvNovoEnabled" type="checkbox" checked>
-              Ativo
-            </label>
-          </div>
-          <div class="md:col-span-4">
-            <label class="text-sm text-gray-700">Conteúdo</label>
-            <textarea id="pvNovoConteudo" rows="3" class="w-full border rounded-md p-2"
-              placeholder="Mensagem detalhada"></textarea>
-          </div>
-          <div class="md:col-span-4">
-            <label class="text-sm text-gray-700">Carteiras (opcional)</label>
-            <div id="pvNovoCarteiras" class="flex flex-wrap gap-2 mt-1"></div>
-            <div class="text-xs text-gray-500 mt-1">Se nenhuma carteira for marcada, o aviso será <b>global</b>.</div>
-          </div>
-          <div class="md:col-span-4 flex gap-2">
-            <button id="pvBtnCriar" class="btn btn-primary">Criar aviso</button>
-            <span id="pvNovoMsg" class="text-sm"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Editar aviso (inline) -->
-      <div id="pvEditBox" class="hidden mt-4 p-3 border rounded-lg bg-indigo-50/40">
-        <div class="flex items-center justify-between">
-          <div class="font-medium">Editar aviso <span id="pvEditId"
-              class="px-2 py-[2px] rounded bg-indigo-100 text-indigo-900 text-xs"></span></div>
-          <button id="pvBtnCancelarEdicao" class="btn btn-muted">Cancelar</button>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
-          <div class="md:col-span-2">
-            <label class="text-sm text-gray-700">Título</label>
-            <input id="pvEditTitulo" type="text" class="w-full border rounded-md p-2">
-          </div>
-
-          <!-- picker colorido -->
-          <div>
-            <label class="text-sm text-gray-700">Prioridade (0..10)</label>
-            <div id="pvEditPrioridadePicker" class="prio-wrap mt-1"></div>
-            <input id="pvEditPrioridade" type="hidden" value="0">
-          </div>
-
-          <div class="flex items-end gap-2">
-            <label class="text-sm text-gray-700 flex items-center gap-2">
-              <input id="pvEditEnabled" type="checkbox"> Ativo
-            </label>
-          </div>
-          <div class="md:col-span-4">
-            <label class="text-sm text-gray-700">Conteúdo</label>
-            <textarea id="pvEditConteudo" rows="3" class="w-full border rounded-md p-2"></textarea>
-          </div>
-          <div class="md:col-span-4">
-            <label class="text-sm text-gray-700">Carteiras</label>
-            <div id="pvEditCarteiras" class="flex flex-wrap gap-2 mt-1"></div>
-          </div>
-          <div class="md:col-span-4 flex gap-2">
-            <button id="pvBtnSalvarEdicao" class="btn btn-primary">Salvar alterações</button>
-            <span id="pvEditMsg" class="text-sm"></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Lista de avisos -->
-      <div class="mt-4">
-        <div class="text-sm text-gray-700 mb-2">Avisos cadastrados</div>
-        <div class="overflow-auto border rounded-lg">
-          <table class="min-w-full text-sm">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="text-left px-3 py-2 table-th">ID</th>
-                <th class="text-left px-3 py-2 table-th">Ativo</th>
-                <th class="text-left px-3 py-2 table-th">Prior.</th>
-                <th class="text-left px-3 py-2 table-th">Título</th>
-                <th class="text-left px-3 py-2 table-th">Carteiras</th>
-                <th class="text-left px-3 py-2 table-th">Criado em</th>
-                <th class="text-left px-3 py-2 table-th">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="pvTbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </details>
-    <!-- ====== FIM Painel de Avisos ====== -->
-
-    <!-- ====== BLOCO: Textos padrão ====== -->
-    <details class="card hidden" aria-hidden="true">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Gerenciar textos padrão</span>
-        <span class="pill">novo/editar/apagar</span>
-      </summary>
-
-      <div class="mt-3 space-y-6">
-        <!-- NOVO TEXTO -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">Chave (única)</label>
-            <input id="txChaveNovo" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
-          </div>
-          <div class="md:col-span-2">
-            <label class="text-sm text-gray-700">Texto</label>
-            <textarea id="txConteudoNovo" rows="4" class="w-full border rounded-md p-2"
-              placeholder="Conteúdo do texto padrão"></textarea>
-          </div>
-          <div class="md:col-span-3 flex gap-2">
-            <button id="btnNovoTexto" class="btn btn-primary">Salvar novo texto</button>
-            <div id="txNovoMsg" class="text-sm hidden"></div>
-          </div>
-        </div>
-
-        <hr class="border-gray-200">
-
-        <!-- EDITAR TEXTO -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">ID (opcional)</label>
-            <input id="txIdEdit" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
-            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
-            <input id="txChaveEdit" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Novo texto</label>
-            <textarea id="txConteudoEdit" rows="4" class="w-full border rounded-md p-2"
-              placeholder="Conteúdo atualizado"></textarea>
-          </div>
-          <div class="md:col-span-3 flex gap-2">
-            <button id="btnEditarTexto" class="btn btn-primary">Aplicar edição</button>
-            <div id="txEditarMsg" class="text-sm hidden"></div>
-          </div>
-        </div>
-
-        <hr class="border-gray-200">
-
-        <!-- APAGAR TEXTO -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div>
-            <label class="text-sm text-gray-700">ID (opcional)</label>
-            <input id="txIdDelete" type="number" min="1" class="w-full border rounded-md p-2" placeholder="ex: 12">
-            <span class="text-xs text-gray-500">Preencha <b>ID</b> ou <b>Chave</b>.</span>
-          </div>
-          <div>
-            <label class="text-sm text-gray-700">Chave (alternativa ao ID)</label>
-            <input id="txChaveDelete" type="text" class="w-full border rounded-md p-2" placeholder="ex: boas_vindas">
-          </div>
-          <div class="flex items-end">
-            <button id="btnApagarTexto" class="btn btn-muted w-full">Apagar texto</button>
-          </div>
-          <div class="md:col-span-3">
-            <div id="txApagarMsg" class="text-sm hidden"></div>
-          </div>
-        </div>
-      </div>
-    </details>
-    <!-- ====== FIM BLOCO Textos (escondido) ====== -->
-
-    <!-- Logout automático -->
-    <details class="card">
-      <summary class="summary-row">
-        <span class="font-bold text-lg">Logout automático por carteira</span>
-        <span class="pill">agendamento</span>
-      </summary>
-      <div class="mt-3 space-y-3">
-        <div class="flex items-center gap-3">
-          <label class="flex items-center gap-2 text-sm">
-            <input id="lgEnabled" type="checkbox" class="w-4 h-4">
-            Ativar logout automático
-          </label>
-          <label class="text-sm text-gray-700">Horário (HH:MM)
-            <input id="lgTime" type="time" value="18:00" class="border rounded-md p-2 ml-2">
-          </label>
-        </div>
-        <div>
-          <div class="text-sm text-gray-700 mb-1">Carteiras para logout:</div>
-          <div id="lgCarteiras" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
-        </div>
-        <div class="flex gap-2">
-          <button id="btnSalvarLogout" class="btn btn-primary">Salvar configuração</button>
-          <button id="btnForcarLogout" class="btn btn-muted">Forçar logout agora</button>
-          <span id="lgMsg" class="text-sm text-gray-600"></span>
-        </div>
-      </div>
-    </details>
+      <textarea id="textoMensagem" rows="1" class="flex-1 border rounded-md p-2 resize-none"
+        placeholder="Digite uma mensagem..." disabled></textarea>
+      <button id="btnEnviar" onclick="enviarMensagem()"
+        class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 disabled:opacity-50"
+        disabled>Enviar</button>
+    </div>
   </main>
 
+  <!-- Modal de imagem -->
+  <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+    <span id="closeModal" class="absolute top-4 right-6 text-white text-3xl cursor-pointer">&times;</span>
+    <img id="modalImg" src="" alt="Imagem" class="max-h-[90%] max-w-[90%] rounded-lg shadow-lg">
+  </div>
+
   <script>
-    /* === Bases de API === */
-    const API_BASE = (window.ATEND_API_BASE || "https://whatsapp-webhook-production-9a27.up.railway.app/api").replace(/\/+$/, ''); // fila/agentes + textos + painel
-    const CONV_API = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, ''); // conversas/limits
+    /* ======= Config/estado ======= */
+    const API_BASE = (window.CONV_API || "https://conversas-api-production.up.railway.app").replace(/\/+$/, '');
+    const phoneIdMap = {
+      "789025174304270": "ConnectZap",
+      "805610009301153": "Banco PAN",
+      "727586317113885": "Recovery PJ",
+      "802977069563598": "Recovery PF",
+      "938298879357445": "Recovery Preventivo",
+      "897647883433681": "Recovery Manutenção",
+      "821562937700669": "Mercado Pago Cobrança",
+      "779797401888141": "DivZero_P2",
+      "922259637643727": "DivZero_LP",
+      "829210283602406": "Arc4U",
+      "905309685992125": "Arc4U Veiculos",
+      "713021321904495": "Serasa",
+      "803535039503723": "Mercado Pago Vendas"
+    };
 
-    /* === Carteiras === */
-    const CARTEIRAS = [
-      "ConnectZap", "Banco PAN", "Recovery PJ", "Recovery PF","Recovery Preventivo","Recovery Manutenção",
-      "Mercado Pago Cobrança", "DivZero", "Arc4U","Arc4U Veiculos", "Serasa", "Mercado Pago Vendas"
-    ];
+    let contatoSelecionado = null, phoneIdAtual = null;
+    let respostaMsgId = null;
+    let userTyping = false, isModalOpen = false;
+    let sortOrder = "desc"; // 'desc' (mais recentes) | 'asc' (mais antigos)
 
-    /* === Helpers === */
-    function showMsg(el, text, type = "ok") { el.classList.remove("hidden"); el.textContent = text; el.style.color = (type === "ok" ? "var(--ok)" : type === "warn" ? "var(--warn)" : "var(--err)"); }
-    function hideMsg(el) { el.classList.add("hidden"); el.textContent = ""; el.style.color = ""; }
-    function fmt(dt) { try { return new Date(dt).toLocaleString("pt-BR"); } catch { return dt || "—"; } }
-    function fillSelect(sel, vals, includeEmpty = true) {sel.innerHTML = includeEmpty ? `<option value="">Todas</option>` : "";vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });}
-    function sig(obj) { try { return JSON.stringify(obj); } catch { return String(obj); } }
+    /* Mensagens render state */
+    let lastTimestampMs = null;
+    let lastDayRendered = null;
+    let renderedKeys = new Set();
 
-    // >>> Helpers para inatividade
-    function parseTempoInativo(v) {
-      if (v == null) return null;
-      if (typeof v === 'number' && isFinite(v)) return v;
-      if (typeof v === 'string' && /^\d{1,2}:\d{2}:\d{2}$/.test(v)) {
-        const [h, m, s] = v.split(':').map(n => parseInt(n, 10));
-        return (h * 3600) + (m * 60) + s;
-      }
-      return null;
+    /* ======= Documento: constantes ======= */
+    const DOC_PREVIEW_MAX = 2 * 1024 * 1024; // 2MB para preview embutido de PDF
+
+    // refs
+    const textarea = document.getElementById("textoMensagem");
+    const btnEnviar = document.getElementById("btnEnviar");
+    const digitando = document.getElementById("digitando");
+    const contatosUL = document.getElementById("contatos");
+    const filtroContaEl = document.getElementById("filtroConta");
+    const btnAtualizar = document.getElementById("btnAtualizar");
+    const searchInput = document.getElementById("searchInput");
+    const hintFiltro = document.getElementById("hintFiltro");
+    const fltResumoEl = document.getElementById("fltResumo");
+    const rangeResumo = document.getElementById("rangeResumo");
+    const sortBtns = [...document.querySelectorAll(".chip-btn[data-sort]")];
+
+    /* ======= UX da textarea ======= */
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+      btnEnviar.disabled = textarea.value.trim().length === 0;
+      digitando.style.display = textarea.value.trim() ? "block" : "none";
+    });
+    textarea.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!btnEnviar.disabled) enviarMensagem(); }
+    });
+
+    /* ======= Ordenação ======= */
+    function setSort(order) {
+      sortOrder = (order === "asc") ? "asc" : "desc";
+      sortBtns.forEach(b => b.classList.toggle("active", b.dataset.sort === sortOrder));
     }
-    function fmtDuracao(seg) {
-      if (seg == null) return '—';
-      const h = Math.floor(seg / 3600);
-      const m = Math.floor((seg % 3600) / 60);
-      const s = Math.floor(seg % 60);
-      const hh = h.toString().padStart(2, '0');
-      const mm = m.toString().padStart(2, '0');
-      const ss = s.toString().padStart(2, '0');
-      return h > 0 ? `${hh}:${mm}:${ss}` : `${mm}:${ss}`;
+    sortBtns.forEach(btn => btn.addEventListener("click", () => { setSort(btn.dataset.sort); }));
+
+    /* ======= Helpers ======= */
+    function pad(n) { return String(n).padStart(2, "0"); }
+    function toYMD(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+    function gerarCor(nome) { let hash = 0; for (let i = 0; i < String(nome || 'U').length; i++) { hash = String(nome || 'U').charCodeAt(i) + ((hash << 5) - hash); } return `hsl(${hash % 360},70%,60%)`; }
+    function escapeHtml(s) { if (!s) return ""; return s.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
+    function isIncoming(m) {
+      const s = (m.status || "").toLowerCase();
+      if (typeof m.from_me === "boolean") return !m.from_me;
+      if (m.direction) return String(m.direction).toLowerCase().startsWith("in");
+      if (["in", "received", "incoming"].includes(s)) return true;
+      if (["out", "sent", "delivered", "read", "outgoing"].includes(s)) return false;
+      return s === "in";
     }
-    // <<< FIM helpers inatividade
-
-    // >>> Helpers Painel de Avisos
-    function makeCarteirasChecklist(containerEl, selected = new Set()) {
-      containerEl.innerHTML = CARTEIRAS.map(c =>
-        `<label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
-          <input type="checkbox" value="${c}" ${selected.has(c) ? "checked" : ""}> ${c}
-        </label>`
-      ).join("");
+    function bytesToHuman(n) { if (!n && n !== 0) return ""; const u = ["B", "KB", "MB", "GB", "TB"]; let i = 0, s = n; while (s >= 1024 && i < u.length - 1) { s /= 1024; i++; } return `${s.toFixed(s >= 10 || i === 0 ? 0 : 1)} ${u[i]}`; }
+    function isWithinLastTwoDays(iso) {
+      const d = new Date(iso);
+      const today = new Date();
+      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      return d.toDateString() === today.toDateString() || d.toDateString() === yesterday.toDateString();
     }
-    function readChecklist(containerEl) {
-      return Array.from(containerEl.querySelectorAll('input[type="checkbox"]:checked')).map(ch => ch.value);
+    function updateResumoLabels() {
+      const today = new Date();
+      const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+      fltResumoEl.textContent = `(carteira: ${filtroContaEl.value ? (filtroContaEl.value === "*" ? "todas" : "selecionada") : "—"} • últimos 2 dias: ${toYMD(yesterday)} → ${toYMD(today)})`;
+      rangeResumo.textContent = `(ÚLTIMOS 2 DIAS • ${toYMD(yesterday)} → ${toYMD(today)})`;
     }
-    function badge(str, variant = "muted") {
-      const map = { muted: "bg-gray-100 text-gray-800", ok: "bg-green-100 text-green-800", warn: "bg-amber-100 text-amber-800", err: "bg-red-100 text-red-800", indigo: "bg-indigo-100 text-indigo-800", blue: "bg-blue-100 text-blue-800" };
-      return `<span class="inline-block text-xs px-2 py-[2px] rounded ${map[variant] || map.muted}">${str}</span>`;
-    }
-    // <<< FIM Helpers Painel
+    updateResumoLabels();
 
-    /* === Priority Picker Helpers === */
-    const __prioPickers = {}; // por hiddenId
-    function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
-    function priorityColor(n) {
-      const v = Math.max(0, Math.min(10, Number(n) || 0));
-      const hue = Math.round((v / 10) * 120);
-      return `hsl(${hue} 85% 45%)`;
-    }
-    function priorityText(n) {
-      const v = Math.max(0, Math.min(10, Number(n) || 0));
-      return `${v}`;
-    }
-    function renderPriorityPicker({ mountId, hiddenId, initial = 0 }) {
-      const mount = document.getElementById(mountId);
-      const hidden = document.getElementById(hiddenId);
-      if (!mount || !hidden) return;
-
-      hidden.value = String(initial);
-
-      mount.innerHTML = `
-        <div class="prio-wrap">
-          <button type="button" class="prio-btn" id="${hiddenId}__btn" aria-haspopup="listbox" aria-expanded="false">
-            <span class="prio-left">
-              <span class="prio-dot" id="${hiddenId}__dot"></span>
-              <span class="prio-label" id="${hiddenId}__label"></span>
-            </span>
-            <svg class="prio-caret" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.29a.75.75 0 0 1 .02-1.08Z"/></svg>
-          </button>
-          <div class="prio-menu hidden" id="${hiddenId}__menu" role="listbox"></div>
-        </div>
-      `;
-
-      const btn = document.getElementById(`${hiddenId}__btn`);
-      const dot = document.getElementById(`${hiddenId}__dot`);
-      const lab = document.getElementById(`${hiddenId}__label`);
-      const menu = document.getElementById(`${hiddenId}__menu`);
-
-      function paint(v) {
-        dot.style.background = priorityColor(v);
-        lab.textContent = `Prioridade ${priorityText(v)}`;
-      }
-
-      function openMenu() {
-        menu.classList.remove("hidden");
-        btn.setAttribute("aria-expanded", "true");
-      }
-      function closeMenu() {
-        menu.classList.add("hidden");
-        btn.setAttribute("aria-expanded", "false");
-      }
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const isOpen = btn.getAttribute("aria-expanded") === "true";
-        if (isOpen) closeMenu(); else openMenu();
+    /* ======= Contatos: busca local ======= */
+    searchInput.addEventListener("input", () => filtrarContatos(searchInput.value));
+    function filtrarContatos(q) {
+      q = (q || "").toLowerCase().trim();
+      document.querySelectorAll("#contatos li").forEach(li => {
+        const hay = (li.dataset.search || li.textContent).toLowerCase();
+        li.style.display = hay.includes(q) ? "flex" : "none";
       });
-      document.addEventListener("click", () => closeMenu());
+    }
 
-      // opções 0..10
-      menu.innerHTML = Array.from({ length: 11 }, (_, i) => {
-        const c = priorityColor(i);
-        return `
-          <button class="prio-opt" data-val="${i}">
-            <span class="prio-dot" style="background:${c}"></span>
-            <span class="prio-label">Prioridade ${i}</span>
-          </button>
-        `;
-      }).join("");
+    /* ======= Carregar contatos (manual) ======= */
+    btnAtualizar.addEventListener("click", carregarContatos);
 
-      menu.querySelectorAll(".prio-opt").forEach(opt => {
-        opt.addEventListener("click", (ev) => {
-          const v = Number(ev.currentTarget.getAttribute("data-val"));
-          hidden.value = String(v);
-          paint(v);
-          closeMenu();
+    async function carregarContatos() {
+      if (!filtroContaEl.value) { alert("Selecione uma carteira (ou 'Todas as contas')."); return; }
+      contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Carregando…</li>`;
+      try {
+        const r = await fetch(`${API_BASE}/api/conversas/contatos`, { cache: "no-store" });
+        if (!r.ok) throw new Error("Falha ao buscar contatos");
+        let itens = await r.json();
+
+        // filtra carteira
+        const carteirafiltro = filtroContaEl.value;
+        if (carteirafiltro && carteirafiltro !== "*") {
+          itens = itens.filter(c => String(c.phone_id) === String(carteirafiltro));
+        }
+
+        // filtra últimos 2 dias (hoje e ontem)
+        itens = itens.filter(c => c.data_hora && isWithinLastTwoDays(c.data_hora));
+
+        // ordenação
+        itens.sort((a, b) => {
+          const da = new Date(a.data_hora).getTime();
+          const db = new Date(b.data_hora).getTime();
+          return sortOrder === "asc" ? (da - db) : (db - da);
         });
-      });
 
-      paint(Number(hidden.value || initial));
-      __prioPickers[hiddenId] = { set(v) { hidden.value = String(v); paint(v); } };
+        renderContatos(itens);
+        hintFiltro.classList.add("hidden");
+        updateResumoLabels();
+      } catch (e) {
+        console.error(e);
+        contatosUL.innerHTML = `<li class="p-3 text-sm text-red-600">Erro ao carregar contatos.</li>`;
+      }
     }
 
-    /* === Estados === */
-    let filtroCarteira = "";
-    let ultimoOnline = [];
-    let mapaTicketsAtivos = {};
-    let pendentesCarteiraAgg = [];
-    let lastSig = { online: "", contagem: "", pendentes: "" };
+    function renderContatos(lista) {
+      contatosUL.innerHTML = "";
+      if (!Array.isArray(lista) || !lista.length) {
+        contatosUL.innerHTML = `<li class="p-3 text-sm text-gray-500">Nenhum contato nos últimos 2 dias.</li>`;
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      lista.forEach(c => {
+        const nome = c.nome_exibicao || c.remetente;
+        const hora = c.data_hora ? new Date(c.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "";
 
-    // Painel de Avisos estados
-    let pvItems = [];
-    let pvSomenteAtivos = true;
-    let pvFiltroCar = "";
-    let pvEditId = null;
+        const li = document.createElement("li");
+        li.className = "flex items-center p-3 hover:bg-gray-100 cursor-pointer border-b relative";
+        li.dataset.remetente = (c.remetente || "").toLowerCase();
+        li.dataset.search = `${(nome || "").toLowerCase()} ${(c.remetente || "").toLowerCase()}`;
 
-    /* === Init UI === */
-    (function initUI() {
-      fillSelect(document.getElementById("filtroGlobalCarteira"), CARTEIRAS);
-      const cadCarteira = document.getElementById("cadCarteira");
-      cadCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
-      const edCarteira = document.getElementById("edCarteira");
-      fillSelect(edCarteira, CARTEIRAS, false);
+        li.innerHTML = `
+      <div class="w-10 h-10 rounded-full flex items-center justify-center mr-3 font-medium"
+           style="background:${gerarCor(nome)};color:white;">
+        ${(nome || c.remetente || "U").charAt(0).toUpperCase()}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold truncate">${escapeHtml(nome)}</div>
+        <span class="sr-only">${escapeHtml(c.remetente || "")}</span>
+      </div>
+      <div class="text-xs text-gray-400 pl-2">${hora}</div>
+    `;
+        li.onclick = () => abrirConversaFromElement(c, li);
+        frag.appendChild(li);
+      });
+      contatosUL.appendChild(frag);
+    }
 
-      // logout checkboxes
-      const wrap = document.getElementById("lgCarteiras");
-      wrap.innerHTML = CARTEIRAS.map(c => `
-        <label class="flex items-center gap-2 text-sm border rounded-md p-2 bg-white">
-          <input type="checkbox" class="lg-check" value="${c}"> ${c}
-        </label>
-      `).join("");
+    /* ======= Abrir conversa ======= */
+    function abrirConversaFromElement(c, el) {
+      document.querySelectorAll("#contatos li").forEach(li => li.classList.remove("contato-selected"));
+      el.classList.add("contato-selected");
+      abrirConversa(c);
+    }
+    async function abrirConversa(c) {
+      contatoSelecionado = c.remetente; phoneIdAtual = c.phone_id;
 
-      // bloco limites
-      const tlCarteira = document.getElementById("tlCarteira");
-      tlCarteira.innerHTML = `<option value="">Selecione</option>` + CARTEIRAS.map(c => `<option>${c}</option>`).join("");
+      // LIMPA chat imediatamente para evitar confusão com conversa anterior
+      const chatEl = document.getElementById("chat");
+      chatEl.innerHTML = ""; // <<< limpeza imediata
+      lastTimestampMs = null; lastDayRendered = null; renderedKeys.clear();
 
-      // Painel de Avisos: filtros e checklists
-      fillSelect(document.getElementById("pvFiltroCarteira"), CARTEIRAS);
-      makeCarteirasChecklist(document.getElementById("pvNovoCarteiras"));
-      makeCarteirasChecklist(document.getElementById("pvEditCarteiras"));
+      document.getElementById("tituloConversa").innerText = c.nome_exibicao ? `${c.nome_exibicao} (${c.remetente})` : c.remetente;
+      document.getElementById("subInfo").innerText = c.phone_id ? `conta: ${phoneIdMap[c.phone_id] || c.phone_id}` : "";
+      textarea.disabled = false; textarea.focus(); btnEnviar.disabled = true;
 
-      // Renderiza os 2 pickers de prioridade
-      renderPriorityPicker({ mountId: "pvNovoPrioridadePicker", hiddenId: "pvNovoPrioridade", initial: 0 });
-      renderPriorityPicker({ mountId: "pvEditPrioridadePicker", hiddenId: "pvEditPrioridade", initial: 0 });
+      // força ciclo imediato apenas para mensagens
+      await refreshLoop("abrir-conversa");
+    }
 
-      // carregar config de logout
-      fetch(`${API_BASE}/supervisao/logout-config`).then(r => r.json()).then(cfg => {
-        document.getElementById("lgEnabled").checked = !!cfg.enabled;
-        document.getElementById("lgTime").value = (cfg.time || "18:00").slice(0, 5);
-        const set = new Set(cfg.carteiras || []);
-        document.querySelectorAll(".lg-check").forEach(ch => { ch.checked = set.has(ch.value); });
-      }).catch(() => { });
+    /* ======= Mensagens (render) ======= */
+    async function renderMensagens(msgs, incremental = true) {
+      if (!contatoSelecionado) return;
+      const chat = document.getElementById("chat");
+      if (!Array.isArray(msgs)) return;
 
-      // carrega chips + valor inicial do limite
-      carregarTicketsLimitList();
+      msgs.sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
 
-      // Painel de Avisos: primeira carga
-      pvRecarregar();
-    })();
+      if (!incremental) {
+        chat.innerHTML = "";
+        lastTimestampMs = null;
+        lastDayRendered = null;
+        renderedKeys.clear();
+      }
 
-    /* === Ciclo de atualização estável (1 requisição em voo) === */
-    const REFRESH_MS = 10000;
+      const isNearBottom = (chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 200;
+
+      msgs.forEach((m) => {
+        const tMs = new Date(m.data_hora).getTime();
+        const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
+        if (renderedKeys.has(key)) return;
+        if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
+
+        const dia = new Date(m.data_hora).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+        if (!lastDayRendered || lastDayRendered !== dia) {
+          const sep = document.createElement("div");
+          sep.className = "dia";
+          sep.innerText = `— ${dia} —`;
+          chat.appendChild(sep);
+          lastDayRendered = dia;
+        }
+
+        const hora = new Date(m.data_hora).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+        const div = document.createElement("div");
+        const incoming = isIncoming(m);
+        div.className = `msg ${incoming ? "recebida" : "enviada"}`;
+
+        if (m.tipo === "imagem" || m.mensagem_final === "[image]") {
+          div.innerHTML = `
+        <div class="text-gray-600 italic">[imagem recebida]</div>
+        <button class="btn-olhinho text-blue-600 underline mt-1">👁 Ver imagem</button>
+        <span class="hora">${hora}</span>
+      `;
+          const btn = div.querySelector(".btn-olhinho");
+          if (!m.msg_id) {
+            btn.disabled = true; btn.innerText = "Imagem indisponível";
+          } else {
+            btn.onclick = async () => {
+              btn.disabled = true; btn.innerText = "⏳ Carregando...";
+              try {
+                const r = await fetch(`${API_BASE}/api/conversas/image/${encodeURIComponent(m.msg_id)}`);
+                const j = await r.json();
+                if (j.ok && j.data_uri) {
+                  const img = document.createElement("img");
+                  img.src = j.data_uri; img.alt = "Imagem recebida";
+                  img.className = "thumb mt-2";
+                  img.onclick = () => abrirModalImagem(j.data_uri);
+                  div.insertBefore(img, btn); btn.remove();
+                } else { throw new Error(j.erro || "Resposta inválida do backend"); }
+              } catch (e) { console.error("Erro imagem:", e); btn.disabled = false; btn.innerText = "👁 Ver imagem"; alert("Erro ao carregar imagem"); }
+            };
+          }
+        }
+        else if (m.tipo === "audio" || m.mensagem_final === "[audio]") {
+          div.innerHTML = `
+        <div class="text-gray-600 italic">[áudio recebido]</div>
+        <button class="btn-audio text-blue-600 underline mt-1">▶ Reproduzir áudio</button>
+        <span class="hora">${hora}</span>
+      `;
+          const btn = div.querySelector(".btn-audio");
+          if (!m.msg_id) { btn.disabled = true; btn.innerText = "Áudio indisponível"; }
+          else {
+            btn.onclick = async () => {
+              btn.disabled = true; btn.innerText = "⏳ Carregando...";
+              try {
+                const r = await fetch(`${API_BASE}/api/conversas/audio/${encodeURIComponent(m.msg_id)}`);
+                const j = await r.json();
+                if (j.ok && j.data_uri) {
+                  const audio = document.createElement("audio");
+                  audio.src = j.data_uri; audio.controls = true; audio.className = "mt-2";
+                  div.insertBefore(audio, btn); btn.remove();
+                } else { throw new Error(j.erro || "Resposta inválida do backend"); }
+              } catch (e) { console.error("Erro áudio:", e); btn.disabled = false; btn.innerText = "▶ Reproduzir áudio"; alert("Erro ao carregar áudio"); }
+            };
+          }
+        }
+        else if (m.tipo === "document" || m.mensagem_final === "[document]") {
+          div.innerHTML = `
+        <div class="text-gray-600 italic">[documento recebido]</div>
+        <button class="btn-doc text-blue-600 underline mt-1">📎 Ver documento</button>
+        <span class="hora">${hora}</span>
+      `;
+          const btn = div.querySelector(".btn-doc");
+          if (!m.msg_id) { btn.disabled = true; btn.innerText = "Documento indisponível"; }
+          else { btn.onclick = () => carregarDocumento(div, btn, m.msg_id); }
+        }
+        else if (typeof m.mensagem_final === "string" && m.mensagem_final.startsWith("📎 PDF:")) {
+          const lines = m.mensagem_final.split("\n");
+          const filename = (lines[0] || "").replace("📎 PDF:", "").trim() || "Arquivo";
+          const link = (lines[1] || "").replace("🔗", "").trim();
+          div.innerHTML = `
+        <div class="flex items-start gap-2">
+          <div class="text-xl leading-none">📄</div>
+          <div class="min-w-0">
+            <div class="font-semibold">${escapeHtml(filename)}</div>
+            ${link ? `<a href="${escapeHtml(link)}" target="_blank" class="text-blue-600 underline break-all">Abrir/baixar</a>` : `<span class="text-slate-500">sem link</span>`}
+          </div>
+        </div>
+        <span class="hora">${hora}</span>
+      `;
+        }
+        else if (m.tipo === "emoji" || m.mensagem_final === "[reaction]") {
+          const wrapper = document.createElement("div"); wrapper.className = "flex items-center gap-2";
+          const emojiEl = document.createElement("span"); emojiEl.className = "text-2xl leading-none"; emojiEl.textContent = "🙂";
+          const label = document.createElement("span"); label.className = "text-gray-600 italic"; label.textContent = "enviou um emote";
+          wrapper.appendChild(emojiEl); wrapper.appendChild(label); div.appendChild(wrapper);
+          const horaSpan = document.createElement("span"); horaSpan.className = "hora"; horaSpan.textContent = hora; div.appendChild(horaSpan);
+          if (m.msg_id) {
+            (async () => {
+              try {
+                const r = await fetch(`${API_BASE}/api/conversas/emoji/${encodeURIComponent(m.msg_id)}`);
+                const j = await r.json();
+                if (j.ok && j.emoji) emojiEl.textContent = j.emoji; else label.textContent = "emoji não carregado";
+              } catch (e) { console.error("Erro emoji:", e); label.textContent = "falha ao carregar emoji"; }
+            })();
+          } else { label.textContent = "emoji indisponível"; }
+        }
+        else if (m.tipo === "system" || m.mensagem_final === "[system]") {
+          div.classList.add("system");
+          div.innerHTML = `
+        <div class="sys-title"><span>ℹ️ Evento do sistema</span> <span class="sys-pill">carregando…</span></div>
+        <div class="sys-body mt-1 text-slate-600">Obtendo detalhes…</div>
+        <div class="sys-meta mt-1"></div>
+        <span class="hora">${hora}</span>
+      `;
+          if (!m.msg_id) {
+            div.querySelector(".sys-body").textContent = "Detalhes indisponíveis (sem msg_id).";
+            const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "indisponível";
+          } else {
+            (async () => {
+              try {
+                const r = await fetch(`${API_BASE}/api/conversas/system/${encodeURIComponent(m.msg_id)}`);
+                const j = await r.json();
+                const pill = div.querySelector(".sys-pill");
+                const bodyEl = div.querySelector(".sys-body");
+                const metaEl = div.querySelector(".sys-meta");
+
+                if (!j.ok) { if (pill) pill.textContent = "erro"; bodyEl.textContent = j.erro || "Falha ao obter detalhes do evento."; return; }
+                if (pill) pill.textContent = j.type || "system";
+                if (j.type === "user_changed_number" && j.old_wa_id && j.wa_id) {
+                  bodyEl.innerHTML = `O cliente alterou o número:<br>
+              <span class="font-semibold">${escapeHtml(j.old_wa_id)}</span>
+              <span class="mx-1">→</span>
+              <span class="font-semibold">${escapeHtml(j.wa_id)}</span>`;
+                } else {
+                  bodyEl.textContent = j.body || "Evento de sistema recebido.";
+                }
+                const src = j.from || j.old_wa_id || "";
+                const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
+                metaEl.textContent = `${src ? "Origem: " + src : ""}${pid}`;
+              } catch (e) { console.error("Erro system:", e); const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro"; div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento."; }
+            })();
+          }
+        }
+        else {
+          div.innerHTML = `<div>${escapeHtml(m.mensagem_final || "")}</div><span class="hora">${hora}</span>`;
+        }
+
+        // Ação de Responder (apenas mensagens do cliente)
+        if (incoming && !(m.tipo === "system" || m.mensagem_final === "[system]")) {
+          const actions = document.createElement("div");
+          actions.className = "actions";
+          const replyBtn = document.createElement("button");
+          replyBtn.className = "icon-btn";
+          replyBtn.title = "Responder";
+          replyBtn.textContent = "↩";
+          replyBtn.onclick = () => responderMensagem(m.msg_id, m.mensagem_final || "");
+          actions.appendChild(replyBtn);
+          div.appendChild(actions);
+        }
+
+        document.getElementById("chat").appendChild(div);
+        renderedKeys.add(key);
+        if (lastTimestampMs === null || tMs > lastTimestampMs) lastTimestampMs = tMs;
+      });
+
+      if (isNearBottom) document.getElementById("chat").scrollTo({ top: document.getElementById("chat").scrollHeight, behavior: "smooth" });
+    }
+
+    /* ======= Documento (carregar) ======= */
+    async function carregarDocumento(div, btn, msg_id) {
+      btn.disabled = true; btn.textContent = "⏳ Carregando…";
+      try {
+        const r = await fetch(`${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}`);
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.erro || "Falha ao obter documento");
+
+        const filename = j.filename || "arquivo";
+        const mime = j.mime_type || "application/octet-stream";
+        const size = j.size_bytes ?? null;
+
+        const box = document.createElement("div");
+        box.className = "mt-2 space-y-1";
+
+        if (mime.startsWith("application/pdf") && j.data_uri && (size === null || size <= DOC_PREVIEW_MAX)) {
+          const preview = document.createElement("embed");
+          preview.src = j.data_uri; preview.type = mime; preview.className = "w-[260px] h-[200px] rounded border";
+          box.appendChild(preview);
+
+          const meta = document.createElement("div");
+          meta.className = "text-xs text-slate-600";
+          const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+          meta.innerHTML = `<div class="font-semibold truncate">${escapeHtml(filename)}</div>
+                        <div>${size ? bytesToHuman(size) : ""}</div>
+                        <a href="${link}" target="_blank" class="text-blue-600 underline">Abrir/baixar</a>`;
+          box.appendChild(meta);
+        } else {
+          const link = `${API_BASE}/api/conversas/document/${encodeURIComponent(msg_id)}/download`;
+          const row = document.createElement("div");
+          row.className = "flex items-start gap-2";
+          row.innerHTML = `
+        <div class="text-xl leading-none">📎</div>
+        <div class="min-w-0">
+          <div class="font-semibold truncate">${escapeHtml(filename)}</div>
+          <div class="text-xs text-slate-600">${escapeHtml(mime)} ${size ? ("• " + bytesToHuman(size)) : ""}</div>
+          <a href="${link}" target="_blank" class="text-blue-600 underline break-all">Baixar documento</a>
+        </div>`;
+          box.appendChild(row);
+        }
+
+        div.insertBefore(box, btn);
+        btn.remove();
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar documento");
+        btn.disabled = false; btn.textContent = "📎 Ver documento";
+      }
+    }
+
+    /* ======= Responder / Cancelar ======= */
+    function responderMensagem(msgId, conteudo) {
+      respostaMsgId = msgId || null;
+      document.getElementById("respostaTexto").innerText = (conteudo || "").slice(0, 50);
+      document.getElementById("respostaPreview").classList.remove("hidden");
+      textarea.focus();
+    }
+    function cancelarResposta() {
+      respostaMsgId = null;
+      document.getElementById("respostaPreview").classList.add("hidden");
+      document.getElementById("respostaTexto").innerText = "";
+    }
+
+    /* ======= Enviar texto ======= */
+    async function enviarMensagem() {
+      const texto = textarea.value.trim();
+      if (!texto || !contatoSelecionado) return;
+      userTyping = true; btnEnviar.disabled = true;
+      try {
+        const body = { texto, phone_id: phoneIdAtual, msg_id: respostaMsgId || null };
+        const res = await fetch(`${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        if (json.ok) {
+          textarea.value = ""; textarea.style.height = "auto";
+          cancelarResposta();
+          // refresh imediato (mensagens) após enviar
+          await refreshLoop("enviar");
+        } else { alert("Erro ao enviar: " + (json.erro || JSON.stringify(json))); }
+      } catch (err) { console.error(err); alert("Erro ao enviar mensagem. Verifique CORS/Network."); }
+      finally { userTyping = false; btnEnviar.disabled = textarea.value.trim().length === 0; }
+    }
+
+    /* ======= Enviar PDF ======= */
+    async function enviarPDF(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!contatoSelecionado || !phoneIdAtual) { alert("Selecione uma conversa antes de enviar PDF"); event.target.value = ""; return; }
+      if (file.type !== "application/pdf") { alert("Somente arquivos PDF são permitidos"); event.target.value = ""; return; }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/upload/pdf`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: file.name })
+        });
+        const json = await res.json();
+        if (!json.ok) { alert("Erro ao gerar URL: " + json.erro); return; }
+
+        const put = await fetch(json.upload_url, { method: "PUT", headers: { "Content-Type": "application/pdf" }, body: file });
+        if (!put.ok) { alert("Falha no upload"); return; }
+
+        const body = { phone_id: phoneIdAtual, file_url: json.file_url, original_filename: file.name };
+        const sendRes = await fetch(`${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+        });
+        const sendJson = await sendRes.json();
+        if (sendJson.ok) {
+          await refreshLoop("enviar-pdf");
+        } else { alert("Erro ao enviar PDF: " + (sendJson.erro || JSON.stringify(sendJson))); }
+      } catch (err) {
+        console.error("Erro ao enviar PDF", err); alert("Erro ao enviar PDF");
+      } finally { event.target.value = ""; }
+    }
+
+    /* ======= Modal imagem ======= */
+    const imageModal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImg");
+    const closeModal = document.getElementById("closeModal");
+    function abrirModalImagem(src) { isModalOpen = true; modalImg.src = src; imageModal.classList.remove("hidden"); }
+    closeModal.onclick = () => { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; };
+    imageModal.onclick = (e) => { if (e.target === imageModal) { imageModal.classList.add("hidden"); modalImg.src = ""; isModalOpen = false; } };
+
+    /* ======= Loop de atualização (apenas conversa selecionada) ======= */
+    const CADENCE = { active: 10000, hidden: 60000 }; // 10s ativo; 60s aba oculta
+    const BACKOFF_MAX = 120000;
+    let failureStreak = 0;
     let refreshTimer = null;
     let refreshAbort = null;
     let isRefreshing = false;
 
-    function scheduleRefresh(delay = REFRESH_MS) {
+    // calcula próximo delay
+    function computeNextDelay() {
+      if (failureStreak > 0) return Math.min(BACKOFF_MAX, CADENCE.active * Math.pow(2, failureStreak));
+      if (document.hidden) return CADENCE.hidden;
+      // somente se houver conversa selecionada, mantemos 10s; caso contrário não reagendamos
+      return contatoSelecionado ? CADENCE.active : null;
+    }
+    function scheduleRefresh(delay = computeNextDelay()) {
       clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(() => carregarTudo("auto"), delay);
+      if (delay == null) return; // nada agendado sem conversa selecionada
+      refreshTimer = setTimeout(() => refreshLoop("auto"), delay);
     }
 
-    async function fetchJSON(url, { signal, timeoutMs = 9000, ...init } = {}) {
+    // fetch JSON simples
+    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
       const own = new AbortController();
       const t = setTimeout(() => own.abort("timeout"), timeoutMs);
-
-      let finalSignal = own.signal;
-      if (signal) {
-        const comp = new AbortController();
-        signal.addEventListener("abort", () => comp.abort("parent"), { once: true });
-        own.signal.addEventListener("abort", () => comp.abort("timeout"), { once: true });
-        finalSignal = comp.signal;
-      }
+      const comp = new AbortController();
+      const forward = (reason) => () => comp.abort(reason);
+      own.signal.addEventListener("abort", forward("timeout"), { once: true });
+      if (signal) signal.addEventListener("abort", forward("parent"), { once: true });
 
       try {
-        const r = await fetch(url, { signal: finalSignal, ...init });
-        const ct = r.headers.get("content-type") || "";
-        if (!ct.includes("application/json")) return await r.text();
+        const r = await fetch(url, { signal: comp.signal, cache: "no-store" });
         return await r.json();
-      } finally {
-        clearTimeout(t);
-      }
+      } finally { clearTimeout(t); }
     }
 
-    async function carregarTudo(reason = "manual") {
+    async function refreshLoop(reason = "manual") {
+      // pausa se modal aberto ou digitando
+      const pauseMsgs = userTyping || isModalOpen;
+
+      // single-flight: garante que o próximo ciclo só inicia após o término deste
       if (isRefreshing) { try { refreshAbort?.abort("superseded"); } catch { } }
       isRefreshing = true;
       refreshAbort = new AbortController();
       const { signal } = refreshAbort;
 
-      const kpiMsg = document.getElementById("kpiMsg");
-      kpiMsg.textContent = reason === "auto" ? "Atualizando…" : "Atualizando (forçado)…";
-
       try {
-        const urlOnline = filtroCarteira ? `${API_BASE}/fila/status?carteira=${encodeURIComponent(filtroCarteira)}` : `${API_BASE}/fila/status`;
-        const urlCnt = filtroCarteira ? `${CONV_API}/api/tickets/contagem_por_agente?carteira=${encodeURIComponent(filtroCarteira)}` : `${CONV_API}/api/tickets/contagem_por_agente`;
-        const urlPend = `${API_BASE}/fila/pendentes_por_carteira`;
-
-        const [lista, contagem, pend] = await Promise.allSettled([
-          fetchJSON(urlOnline, { signal }),
-          fetchJSON(urlCnt, { signal }),
-          fetchJSON(urlPend, { signal })
-        ]);
-
-        // ONLINE
-        if (lista.status === "fulfilled" && Array.isArray(lista.value)) {
-          const sigOnline = sig(lista.value);
-          if (sigOnline !== lastSig.online) {
-            lastSig.online = sigOnline;
-            ultimoOnline = lista.value;
-
-            const porCarteira = {};
-            ultimoOnline.forEach(a => { porCarteira[a.carteira] = (porCarteira[a.carteira] || 0) + 1; });
-
-            document.getElementById("kpiOnlineTotal").textContent = ultimoOnline.length;
-            const wrap = document.getElementById("kpiOnlineCarteiras");
-            wrap.innerHTML = "";
-            Object.entries(porCarteira).forEach(([car, qt]) => {
-              const span = document.createElement("span");
-              span.className = "pill";
-              span.textContent = `${car}: ${qt}`;
-              wrap.appendChild(span);
-            });
+        // somente mensagens
+        if (contatoSelecionado && !pauseMsgs) {
+          const url = `${API_BASE}/api/conversas/${encodeURIComponent(contatoSelecionado)}${phoneIdAtual ? `?phone_id=${encodeURIComponent(phoneIdAtual)}` : ""}`;
+          const data = await fetchJSON(url, { signal });
+          if (Array.isArray(data)) {
+            await renderMensagens(data, /*incremental*/ true);
           }
         }
 
-        // CONTAGEM 
-        if (contagem.status === "fulfilled" && contagem.value && contagem.value.ok && contagem.value.mapa) {
-          const sigCont = sig(contagem.value.mapa);
-          if (sigCont !== lastSig.contagem) {
-            lastSig.contagem = sigCont;
-            mapaTicketsAtivos = contagem.value.mapa;
-          }
-          const totalTickets = ultimoOnline.reduce((s, a) => {
-            const key = `${a.codigo_do_agente}-${a.carteira}`;
-            const val = mapaTicketsAtivos[key];
-
-            const qtd = (typeof val === 'object' && val)
-              ? (val.qtd ?? 0)
-              : (Number(val) || 0);
-            return s + qtd;
-          }, 0);
-          document.getElementById("kpiEmAndamento").textContent = totalTickets;
-        }
-
-        // PENDENTES
-        if (pend.status === "fulfilled" && Array.isArray(pend.value)) {
-          const sigPend = sig(pend.value);
-          if (sigPend !== lastSig.pendentes) {
-            lastSig.pendentes = sigPend;
-            pendentesCarteiraAgg = pend.value;
-          }
-
-          const norm = s => (s || "")
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "")
-            .trim()
-            .toLowerCase();
-
-          const filtroN = norm(filtroCarteira);
-          const filtrados = pendentesCarteiraAgg.filter(x => !filtroN || norm(x.carteira) === filtroN);
-
-          const totalPend = filtrados.reduce((s, x) => s + (Number(x.total) || 0), 0);
-          document.getElementById("kpiPendentesFila").textContent = totalPend;
-
-          const chips = document.getElementById("kpiPendentesPorCarteira");
-          chips.innerHTML = "";
-          filtrados.forEach(({ carteira, total }) => {
-            const span = document.createElement("span");
-            span.className = "pill";
-            span.textContent = `${carteira}: ${total}`;
-            chips.appendChild(span);
-          });
-        }
-
-        renderOnlineTable();
-
-        document.getElementById("kpiAtualizado").textContent = new Date().toLocaleTimeString("pt-BR");
-        kpiMsg.textContent = "OK";
+        failureStreak = 0;
       } catch (e) {
         if (String(e) !== "AbortError" && String(e) !== "superseded") {
-          kpiMsg.textContent = "Falha ao atualizar. Verifique APIs.";
+          failureStreak = Math.min(failureStreak + 1, 10);
+          console.warn("Refresh falhou:", e);
         }
       } finally {
         isRefreshing = false;
+        // agenda o próximo ciclo SÓ depois que o atual terminou (requisitado)
         scheduleRefresh();
       }
     }
 
-    function renderOnlineTable() {
-      const tbody = document.getElementById("tbodyOnline");
-      tbody.innerHTML = "";
-      const filtrados = ultimoOnline;
-
-      filtrados.forEach(a => {
-        const tr = document.createElement("tr");
-        const key = `${a.codigo_do_agente}-${a.carteira}`;
-        const val = mapaTicketsAtivos[key];
-
-        const tickets = (typeof val === 'object' && val) ? (val.qtd ?? 0) : (mapaTicketsAtivos[key] ?? 0);
-
-        let tempoSeg = null;
-        if (val && typeof val === 'object') {
-          tempoSeg = parseTempoInativo(val.tempo_inativo_seconds ?? val.tempo_inativo ?? null);
-        }
-
-        const critico = (tempoSeg != null && tempoSeg >= 3600); // 1h+
-
-        tr.className = "border-b";
-        if (critico) tr.classList.add("bg-amber-50");
-
-        tr.innerHTML = `
-          <td class="px-3 py-2 table-td">${a.codigo_do_agente}</td>
-          <td class="px-3 py-2 table-td">${a.nome || "-"}</td>
-          <td class="px-3 py-2 table-td">${a.carteira}</td>
-          <td class="px-3 py-2 table-td">${fmt(a.data_hora)}</td>
-          <td class="px-3 py-2 table-td">${tickets}</td>
-          <td class="px-3 py-2 table-td ${critico ? 'text-amber-700 font-medium' : 'text-gray-600'}">
-            ${tempoSeg != null ? fmtDuracao(tempoSeg) : '—'}
-            ${critico ? '<span class="ml-2 inline-block px-2 py-[2px] text-[11px] rounded-full bg-amber-200 text-amber-900">1h+</span>' : ''}
-          </td>
-          <td class="px-3 py-2 table-td">
-            <button class="px-2 py-1 bg-gray-100 rounded-md hover:bg-gray-200"
-              onclick="forcarOffline(${a.codigo_do_agente}, '${a.carteira.replace(/'/g, "\\'")}')">Forçar offline</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      const msg = document.getElementById("onlineMsg");
-      msg.textContent = filtrados.length ? "" : (filtroCarteira ? `Nenhum agente online na carteira "${filtroCarteira}".` : "Nenhum agente online no momento.");
-    }
-
-    async function forcarOffline(codigo, carteira) {
-      if (!confirm(`Forçar o agente #${codigo} a ficar offline da carteira ${carteira}?`)) return;
-      try {
-        const r = await fetch(`${API_BASE}/fila/offline`, {
-          method: "DELETE", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ codigo_do_agente: codigo, carteira })
-        });
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.erro || "Falha ao forçar offline");
-        carregarTudo("acao");
-      } catch (e) { alert(e.message || "Erro ao forçar offline"); }
-    }
-
-    /* === Cadastro de agente === */
-    document.getElementById("btnCadastrar").onclick = async () => {
-      const msg = document.getElementById("cadMsg"); hideMsg(msg);
-      const codigo = Number(document.getElementById("cadCodigo").value);
-      const nome = (document.getElementById("cadNome").value || "").trim();
-      const carteira = document.getElementById("cadCarteira").value;
-      const origem = document.getElementById("cadOrigem").value;
-      const permiteEnvioInd = document.getElementById("cadPermiteEnvioInd").checked; // NOVO
-
-      if (!codigo || !Number.isInteger(codigo)) return showMsg(msg, "Código precisa ser inteiro.", "warn");
-      if (!nome || nome.split(" ").length < 2) return showMsg(msg, "Informe o nome completo.", "warn");
-      if (!carteira) return showMsg(msg, "Selecione a carteira.", "warn");
-      if (!origem) return showMsg(msg, "Selecione a origem BD.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            codigo_do_agente: codigo,
-            nome,
-            carteira,
-            origem_bd: origem,
-            permite_envio_individual: permiteEnvioInd // NOVO
-          })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao cadastrar.", "err");
-        showMsg(msg, "Agente cadastrado com sucesso.", "ok");
-
-        document.getElementById("cadCodigo").value = "";
-        document.getElementById("cadNome").value = "";
-        document.getElementById("cadCarteira").value = "";
-        document.getElementById("cadOrigem").value = "";
-        document.getElementById("cadPermiteEnvioInd").checked = false; // reset NOVO
-
-        carregarTudo("acao");
-      } catch (e) { showMsg(msg, "Erro de rede ao cadastrar.", "err"); }
-    };
-
-    /* === Buscar/editar agente === */
-    document.getElementById("btnBuscar").onclick = async () => {
-      const cod = Number(document.getElementById("buscaCodigo").value);
-      const msg = document.getElementById("editMsg"); hideMsg(msg);
-      if (!cod || !Number.isInteger(cod)) return showMsg(msg, "Informe um código inteiro válido.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes/${cod}`);
-        const j = await r.json();
-        if (!j.ok) {
-          showMsg(msg, j.erro || "Não encontrado.", "warn");
-          document.getElementById("editBox").classList.add("hidden");
-          return;
-        }
-        const ag = j.agente;
-        document.getElementById("edCodigo").textContent = ag.codigo_do_agente;
-        document.getElementById("edNome").textContent = ag.nome;
-        document.getElementById("edCarteira").value = ag.carteira;
-        document.getElementById("edOrigem").textContent = ag.origem_bd;
-        document.getElementById("edPermiteEnvioInd").checked = !!ag.permite_envio_individual; // NOVO
-        document.getElementById("editBox").classList.remove("hidden");
-      } catch (e) { showMsg(msg, "Erro ao buscar agente.", "err"); }
-    };
-
-    document.getElementById("btnLimparBusca").onclick = () => {
-      document.getElementById("buscaCodigo").value = "";
-      document.getElementById("editBox").classList.add("hidden");
-      hideMsg(document.getElementById("editMsg"));
-    };
-
-    document.getElementById("btnSalvarEdicao").onclick = async () => {
-      const msg = document.getElementById("editMsg"); hideMsg(msg);
-      const codigo = Number(document.getElementById("edCodigo").textContent);
-      const nova = document.getElementById("edCarteira").value;
-      const permiteEnvioInd = document.getElementById("edPermiteEnvioInd").checked; // NOVO
-      if (!nova) return showMsg(msg, "Selecione uma carteira.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/agentes/${codigo}`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            carteira: nova,
-            permite_envio_individual: permiteEnvioInd // NOVO
-          })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao atualizar carteira.", "err");
-        showMsg(msg, "Alterações salvas.", "ok");
-        carregarTudo("acao");
-      } catch (e) { showMsg(msg, "Erro de rede ao salvar.", "err"); }
-    };
-
-    /* === Limite de tickets por carteira === */
-    async function carregarTicketsLimitList() {
-      try {
-        const list = await fetch(`${CONV_API}/api/supervisao/tickets-limit`).then(r => r.json());
-        renderTicketsLimitChips(Array.isArray(list) ? list : []);
-      } catch {
-        renderTicketsLimitChips([]);
-      }
-    }
-    function renderTicketsLimitChips(items) {
-      const wrap = document.getElementById("tlChips");
-      wrap.innerHTML = "";
-      if (!items.length) {
-        wrap.innerHTML = `<span class="text-xs text-gray-500">Nenhuma carteira configurada — limite padrão 0 (sem restrição).</span>`;
-        return;
-      }
-      items.forEach(({ carteira, limit_per_agent }) => {
-        const span = document.createElement("span");
-        span.className = "pill";
-        span.textContent = `${carteira}: ${limit_per_agent}`;
-        wrap.appendChild(span);
-      });
-    }
-    async function carregarTicketsLimitValor(carteira) {
-      const tlMsg = document.getElementById("tlMsg");
-      if (!carteira) { document.getElementById("tlLimit").value = 0; return; }
-      tlMsg.textContent = "Carregando...";
-      try {
-        const j = await fetch(`${CONV_API}/api/supervisao/tickets-limit?carteira=${encodeURIComponent(carteira)}`).then(r => r.json());
-        document.getElementById("tlLimit").value = Number(j.limit_per_agent || 0);
-        tlMsg.textContent = "";
-      } catch (e) { tlMsg.textContent = "Falha ao carregar valor."; }
-    }
-    async function salvarTicketsLimit(limit, carteira) {
-      const tlMsg = document.getElementById("tlMsg");
-      tlMsg.textContent = "Salvando...";
-      try {
-        const r = await fetch(`${CONV_API}/api/supervisao/tickets-limit`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carteira, limit_per_agent: Number(limit || 0) })
-        });
-        const j = await r.json();
-        tlMsg.textContent = j.ok ? "Limite salvo." : (j.erro || "Erro ao salvar.");
-        await carregarTicketsLimitList();
-      } catch (e) { tlMsg.textContent = "Erro de rede ao salvar."; }
-    }
-
-    document.getElementById("tlCarteira").addEventListener("change", (e) => {
-      const car = e.target.value || "";
-      carregarTicketsLimitValor(car);
-    });
-    document.getElementById("btnSalvarTicketsLimit").onclick = async () => {
-      const carteira = document.getElementById("tlCarteira").value;
-      const v = Number(document.getElementById("tlLimit").value || 0);
-      const tlMsg = document.getElementById("tlMsg");
-      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
-      if (!Number.isInteger(v) || v < 0 || v > 50) { tlMsg.textContent = "Informe um valor entre 0 e 50."; return; }
-      await salvarTicketsLimit(v, carteira);
-    };
-    document.getElementById("btnResetTicketsLimit").onclick = async () => {
-      const carteira = document.getElementById("tlCarteira").value;
-      const tlMsg = document.getElementById("tlMsg");
-      if (!carteira) { tlMsg.textContent = "Selecione uma carteira."; return; }
-      document.getElementById("tlLimit").value = 0;
-      await salvarTicketsLimit(0, carteira);
-    };
-
-    /* === BLOCO Textos padrão (handlers mantidos) === */
-    function buildIdOrChavePayload(idVal, chaveVal) {
-      const payload = {};
-      const id = Number(idVal);
-      const chave = (chaveVal || "").trim();
-      if (Number.isInteger(id) && id > 0) payload.id = id;
-      if (chave) payload.chave = chave;
-      return payload;
-    }
-
-    document.getElementById("btnNovoTexto")?.addEventListener("click", async () => {
-      const msg = document.getElementById("txNovoMsg"); hideMsg(msg);
-      const chave = (document.getElementById("txChaveNovo").value || "").trim();
-      const texto = (document.getElementById("txConteudoNovo").value || "").trim();
-
-      if (!chave) return showMsg(msg, "Informe a chave (única) do texto.", "warn");
-      if (!texto) return showMsg(msg, "Informe o conteúdo do texto.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/textos/novo_texto`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chave, texto })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao salvar novo texto.", "err");
-        showMsg(msg, "Texto cadastrado com sucesso.", "ok");
-        document.getElementById("txChaveNovo").value = "";
-        document.getElementById("txConteudoNovo").value = "";
-      } catch (e) { showMsg(msg, "Erro de rede ao salvar texto.", "err"); }
+    /* ======= Visibilidade ======= */
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) { scheduleRefresh(1000); } else { clearTimeout(refreshTimer); }
     });
 
-    document.getElementById("btnEditarTexto")?.addEventListener("click", async () => {
-      const msg = document.getElementById("txEditarMsg"); hideMsg(msg);
-      const idVal = document.getElementById("txIdEdit").value;
-      const chaveVal = document.getElementById("txChaveEdit").value;
-      const texto = (document.getElementById("txConteudoEdit").value || "").trim();
-
-      if (!texto) return showMsg(msg, "Informe o novo conteúdo.", "warn");
-      const base = buildIdOrChavePayload(idVal, chaveVal);
-      if (!base.id && !base.chave) return showMsg(msg, "Informe ID ou Chave para localizar o registro.", "warn");
-
-      try {
-        const r = await fetch(`${API_BASE}/textos/editar_texto`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...base, texto })
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao editar texto.", "err");
-        showMsg(msg, "Texto atualizado com sucesso.", "ok");
-        document.getElementById("txIdEdit").value = "";
-        document.getElementById("txChaveEdit").value = "";
-        document.getElementById("txConteudoEdit").value = "";
-      } catch (e) { showMsg(msg, "Erro de rede ao editar texto.", "err"); }
-    });
-
-    document.getElementById("btnApagarTexto")?.addEventListener("click", async () => {
-      const msg = document.getElementById("txApagarMsg"); hideMsg(msg);
-      const idVal = document.getElementById("txIdDelete").value;
-      const chaveVal = document.getElementById("txChaveDelete").value;
-
-      const base = buildIdOrChavePayload(idVal, chaveVal);
-      if (!base.id && !base.chave) return showMsg(msg, "Informe ID ou Chave para apagar.", "warn");
-
-      if (!confirm(`Confirmar exclusão do texto (${base.id ? 'ID ' + base.id : 'chave ' + base.chave})?`)) return;
-
-      try {
-        const r = await fetch(`${API_BASE}/textos/apagar_texto`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(base)
-        });
-        const j = await r.json();
-        if (!j.ok) return showMsg(msg, j.erro || "Erro ao apagar texto.", "err");
-        showMsg(msg, "Texto apagado com sucesso.", "ok");
-        document.getElementById("txIdDelete").value = "";
-        document.getElementById("txChaveDelete").value = "";
-      } catch (e) { showMsg(msg, "Erro de rede ao apagar texto.", "err"); }
-    });
-
-    /* === Logout automático === */
-    document.getElementById("btnSalvarLogout").onclick = async () => {
-      const lgMsg = document.getElementById("lgMsg");
-      const enabled = document.getElementById("lgEnabled").checked;
-      const time = document.getElementById("lgTime").value || "18:00";
-      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
-      lgMsg.textContent = "Salvando...";
-      try {
-        const r = await fetch(`${API_BASE}/supervisao/logout-config`, {
-          method: "PUT", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled, time, carteiras })
-        });
-        const j = await r.json();
-        lgMsg.textContent = j.ok ? "Configuração salva." : (j.erro || "Erro ao salvar.");
-      } catch (e) { lgMsg.textContent = "Erro de rede ao salvar."; }
-    };
-    document.getElementById("btnForcarLogout").onclick = async () => {
-      const lgMsg = document.getElementById("lgMsg");
-      const carteiras = Array.from(document.querySelectorAll(".lg-check:checked")).map(x => x.value);
-      if (!carteiras.length) { lgMsg.textContent = "Selecione ao menos uma carteira."; return; }
-      if (!confirm(`Forçar logout agora das carteiras:\n- ${carteiras.join("\n- ")}`)) return;
-      lgMsg.textContent = "Executando...";
-      try {
-        const r = await fetch(`${API_BASE}/fila/forcar_logout`, {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ carteiras })
-        });
-        const j = await r.json();
-        lgMsg.textContent = j.ok ? `Logout concluído. Afetados: ${j.afetados}` : (j.erro || "Erro ao forçar logout.");
-        carregarTudo("acao");
-      } catch (e) { lgMsg.textContent = "Erro de rede ao forçar logout."; }
-    };
-
-    /* === Eventos globais === */
-    document.getElementById("filtroGlobalCarteira").addEventListener("change", (e) => {
-      filtroCarteira = e.target.value || "";
-      carregarTudo("filtro");
-    });
-
-    /* === Painel de Avisos: lógica === */
-    async function pvRecarregar() {
-      const msg = document.getElementById("pvMsg");
-      msg.textContent = "Carregando...";
-      pvSomenteAtivos = document.getElementById("pvSomenteAtivos").checked;
-      pvFiltroCar = document.getElementById("pvFiltroCarteira").value || "";
-
-      try {
-        let url = `${API_BASE}/painel/avisos`;
-        const qs = [];
-        if (pvSomenteAtivos) qs.push("enabled_only=1");
-        if (pvFiltroCar) qs.push(`carteira=${encodeURIComponent(pvFiltroCar)}`);
-        if (qs.length) url += "?" + qs.join("&");
-
-        const data = await fetchJSON(url);
-        pvItems = Array.isArray(data) ? data : (data?.avisos || []);
-        pvRenderLista();
-        msg.textContent = `${pvItems.length} avisos`;
-      } catch (e) {
-        pvItems = [];
-        pvRenderLista();
-        msg.textContent = "Falha ao carregar.";
-      }
-    }
-
-    function pvRenderLista() {
-      const tbody = document.getElementById("pvTbody");
-      tbody.innerHTML = "";
-      if (!pvItems.length) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td class="px-3 py-2 text-sm text-gray-500" colspan="7">Nenhum aviso encontrado.</td>`;
-        tbody.appendChild(tr);
-        return;
-      }
-
-      const items = [...pvItems].sort((a, b) => {
-        const pa = Number(a.prioridade ?? 0), pb = Number(b.prioridade ?? 0);
-        if (pb !== pa) return pb - pa;
-        const da = new Date(a.created_at || 0).getTime();
-        const db = new Date(b.created_at || 0).getTime();
-        return db - da;
-      });
-
-      items.forEach(av => {
-        const tr = document.createElement("tr");
-        tr.className = "border-b align-top";
-        const carteiras = Array.isArray(av.carteiras) ? av.carteiras : [];
-        const enabled = !!av.enabled;
-        const deleted = !!av.deleted_at;
-        const pr = Number(av.prioridade ?? 0);
-
-        tr.innerHTML = `
-          <td class="px-3 py-2 table-td">${av.id ?? "-"}</td>
-          <td class="px-3 py-2 table-td">
-            ${enabled ? badge("Ativo", "ok") : badge("Inativo", "warn")}
-            ${deleted ? `<div class="mt-1">${badge("Removido", "err")}</div>` : ""}
-          </td>
-          <td class="px-3 py-2 table-td">
-            <div class="flex items-center gap-2">
-              <span class="inline-block w-3 h-3 rounded-full" style="background:${priorityColor(pr)}"></span>
-              <span>${pr}</span>
-            </div>
-          </td>
-          <td class="px-3 py-2 table-td">
-            <div class="font-medium">${(av.titulo || "—")}</div>
-            <div class="text-xs text-gray-600 mt-1 whitespace-pre-wrap">${(av.conteudo || "").slice(0, 400)}${(av.conteudo || "").length > 400 ? "…" : ""}</div>
-          </td>
-          <td class="px-3 py-2 table-td">
-            ${carteiras.length ? carteiras.map(c => badge(c, "blue")).join(" ") : badge("Global", "indigo")}
-          </td>
-          <td class="px-3 py-2 table-td">
-            <div>${fmt(av.created_at)}</div>
-            ${av.updated_at ? `<div class="text-xs text-gray-500">upd: ${fmt(av.updated_at)}</div>` : ""}
-          </td>
-          <td class="px-3 py-2 table-td">
-            <div class="flex flex-wrap gap-2">
-              <button class="px-2 py-1 bg-gray-100 rounded hover:bg-gray-200" onclick="pvToggleEnabled(${av.id}, ${enabled ? 'false' : 'true'})">${enabled ? 'Desativar' : 'Ativar'}</button>
-              <button class="px-2 py-1 bg-indigo-100 text-indigo-900 rounded hover:bg-indigo-200" onclick="pvAbrirEdicao(${av.id})">Editar</button>
-              <button class="px-2 py-1 bg-amber-100 text-amber-900 rounded hover:bg-amber-200" onclick="pvRemover(${av.id})">Remover</button>
-              <button class="px-2 py-1 bg-red-100 text-red-900 rounded hover:bg-red-200" onclick="pvApagarDef(${av.id})">Apagar definitivo</button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    document.getElementById("pvBtnCriar").onclick = async () => {
-      const m = document.getElementById("pvNovoMsg");
-      m.textContent = "";
-      const titulo = (document.getElementById("pvNovoTitulo").value || "").trim();
-      const conteudo = (document.getElementById("pvNovoConteudo").value || "").trim();
-      const prioridade = Number(document.getElementById("pvNovoPrioridade").value || 0);
-      const enabled = document.getElementById("pvNovoEnabled").checked;
-      const carteiras = readChecklist(document.getElementById("pvNovoCarteiras"));
-
-      if (!titulo) { m.textContent = "Informe o título."; m.style.color = "var(--warn)"; return; }
-      if (!conteudo) { m.textContent = "Informe o conteúdo."; m.style.color = "var(--warn)"; return; }
-      if (!Number.isInteger(prioridade) || prioridade < 0 || prioridade > 10) { m.textContent = "Prioridade deve ser 0..10."; m.style.color = "var(--warn)"; return; }
-
-      try {
-        m.textContent = "Salvando...";
-        const r = await fetch(`${API_BASE}/painel/novo_texto`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ titulo, conteudo, prioridade, enabled, carteiras })
-        });
-        const j = await r.json();
-        if (!j.ok) { m.textContent = j.erro || "Erro ao salvar."; m.style.color = "var(--err)"; return; }
-        m.textContent = "Criado com sucesso!";
-        m.style.color = "var(--ok)";
-        document.getElementById("pvNovoTitulo").value = "";
-        document.getElementById("pvNovoConteudo").value = "";
-        document.getElementById("pvNovoPrioridade").value = "0";
-        if (__prioPickers["pvNovoPrioridade"]) __prioPickers["pvNovoPrioridade"].set(0);
-        document.getElementById("pvNovoEnabled").checked = true;
-        document.querySelectorAll("#pvNovoCarteiras input[type='checkbox']").forEach(ch => ch.checked = false);
-        pvRecarregar();
-      } catch (e) {
-        m.textContent = "Erro de rede.";
-        m.style.color = "var(--err)";
-      }
-    };
-
-    window.pvAbrirEdicao = (id) => {
-      const item = pvItems.find(x => x.id === id);
-      if (!item) return;
-      pvEditId = id;
-      document.getElementById("pvEditId").textContent = `#${id}`;
-      document.getElementById("pvEditTitulo").value = item.titulo || "";
-      document.getElementById("pvEditConteudo").value = item.conteudo || "";
-      const pr = Number(item.prioridade ?? 0);
-      document.getElementById("pvEditPrioridade").value = pr;
-      if (__prioPickers["pvEditPrioridade"]) __prioPickers["pvEditPrioridade"].set(pr);
-      document.getElementById("pvEditEnabled").checked = !!item.enabled;
-      makeCarteirasChecklist(document.getElementById("pvEditCarteiras"), new Set(Array.isArray(item.carteiras) ? item.carteiras : []));
-      document.getElementById("pvEditBox").classList.remove("hidden");
-      document.getElementById("pvEditMsg").textContent = "";
-    };
-
-    document.getElementById("pvBtnCancelarEdicao").onclick = () => {
-      pvEditId = null;
-      document.getElementById("pvEditBox").classList.add("hidden");
-      document.getElementById("pvEditMsg").textContent = "";
-    };
-
-    document.getElementById("pvBtnSalvarEdicao").onclick = async () => {
-      const msg = document.getElementById("pvEditMsg");
-      if (!pvEditId) { msg.textContent = "Nada para salvar."; msg.style.color = "var(--warn)"; return; }
-      const titulo = (document.getElementById("pvEditTitulo").value || "").trim();
-      const conteudo = (document.getElementById("pvEditConteudo").value || "").trim();
-      const prioridade = Number(document.getElementById("pvEditPrioridade").value || 0);
-      const enabled = document.getElementById("pvEditEnabled").checked;
-      const carteiras = readChecklist(document.getElementById("pvEditCarteiras"));
-
-      if (!titulo) { msg.textContent = "Informe o título."; msg.style.color = "var(--warn)"; return; }
-      if (!conteudo) { msg.textContent = "Informe o conteúdo."; msg.style.color = "var(--warn)"; return; }
-      if (!Number.isInteger(prioridade) || prioridade < 0 || prioridade > 10) { msg.textContent = "Prioridade deve ser 0..10."; msg.style.color = "var(--warn)"; return; }
-
-      try {
-        msg.textContent = "Salvando...";
-        msg.style.color = "";
-        const r = await fetch(`${API_BASE}/painel/editar_texto`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: pvEditId, titulo, conteudo, enabled, prioridade, carteiras })
-        });
-        const j = await r.json();
-        if (!j.ok) { msg.textContent = j.erro || "Erro ao salvar."; msg.style.color = "var(--err)"; return; }
-        msg.textContent = "Salvo.";
-        msg.style.color = "var(--ok)";
-        pvRecarregar();
-      } catch (e) {
-        msg.textContent = "Erro de rede.";
-        msg.style.color = "var(--err)";
-      }
-    };
-
-    window.pvToggleEnabled = async (id, enabled) => {
-      try {
-        const r = await fetch(`${API_BASE}/painel/editar_texto`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, enabled })
-        });
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.erro || "Falha ao atualizar status");
-        pvRecarregar();
-      } catch (e) {
-        alert(e.message || "Erro ao atualizar status");
-      }
-    };
-
-    window.pvRemover = async (id) => {
-      if (!confirm(`Remover (soft delete) o aviso #${id}?`)) return;
-      try {
-        const r = await fetch(`${API_BASE}/painel/apagar_texto`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, hard: false })
-        });
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.erro || "Falha ao remover");
-        pvRecarregar();
-      } catch (e) {
-        alert(e.message || "Erro ao remover");
-      }
-    };
-
-    window.pvApagarDef = async (id) => {
-      if (!confirm(`APAGAR DEFINITIVAMENTE o aviso #${id}? Essa ação não pode ser desfeita.`)) return;
-      try {
-        const r = await fetch(`${API_BASE}/painel/apagar_texto`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, hard: true })
-        });
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.erro || "Falha ao apagar");
-        pvRecarregar();
-      } catch (e) {
-        alert(e.message || "Erro ao apagar");
-      }
-    };
-
-    document.getElementById("pvSomenteAtivos").addEventListener("change", pvRecarregar);
-    document.getElementById("pvFiltroCarteira").addEventListener("change", pvRecarregar);
-    document.getElementById("pvBtnRecarregar").addEventListener("click", pvRecarregar);
-
-    /* === Start === */
-    carregarTudo("primeiro");
+    /* ======= Inicial ======= */
+    setSort("desc"); // padrão: mais recentes primeiro
   </script>
 </body>
 
