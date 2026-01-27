@@ -215,7 +215,7 @@
       width: 1px;
       height: 1px;
       padding: 0;
-      margin: -1px;
+      margin: 0;
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
       white-space: nowrap;
@@ -353,7 +353,7 @@
     let contatoSelecionado = null, phoneIdAtual = null;
     let respostaMsgId = null;
     let userTyping = false, isModalOpen = false;
-    let sortOrder = "desc"; // 'desc' (mais recentes) | 'asc' (mais antigos)
+    let sortOrder = "desc";
 
     /* Mensagens render state */
     let lastTimestampMs = null;
@@ -361,7 +361,7 @@
     let renderedKeys = new Set();
 
     /* ======= Documento: constantes ======= */
-    const DOC_PREVIEW_MAX = 2 * 1024 * 1024; // 2MB para preview embutido de PDF
+    const DOC_PREVIEW_MAX = 2 * 1024 * 1024;
 
     // refs
     const textarea = document.getElementById("textoMensagem");
@@ -421,6 +421,178 @@
       rangeResumo.textContent = `(ÚLTIMOS 2 DIAS • ${toYMD(yesterday)} → ${toYMD(today)})`;
     }
     updateResumoLabels();
+
+    function safeJsonParse(s) {
+      try { return JSON.parse(s); } catch { return null; }
+    }
+    function digitsOnly(s) { return String(s || "").replace(/\D+/g, ""); }
+    function formatDisplayName(contact) {
+      const n = contact?.name || {};
+      return n.formatted_name
+        || [n.first_name, n.middle_name, n.last_name].filter(Boolean).join(" ").trim()
+        || contact?.formatted_name
+        || "Contato";
+    }
+    function normalizeContactsPayload(payload) {
+      if (!payload) return null;
+
+      // já é array no formato contacts
+      if (Array.isArray(payload)) return payload;
+
+      // padrões comuns de wrappers
+      if (Array.isArray(payload.contacts)) return payload.contacts;
+      if (payload.contact) return Array.isArray(payload.contact) ? payload.contact : [payload.contact];
+
+      // alguns backends podem encapsular em data/body
+      if (payload.data) return normalizeContactsPayload(payload.data);
+      if (payload.body) return normalizeContactsPayload(payload.body);
+
+      return null;
+    }
+    function extractContactsFromMessage(m) {
+      // 1) campos diretos (caso backend já mande parseado)
+      const direct = normalizeContactsPayload(m?.contacts) || normalizeContactsPayload(m?.payload) || normalizeContactsPayload(m?.raw);
+      if (direct) return direct;
+
+      // 2) mensagem_final como JSON (se vier raw do webhook serializado)
+      const txt = (typeof m?.mensagem_final === "string") ? m.mensagem_final.trim() : "";
+      if (txt && (txt.startsWith("{") || txt.startsWith("["))) {
+        const parsed = safeJsonParse(txt);
+        const arr = normalizeContactsPayload(parsed);
+        if (arr) return arr;
+      }
+
+      return null;
+    }
+    async function copyToClipboard(text) {
+      const t = String(text || "");
+      if (!t) return;
+      try {
+        await navigator.clipboard.writeText(t);
+        return true;
+      } catch {
+        // fallback
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = t;
+          ta.style.position = "fixed";
+          ta.style.left = "-9999px";
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          const ok = document.execCommand("copy");
+          document.body.removeChild(ta);
+          return ok;
+        } catch { return false; }
+      }
+    }
+
+    function buildContactsBox(contacts) {
+      const box = document.createElement("div");
+      box.className = "mt-2 space-y-2";
+
+      contacts.forEach((c) => {
+        const card = document.createElement("div");
+        card.className = "rounded-xl border bg-white px-3 py-2 shadow-sm";
+
+        const name = formatDisplayName(c);
+        const header = document.createElement("div");
+        header.className = "flex items-center justify-between gap-2";
+        header.innerHTML = `
+          <div class="font-semibold truncate">👤 ${escapeHtml(name)}</div>
+          <span class="text-[11px] text-slate-500">contato</span>
+        `;
+        card.appendChild(header);
+
+        const phones = Array.isArray(c?.phones) ? c.phones : [];
+        if (phones.length) {
+          const list = document.createElement("div");
+          list.className = "mt-2 space-y-2";
+          phones.forEach((p) => {
+            const phoneDisplay = p?.phone || p?.formatted_phone || "";
+            const waId = p?.wa_id || "";
+            const waMe = waId ? `https://wa.me/${digitsOnly(waId)}` : (phoneDisplay ? `https://wa.me/${digitsOnly(phoneDisplay)}` : "");
+            const row = document.createElement("div");
+            row.className = "flex items-start justify-between gap-2";
+            row.innerHTML = `
+              <div class="min-w-0">
+                <div class="text-sm">
+                  <span class="font-medium">${escapeHtml(p?.type || "Telefone")}:</span>
+                  <span class="break-all">${escapeHtml(phoneDisplay || waId || "—")}</span>
+                </div>
+                ${waId ? `<div class="text-xs text-slate-500 break-all">wa_id: ${escapeHtml(String(waId))}</div>` : ``}
+              </div>
+              <div class="flex gap-2 shrink-0">
+                ${waMe ? `<a href="${waMe}" target="_blank" class="text-xs text-blue-600 underline">Abrir</a>` : ``}
+                <button class="text-xs text-slate-600 underline btn-copy">Copiar</button>
+              </div>
+            `;
+            const btnCopy = row.querySelector(".btn-copy");
+            btnCopy.onclick = async () => {
+              const ok = await copyToClipboard(waId || phoneDisplay);
+              btnCopy.textContent = ok ? "Copiado!" : "Falhou";
+              setTimeout(() => btnCopy.textContent = "Copiar", 1200);
+            };
+            list.appendChild(row);
+          });
+          card.appendChild(list);
+        } else {
+          const empty = document.createElement("div");
+          empty.className = "mt-2 text-sm text-slate-600";
+          empty.textContent = "Sem telefones informados.";
+          card.appendChild(empty);
+        }
+
+        box.appendChild(card);
+      });
+
+      return box;
+    }
+
+    async function carregarContatoCompartilhado(div, btn, msg_id, messageObj) {
+      // tenta primeiro extrair do próprio objeto (caso backend já mande)
+      const local = extractContactsFromMessage(messageObj);
+      if (local && local.length) {
+        const box = buildContactsBox(local);
+        div.insertBefore(box, btn);
+        btn.remove();
+        return;
+      }
+
+      // fallback: buscar no backend via msg_id
+      btn.disabled = true; btn.textContent = "⏳ Carregando…";
+      try {
+        // endpoint sugerido: /api/conversas/contacts/<msg_id>
+        const r = await fetch(`${API_BASE}/api/conversas/contacts/${encodeURIComponent(msg_id)}`, { cache: "no-store" });
+        const j = await r.json();
+
+        // aceita múltiplos formatos de retorno
+        const payload = (j && j.ok === false) ? null : j;
+        const contacts = normalizeContactsPayload(payload) || normalizeContactsPayload(j?.contacts) || normalizeContactsPayload(j?.data) || normalizeContactsPayload(j?.body);
+
+        if (!contacts || !contacts.length) {
+          throw new Error(j?.erro || "Sem contatos no retorno");
+        }
+
+        const box = buildContactsBox(contacts);
+        div.insertBefore(box, btn);
+        btn.remove();
+      } catch (e) {
+        console.error("Erro contacts:", e);
+
+        // última tentativa: parse de mensagem_final como JSON bruto
+        const local2 = extractContactsFromMessage(messageObj);
+        if (local2 && local2.length) {
+          const box = buildContactsBox(local2);
+          div.insertBefore(box, btn);
+          btn.remove();
+          return;
+        }
+
+        btn.disabled = false;
+        btn.textContent = "👤 Ver contato";
+        alert("Não foi possível carregar os detalhes do contato (backend/retorno inválido).");
+      }
+    }
 
     /* ======= Contatos: busca local ======= */
     searchInput.addEventListener("input", () => filtrarContatos(searchInput.value));
@@ -542,7 +714,7 @@
 
       msgs.forEach((m) => {
         const tMs = new Date(m.data_hora).getTime();
-        const key = `${m.data_hora}|${m.status}|${m.mensagem_final || m.tipo || ""}`;
+        const key = `${m.data_hora}|${m.status}|${m.msg_id || ""}|${m.mensagem_final || m.tipo || ""}`;
         if (renderedKeys.has(key)) return;
         if (incremental && lastTimestampMs !== null && tMs <= lastTimestampMs) return;
 
@@ -650,6 +822,36 @@
             })();
           } else { label.textContent = "emoji indisponível"; }
         }
+        else if (
+          m.tipo === "contacts" || m.tipo === "contact" ||
+          m.mensagem_final === "[contacts]" || m.mensagem_final === "[contact]"
+        ) {
+          // ======= NOVO: contato compartilhado =======
+          const contactsLocal = extractContactsFromMessage(m);
+          if (contactsLocal && contactsLocal.length) {
+            div.innerHTML = `
+              <div class="flex items-center gap-2">
+                <div class="text-gray-600 italic">[contato compartilhado]</div>
+                <span class="text-xs text-slate-500">(${contactsLocal.length})</span>
+              </div>
+              <span class="hora">${hora}</span>
+            `;
+            const box = buildContactsBox(contactsLocal);
+            div.insertBefore(box, div.querySelector(".hora"));
+          } else {
+            div.innerHTML = `
+              <div class="text-gray-600 italic">[contato compartilhado]</div>
+              <button class="btn-contacts text-blue-600 underline mt-1">👤 Ver contato</button>
+              <span class="hora">${hora}</span>
+            `;
+            const btn = div.querySelector(".btn-contacts");
+            if (!m.msg_id) {
+              btn.disabled = true; btn.textContent = "Contato indisponível";
+            } else {
+              btn.onclick = () => carregarContatoCompartilhado(div, btn, m.msg_id, m);
+            }
+          }
+        }
         else if (m.tipo === "system" || m.mensagem_final === "[system]") {
           div.classList.add("system");
           div.innerHTML = `
@@ -683,7 +885,11 @@
                 const src = j.from || j.old_wa_id || "";
                 const pid = j.phone_id ? ` • conta: ${escapeHtml(j.phone_id)}` : "";
                 metaEl.textContent = `${src ? "Origem: " + src : ""}${pid}`;
-              } catch (e) { console.error("Erro system:", e); const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro"; div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento."; }
+              } catch (e) {
+                console.error("Erro system:", e);
+                const pill = div.querySelector(".sys-pill"); if (pill) pill.textContent = "erro";
+                div.querySelector(".sys-body").textContent = "Falha ao carregar detalhes do evento.";
+              }
             })();
           }
         }
@@ -899,7 +1105,6 @@
         }
       } finally {
         isRefreshing = false;
-        // agenda o próximo ciclo SÓ depois que o atual terminou (requisitado)
         scheduleRefresh();
       }
     }
@@ -910,7 +1115,7 @@
     });
 
     /* ======= Inicial ======= */
-    setSort("desc"); // padrão: mais recentes primeiro
+    setSort("desc");
   </script>
 </body>
 
