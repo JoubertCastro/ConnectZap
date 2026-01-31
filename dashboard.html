@@ -368,7 +368,7 @@
 
     .acc-grid {
       display: grid;
-      grid-template-columns: repeat(6, minmax(80px, auto));
+      grid-template-columns: repeat(7, minmax(80px, auto));
       gap: .5rem;
       align-items: center;
       flex: none;
@@ -932,13 +932,14 @@
       const map = new Map();
       rows.forEach(r => {
         const key = r.carteira || "(Sem carteira)";
-        const cur = map.get(key) || { carteira: key, atendimentos: 0, cliente_ficou_inativo: 0, duvidas_gerais: 0, solicitou_2a_via_de_boleto: 0, recusou_a_proposta: 0, realizou_negociacao: 0, agentes: [] };
+        const cur = map.get(key) || { carteira: key, atendimentos: 0, cliente_ficou_inativo: 0, duvidas_gerais: 0, solicitou_2a_via_de_boleto: 0, recusou_a_proposta: 0, realizou_negociacao: 0, comprovante: 0, agentes: [] };
         cur.atendimentos += Number(r.atendimentos || 0);
         cur.cliente_ficou_inativo += Number(r.cliente_ficou_inativo || 0);
         cur.duvidas_gerais += Number(r.duvidas_gerais || 0);
         cur.solicitou_2a_via_de_boleto += Number(r.solicitou_2a_via_de_boleto || 0);
         cur.recusou_a_proposta += Number(r.recusou_a_proposta || 0);
         cur.realizou_negociacao += Number(r.realizou_negociacao || 0);
+        cur.comprovante += Number(r.comprovante || 0);
         cur.agentes.push({
           codigo_do_agente: r.codigo_do_agente,
           nome_agente: r.nome_agente,
@@ -948,6 +949,7 @@
           solicitou_2a_via_de_boleto: r.solicitou_2a_via_de_boleto,
           recusou_a_proposta: r.recusou_a_proposta,
           realizou_negociacao: r.realizou_negociacao,
+          comprovante: r.comprovante,
         });
         map.set(key, cur);
       });
@@ -969,6 +971,7 @@
               <div class="acc-k"><span class="text-slate-500">2ª via</span> <span class="font-semibold">${formatNum(c.solicitou_2a_via_de_boleto)}</span> <span class="text-slate-500">(${pct(c.solicitou_2a_via_de_boleto)})</span></div>
               <div class="acc-k"><span class="text-slate-500">Recusou</span> <span class="font-semibold">${formatNum(c.recusou_a_proposta)}</span> <span class="text-slate-500">(${pct(c.recusou_a_proposta)})</span></div>
               <div class="acc-k"><span class="text-slate-500">Negoc.</span> <span class="font-semibold">${formatNum(c.realizou_negociacao)}</span> <span class="text-slate-500">(${pct(c.realizou_negociacao)})</span></div>
+              <div class="acc-k"><span class="text-slate-500">Comprov.</span> <span class="font-semibold">${formatNum(c.comprovante)}</span> <span class="text-slate-500">(${pct(c.comprovante)})</span></div>
             </div>
           </button>
           <div class="acc-body hidden">
@@ -984,6 +987,7 @@
                     <th class="mini-th text-right">2ª via</th>
                     <th class="mini-th text-right">Recusou</th>
                     <th class="mini-th text-right">Negoc.</th>
+                    <th class="mini-th text-right">Comprov.</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1029,7 +1033,8 @@
           <td class="py-1.5 pl-2 text-right">${formatNum(a.duvidas_gerais)}</td>
           <td class="py-1.5 pl-2 text-right">${formatNum(a.solicitou_2a_via_de_boleto)}</td>
           <td class="py-1.5 pl-2 text-right">${formatNum(a.recusou_a_proposta)}</td>
-          <td class="py-1.5 pl-2 text-right">${formatNum(a.realizou_negociacao)}</td>`;
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.realizou_negociacao)}</td>
+          <td class="py-1.5 pl-2 text-right">${formatNum(a.comprovante)}</td>`;
         tbody.appendChild(tr);
       });
     }
@@ -1050,6 +1055,7 @@
           solicitou_2a_via_de_boleto: Number((r.solicitou_2ª_via_de_boleto ?? r.solicitou_2a_via_de_boleto) ?? r[6] ?? 0),
           recusou_a_proposta: Number(r.recusou_a_proposta ?? r[7] ?? 0),
           realizou_negociacao: Number(r.realizou_negociacao ?? r[8] ?? 0),
+          comprovante: Number(r.comprovante ?? r[9] ?? 0),
         }));
         const groups = aggByCarteira(rows);
         window.__lastResumo = groups;
