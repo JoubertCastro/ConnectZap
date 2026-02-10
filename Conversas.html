@@ -1063,7 +1063,7 @@
     }
 
     // fetch JSON simples
-    async function fetchJSON(url, { signal, timeoutMs = 9000 } = {}) {
+    async function fetchJSON(url, { signal, timeoutMs = 20000 } = {}) {
       const own = new AbortController();
       const t = setTimeout(() => own.abort("timeout"), timeoutMs);
       const comp = new AbortController();
