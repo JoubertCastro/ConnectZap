@@ -516,7 +516,7 @@
                   <option value="divzero_p2">DivZero P2</option>
                   <option value="divzero_lp">DivZero LP</option>
                   <option value="arc4u">Arc4U</option>
-                  <option value="arc4u_veiculos">Arc4U Veiculos</option>
+                  <option value="arc4u_caidos">Arc4U Caidos</option>
                   <option value="serasa">Serasa</option>
                   <option value="mpvendas">Mercado Pago Vendas</option>
                 </select>
@@ -610,7 +610,7 @@
                     <select id="estrategiaSelect">
                       <option value="">-- Nenhuma --</option>
                       <optgroup label="Consulta no SIC">
-                        <option value="arc4u_veiculos">Arc4U Veiculos</option>
+                        <option value="arc4u_caidos">Arc4U Caidos</option>
                         <option value="arc4u_G1">Arc4U G1— Venc hoje</option>
                         <option value="arc4u_G2">Arc4U G2— Venc hoje</option>
                         <option value="arc4u_M">Arc4U M— Venc hoje</option>
@@ -828,8 +828,8 @@
               case 'recoverypf_prev':
                 allowedValues = ['new_recovery_pf','old_recovery_pf','new_recovery_pnj','old_recovery_pnj'];
                 break;
-              case 'arc4u_veiculos':
-                allowedValues = ['arc4u_veiculos'];
+              case 'arc4u_caidos':
+                allowedValues = ['arc4u_caidos'];
                 break;
               case 'mpcobranca':
                 allowedValues = ['mercado_pago_2', 'mercado_pago_4', 'mercado_pago_9'];
@@ -1233,8 +1233,8 @@
                       const data = await res.json();
                       const rows = Array.isArray(data?.dados) ? data.dados : [];
 
-                      // Templates especiais: arc4u_veiculos e ofertas_recovery
-                      if (fonte === "arc4u_veiculos") {
+                      // Templates especiais: arc4u_caidos e ofertas_recovery
+                      if (fonte === "arc4u_caidos") {
                         // Arc4U Veículos: [PrimeiroNome, CPF, PLACA]
                         contatos = rows.map(r => {
                           const row = r || {};
@@ -1406,7 +1406,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_veiculos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa" || selected === "ofertas_recovery" || selected === "new_recovery_pf" || selected === "old_recovery_pf" || selected === "new_recovery_atraso_pf" || selected === "old_recovery_atraso_pf" || selected === "new_recovery_quebra_pf" || selected === "old_recovery_quebra_pf" || selected === "new_recovery_pnj" || selected === "old_recovery_pnj" || selected === "new_recovery_atraso_pnj" || selected === "old_recovery_atraso_pnj"  || selected === "new_recovery_quebra_pnj" || selected === "old_recovery_quebra_pnj" ) {
+              if (selected === "arc4u_caidos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa" || selected === "ofertas_recovery" || selected === "new_recovery_pf" || selected === "old_recovery_pf" || selected === "new_recovery_atraso_pf" || selected === "old_recovery_atraso_pf" || selected === "new_recovery_quebra_pf" || selected === "old_recovery_quebra_pf" || selected === "new_recovery_pnj" || selected === "old_recovery_pnj" || selected === "new_recovery_atraso_pnj" || selected === "old_recovery_atraso_pnj"  || selected === "new_recovery_quebra_pnj" || selected === "old_recovery_quebra_pnj" ) {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
@@ -1548,7 +1548,7 @@
           // IDs por conta
           const contas = {
             connectzap: { phone: "977152815488698", waba: "839866782414172" },
-            bancopan: { phone: "805610009301153", waba: "25205080369078050" },
+            bancopan: { phone: "1055969577600030", waba: "4183227715273651" },
             //recoverypj: { phone: "727586317113885", waba: "844006574616797" },
             recovery: { phone: "802977069563598", waba: "825347669829173" },
             recoverypf_prev: { phone: "999063266621224", waba: "3339575666193527" },
@@ -1557,9 +1557,9 @@
             divzero_p2: { phone: "779797401888141", waba: "1714740535849713" },
             divzero_lp: { phone: "922259637643727", waba: "1714740535849713" },
             arc4u: { phone: "829210283602406", waba: "757728786687884" },
-            arc4u_veiculos: { phone: "905309685992125", waba: "757728786687884" },
+            arc4u_caidos: { phone: "1105949275929416", waba: "3063051860750725" },
             serasa: { phone: "713021321904495", waba: "803987045361450" },
-            mpvendas: { phone: "803535039503723", waba: "760293050103603" }
+            mpvendas: { phone: "1081838095006912", waba: "4241446439501327" }
           };
           document.getElementById("contaSelect").addEventListener("change", function () {
             const contaKey = this.value;
@@ -1612,7 +1612,7 @@
                   <option value="divzero_p2">DivZero P2</option>
                   <option value="divzero_lp">DivZero LP</option>
                   <option value="arc4u">Arc4U</option>
-                  <option value="arc4u_veiculos">Arc4U Veiculos</option>
+                  <option value="arc4u_caidos">Arc4U Caidos</option>
                   <option value="serasa">Serasa</option>
                   <option value="mpvendas">Mercado Pago Vendas</option>
                 </select>
