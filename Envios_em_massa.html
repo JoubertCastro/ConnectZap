@@ -514,7 +514,7 @@
                   <option value="recoverypf_prev">Recovery Preventivo</option>
                   <option value="mpcobranca">Mercado Pago Cobrança</option>
                   <option value="divzero_p2">DivZero P2</option>
-                  <option value="divzero_lp">DivZero LP</option>
+                  <option value="carrefour_2">carrefour 2/option>
                   <option value="divZero_boletos">DivZero Boletos</option>
                   <option value="arc4u">Arc4U</option>
                   <option value="arc4u_caidos">Arc4U Caidos</option>
@@ -1407,7 +1407,7 @@
           byId('estrategiaSelect').addEventListener('change', async function () {
             const selected = this.value;
             try {
-              if (selected === "arc4u_caidos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "divzero_lp" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa" || selected === "ofertas_recovery" || selected === "new_recovery_pf" || selected === "old_recovery_pf" || selected === "new_recovery_atraso_pf" || selected === "old_recovery_atraso_pf" || selected === "new_recovery_quebra_pf" || selected === "old_recovery_quebra_pf" || selected === "new_recovery_pnj" || selected === "old_recovery_pnj" || selected === "new_recovery_atraso_pnj" || selected === "old_recovery_atraso_pnj"  || selected === "new_recovery_quebra_pnj" || selected === "old_recovery_quebra_pnj" ) {
+              if (selected === "arc4u_caidos" || selected === "atraso_old_Arc4u" || selected === "antecipa_old_Arc4u" || selected === "divzero_eavm" || selected === "divzero_p1" || selected === "divzero_p2" || selected === "carrefour_2" || selected === "divzero_atraso" || selected === "divzero_oficio" || selected === "divzero_hoje" || selected === "divzero_serasa" || selected === "entrada_divzero_p1" || selected === "entrada_divzero_p2" || selected === "entrada_divzero_lp" || selected === "entrada_divzero_eavm" || selected === "atraso_new_Arc4u" || selected === "arc4u_G1" || selected === "arc4u_G2" || selected === "arc4u_M" || selected === "arc4u_C1" || selected === "arc4u_A1" || selected === "arc4u" || selected === "mercado_pago_2" || selected === "mercado_pago_4" || selected === "mercado_pago_9" || selected === "serasa_atraso" || selected === "serasa" || selected === "ofertas_recovery" || selected === "new_recovery_pf" || selected === "old_recovery_pf" || selected === "new_recovery_atraso_pf" || selected === "old_recovery_atraso_pf" || selected === "new_recovery_quebra_pf" || selected === "old_recovery_quebra_pf" || selected === "new_recovery_pnj" || selected === "old_recovery_pnj" || selected === "new_recovery_atraso_pnj" || selected === "old_recovery_atraso_pnj"  || selected === "new_recovery_quebra_pnj" || selected === "old_recovery_quebra_pnj" ) {
                 document.getElementById('contagemContatos').textContent = `⏳ Carregando ${selected}...`;
                 await carregarEstrategiaOnline(selected);
                 return;
@@ -1556,13 +1556,13 @@
             //recoverypf_man: { phone: "897647883433681", waba: "825347669829173" },
             mpcobranca: { phone: "1084544078066666", waba: "1479610726857338" },
             divzero_p2: { phone: "779797401888141", waba: "1714740535849713" },
-            divzero_lp: { phone: "922259637643727", waba: "1714740535849713" },
+            carrefour: { phone: "922259637643727", waba: "1714740535849713" },
             divZero_boletos: { phone: "1136868269506871", waba: "2198986270959385" },
             arc4u: { phone: "829210283602406", waba: "757728786687884" },
             arc4u_caidos: { phone: "1105949275929416", waba: "3063051860750725" },
             serasa: { phone: "713021321904495", waba: "803987045361450" },
-            mpvendas: { phone: "1081838095006912", waba: "4241446439501327" },
-            carrefour: { phone: "1020488704489198", waba: "2083014148925790" }
+            mpvendas: { phone: "1081838095006912", waba: "4241446439501327" }
+            //carrefour: { phone: "1020488704489198", waba: "2083014148925790" }
           };
           document.getElementById("contaSelect").addEventListener("change", function () {
             const contaKey = this.value;
@@ -1613,7 +1613,7 @@
                   <option value="recoverypf_prev">Recovery Preventivo</option>
                   <option value="mpcobranca">Mercado Pago Cobrança</option>
                   <option value="divzero_p2">DivZero P2</option>
-                  <option value="divzero_lp">DivZero LP</option>
+                  <option value="carrefour_2">Carrefour 2</option>
                   <option value="divZero_boletos">DivZero Boletos</option>
                   <option value="arc4u">Arc4U</option>
                   <option value="arc4u_caidos">Arc4U Caidos</option>
